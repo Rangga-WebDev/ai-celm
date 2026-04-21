@@ -1,0 +1,178 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  STUDENT
+  LECTURER
+  ADMIN
+}
+
+enum EnrollmentStatus {
+  ACTIVE
+  COMPLETED
+  DROPPED
+}
+
+enum ModuleStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum ProgressStatus {
+  NOT_STARTED
+  IN_PROGRESS
+  COMPLETED
+  LOCKED
+  REMEDIAL
+}
+
+model User {
+  id           String   @id @default(cuid())
+  firstName    String
+  lastName     String
+  email        String   @unique
+  passwordHash String
+  role         Role
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  enrollments       Enrollment[]
+  taughtCourses     Course[]         @relation("CourseLecturer")
+  moduleProgresses  ModuleProgress[]
+  unitProgresses    UnitProgress[]
+}
+
+model Course {
+  id          String   @id @default(cuid())
+  title       String
+  slug        String   @unique
+  description String?
+  coverImage  String?
+  isPublished Boolean  @default(false)
+
+  lecturerId  String?
+  lecturer    User?    @relation("CourseLecturer", fields: [lecturerId], references: [id], onDelete: SetNull)
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  enrollments Enrollment[]
+  modules     Module[]
+}
+
+model Enrollment {
+  id          String           @id @default(cuid())
+  userId      String
+  courseId    String
+  status      EnrollmentStatus @default(ACTIVE)
+  enrolledAt  DateTime         @default(now())
+  completedAt DateTime?
+
+  user        User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  course      Course           @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, courseId])
+  @@index([userId])
+  @@index([courseId])
+}
+
+model Module {
+  id               String       @id @default(cuid())
+  courseId         String
+  title            String
+  slug             String
+  description      String?
+  order            Int
+  estimatedMinutes Int?
+  status           ModuleStatus @default(DRAFT)
+  isLocked         Boolean      @default(false)
+  unlockRule       String?
+
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+
+  course           Course       @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  units            MicroUnit[]
+  progresses       ModuleProgress[]
+
+  @@unique([courseId, slug])
+  @@unique([courseId, order])
+  @@index([courseId])
+}
+
+model MicroUnit {
+  id               String       @id @default(cuid())
+  moduleId         String
+  title            String
+  slug             String
+  description      String?
+  content          String?
+  order            Int
+  estimatedMinutes Int?
+  isRequired       Boolean      @default(true)
+  isLocked         Boolean      @default(false)
+
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+
+  module           Module       @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  progresses       UnitProgress[]
+
+  @@unique([moduleId, slug])
+  @@unique([moduleId, order])
+  @@index([moduleId])
+}
+
+model ModuleProgress {
+  id              String         @id @default(cuid())
+  userId          String
+  moduleId        String
+  status          ProgressStatus @default(NOT_STARTED)
+  progressPercent Int            @default(0)
+  masteryScore    Float?
+  startedAt       DateTime?
+  completedAt     DateTime?
+  lastAccessedAt  DateTime?
+
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  user            User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  module          Module         @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, moduleId])
+  @@index([userId])
+  @@index([moduleId])
+  @@index([status])
+}
+
+model UnitProgress {
+  id              String         @id @default(cuid())
+  userId          String
+  microUnitId     String
+  status          ProgressStatus @default(NOT_STARTED)
+  progressPercent Int            @default(0)
+  score           Float?
+  attempts        Int            @default(0)
+  startedAt       DateTime?
+  completedAt     DateTime?
+  lastAccessedAt  DateTime?
+
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  user            User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  microUnit       MicroUnit      @relation(fields: [microUnitId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, microUnitId])
+  @@index([userId])
+  @@index([microUnitId])
+  @@index([status])
+}

@@ -1,0 +1,585 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  STUDENT
+  LECTURER
+  ADMIN
+}
+
+enum EnrollmentStatus {
+  ACTIVE
+  COMPLETED
+  DROPPED
+}
+
+enum ModuleStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum ProgressStatus {
+  NOT_STARTED
+  IN_PROGRESS
+  COMPLETED
+  LOCKED
+  REMEDIAL
+}
+
+enum CPLDomain {
+  ATTITUDE
+  KNOWLEDGE
+  GENERAL_SKILL
+  SPECIFIC_SKILL
+}
+
+enum UnitType {
+  LESSON
+  VIDEO
+  QUIZ
+  DISCUSSION
+  REFLECTION
+  ASSIGNMENT
+  PROJECT_STEP
+  REMEDIAL
+}
+
+enum ResourceType {
+  PDF
+  DOC
+  SLIDE
+  VIDEO
+  LINK
+  IMAGE
+  QUIZ
+  TEMPLATE
+  OTHER
+}
+
+enum ThreadType {
+  GENERAL
+  DELIBERATION
+  QNA
+  REFLECTION
+}
+
+enum ThreadStatus {
+  OPEN
+  CLOSED
+  ARCHIVED
+}
+
+enum ProjectStatus {
+  DRAFT
+  ACTIVE
+  CLOSED
+  ARCHIVED
+}
+
+enum SubmissionStatus {
+  DRAFT
+  SUBMITTED
+  REVISION_REQUIRED
+  GRADED
+  APPROVED
+}
+
+enum AIInteractionType {
+  CER_FEEDBACK
+  DELIBERATION_PROMPT
+  REMEDIAL_HINT
+  SUMMARY
+  RECOMMENDATION
+  RUBRIC_ASSIST
+}
+
+enum AnalyticsEventType {
+  COURSE_VIEW
+  MODULE_VIEW
+  UNIT_VIEW
+  UNIT_START
+  UNIT_COMPLETE
+  QUIZ_ATTEMPT
+  DISCUSSION_THREAD_CREATE
+  DISCUSSION_POST_CREATE
+  PROJECT_VIEW
+  PROJECT_DRAFT_SAVE
+  PROJECT_SUBMIT
+  AI_REQUEST
+  AI_RESPONSE
+}
+
+model User {
+  id           String   @id @default(cuid())
+  firstName    String
+  lastName     String
+  email        String   @unique
+  passwordHash String
+  role         Role
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  enrollments        Enrollment[]
+  taughtCourses      Course[]                 @relation("CourseLecturer")
+  uploadedResources  LearningResource[]       @relation("ResourceUploader")
+  moduleProgresses   ModuleProgress[]
+  unitProgresses     UnitProgress[]
+  discussionThreads  DiscussionThread[]
+  discussionPosts    DiscussionPost[]
+  createdProjects    CivicActionProject[]     @relation("ProjectCreator")
+  projectSubmissions ProjectSubmission[]
+  aiLogs             AIResponseLog[]
+  analyticsEvents    LearningAnalyticsEvent[]
+}
+
+model Course {
+  id          String  @id @default(cuid())
+  title       String
+  slug        String  @unique
+  code        String?
+  description String?
+  coverImage  String?
+  isPublished Boolean @default(false)
+
+  lecturerId String?
+  lecturer   User?   @relation("CourseLecturer", fields: [lecturerId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  enrollments     Enrollment[]
+  modules         Module[]
+  rps             RPS?
+  cpmks           CPMK[]
+  cplMappings     CourseCPL[]
+  resources       LearningResource[]
+  threads         DiscussionThread[]
+  projects        CivicActionProject[]
+  aiLogs          AIResponseLog[]
+  analyticsEvents LearningAnalyticsEvent[]
+
+  @@index([lecturerId])
+}
+
+model Enrollment {
+  id          String           @id @default(cuid())
+  userId      String
+  courseId    String
+  status      EnrollmentStatus @default(ACTIVE)
+  enrolledAt  DateTime         @default(now())
+  completedAt DateTime?
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, courseId])
+  @@index([userId])
+  @@index([courseId])
+}
+
+model CPL {
+  id        String    @id @default(cuid())
+  code      String    @unique
+  statement String
+  domain    CPLDomain
+  isActive  Boolean   @default(true)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  courseMappings CourseCPL[]
+  cpmkMappings   CPMKCPL[]
+}
+
+model CourseCPL {
+  id        String   @id @default(cuid())
+  courseId  String
+  cplId     String
+  createdAt DateTime @default(now())
+
+  course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  cpl    CPL    @relation(fields: [cplId], references: [id], onDelete: Cascade)
+
+  @@unique([courseId, cplId])
+  @@index([courseId])
+  @@index([cplId])
+}
+
+model CPMK {
+  id        String   @id @default(cuid())
+  courseId  String
+  code      String
+  statement String
+  order     Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  course      Course    @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  cplMappings CPMKCPL[]
+  subCpmks    SubCPMK[]
+
+  @@unique([courseId, code])
+  @@unique([courseId, order])
+  @@index([courseId])
+}
+
+model CPMKCPL {
+  id        String   @id @default(cuid())
+  cpmkId    String
+  cplId     String
+  createdAt DateTime @default(now())
+
+  cpmk CPMK @relation(fields: [cpmkId], references: [id], onDelete: Cascade)
+  cpl  CPL  @relation(fields: [cplId], references: [id], onDelete: Cascade)
+
+  @@unique([cpmkId, cplId])
+  @@index([cpmkId])
+  @@index([cplId])
+}
+
+model SubCPMK {
+  id        String   @id @default(cuid())
+  cpmkId    String
+  code      String
+  statement String
+  order     Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  cpmk         CPMK               @relation(fields: [cpmkId], references: [id], onDelete: Cascade)
+  unitMappings MicroUnitSubCPMK[]
+
+  @@unique([cpmkId, code])
+  @@unique([cpmkId, order])
+  @@index([cpmkId])
+}
+
+model RPS {
+  id               String   @id @default(cuid())
+  courseId         String   @unique
+  semesterLabel    String?
+  academicYear     String?
+  description      String?
+  learningStrategy String?
+  assessmentPolicy String?
+  referencesNote   String?
+  documentUrl      String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+}
+
+model Module {
+  id               String       @id @default(cuid())
+  courseId         String
+  title            String
+  slug             String
+  description      String?
+  order            Int
+  estimatedMinutes Int?
+  status           ModuleStatus @default(DRAFT)
+  isLocked         Boolean      @default(false)
+  masteryThreshold Float        @default(75)
+  unlockRule       Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  course          Course                   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  units           MicroUnit[]
+  progresses      ModuleProgress[]
+  resources       LearningResource[]
+  aiLogs          AIResponseLog[]
+  analyticsEvents LearningAnalyticsEvent[]
+
+  @@unique([courseId, slug])
+  @@unique([courseId, order])
+  @@index([courseId])
+}
+
+model MicroUnit {
+  id               String   @id @default(cuid())
+  moduleId         String
+  title            String
+  slug             String
+  description      String?
+  content          String?
+  order            Int
+  unitType         UnitType @default(LESSON)
+  estimatedMinutes Int?
+  isRequired       Boolean  @default(true)
+  isLocked         Boolean  @default(false)
+  masteryThreshold Float?
+  unlockRule       Json?
+
+  remedialUnitId  String?
+  remedialUnit    MicroUnit?  @relation("UnitRemedial", fields: [remedialUnitId], references: [id], onDelete: SetNull)
+  primaryForUnits MicroUnit[] @relation("UnitRemedial")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  module          Module                   @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  progresses      UnitProgress[]
+  resources       LearningResource[]
+  threads         DiscussionThread[]
+  subCpmkMappings MicroUnitSubCPMK[]
+  aiLogs          AIResponseLog[]
+  analyticsEvents LearningAnalyticsEvent[]
+
+  @@unique([moduleId, slug])
+  @@unique([moduleId, order])
+  @@index([moduleId])
+  @@index([unitType])
+}
+
+model MicroUnitSubCPMK {
+  id          String   @id @default(cuid())
+  microUnitId String
+  subCpmkId   String
+  createdAt   DateTime @default(now())
+
+  microUnit MicroUnit @relation(fields: [microUnitId], references: [id], onDelete: Cascade)
+  subCpmk   SubCPMK   @relation(fields: [subCpmkId], references: [id], onDelete: Cascade)
+
+  @@unique([microUnitId, subCpmkId])
+  @@index([microUnitId])
+  @@index([subCpmkId])
+}
+
+model LearningResource {
+  id           String       @id @default(cuid())
+  courseId     String?
+  moduleId     String?
+  microUnitId  String?
+  title        String
+  description  String?
+  type         ResourceType
+  url          String
+  sortOrder    Int?
+  uploadedById String?
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  course     Course?    @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  module     Module?    @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  microUnit  MicroUnit? @relation(fields: [microUnitId], references: [id], onDelete: Cascade)
+  uploadedBy User?      @relation("ResourceUploader", fields: [uploadedById], references: [id], onDelete: SetNull)
+
+  @@index([courseId])
+  @@index([moduleId])
+  @@index([microUnitId])
+  @@index([type])
+}
+
+model DiscussionThread {
+  id          String       @id @default(cuid())
+  courseId    String
+  microUnitId String?
+  authorId    String
+  title       String
+  prompt      String?
+  type        ThreadType   @default(GENERAL)
+  status      ThreadStatus @default(OPEN)
+  isPinned    Boolean      @default(false)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  course    Course           @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  microUnit MicroUnit?       @relation(fields: [microUnitId], references: [id], onDelete: SetNull)
+  author    User             @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  posts     DiscussionPost[]
+
+  @@index([courseId])
+  @@index([microUnitId])
+  @@index([authorId])
+  @@index([type])
+  @@index([status])
+}
+
+model DiscussionPost {
+  id               String   @id @default(cuid())
+  threadId         String
+  authorId         String
+  parentId         String?
+  content          String
+  aiModerationNote String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  thread  DiscussionThread @relation(fields: [threadId], references: [id], onDelete: Cascade)
+  author  User             @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  parent  DiscussionPost?  @relation("DiscussionReplies", fields: [parentId], references: [id], onDelete: Cascade)
+  replies DiscussionPost[] @relation("DiscussionReplies")
+  aiLogs  AIResponseLog[]
+
+  @@index([threadId])
+  @@index([authorId])
+  @@index([parentId])
+}
+
+model CivicActionProject {
+  id          String        @id @default(cuid())
+  courseId    String
+  createdById String
+  title       String
+  slug        String
+  description String?
+  brief       String?
+  rubric      Json?
+  dueAt       DateTime?
+  status      ProjectStatus @default(DRAFT)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  course      Course              @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  createdBy   User                @relation("ProjectCreator", fields: [createdById], references: [id], onDelete: Cascade)
+  submissions ProjectSubmission[]
+
+  @@unique([courseId, slug])
+  @@index([courseId])
+  @@index([createdById])
+  @@index([status])
+}
+
+model ProjectSubmission {
+  id           String           @id @default(cuid())
+  projectId    String
+  studentId    String
+  title        String?
+  summary      String?
+  artifactUrl  String?
+  artifactJson Json?
+  reflection   String?
+  status       SubmissionStatus @default(DRAFT)
+  score        Float?
+  feedback     String?
+  submittedAt  DateTime?
+  reviewedAt   DateTime?
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+
+  project CivicActionProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  student User               @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  aiLogs  AIResponseLog[]
+
+  @@unique([projectId, studentId])
+  @@index([projectId])
+  @@index([studentId])
+  @@index([status])
+}
+
+model AIResponseLog {
+  id                  String            @id @default(cuid())
+  userId              String
+  courseId            String?
+  moduleId            String?
+  microUnitId         String?
+  discussionPostId    String?
+  projectSubmissionId String?
+  interactionType     AIInteractionType
+  prompt              String
+  response            String
+  modelName           String?
+  inputTokens         Int?
+  outputTokens        Int?
+  metadata            Json?
+  createdAt           DateTime          @default(now())
+
+  user              User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  course            Course?            @relation(fields: [courseId], references: [id], onDelete: SetNull)
+  module            Module?            @relation(fields: [moduleId], references: [id], onDelete: SetNull)
+  microUnit         MicroUnit?         @relation(fields: [microUnitId], references: [id], onDelete: SetNull)
+  discussionPost    DiscussionPost?    @relation(fields: [discussionPostId], references: [id], onDelete: SetNull)
+  projectSubmission ProjectSubmission? @relation(fields: [projectSubmissionId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([courseId])
+  @@index([moduleId])
+  @@index([microUnitId])
+  @@index([interactionType])
+  @@index([createdAt])
+}
+
+model LearningAnalyticsEvent {
+  id          String             @id @default(cuid())
+  userId      String
+  courseId    String
+  moduleId    String?
+  microUnitId String?
+  eventType   AnalyticsEventType
+  value       Float?
+  sessionId   String?
+  metadata    Json?
+  createdAt   DateTime           @default(now())
+
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  course    Course     @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  module    Module?    @relation(fields: [moduleId], references: [id], onDelete: SetNull)
+  microUnit MicroUnit? @relation(fields: [microUnitId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([courseId])
+  @@index([moduleId])
+  @@index([microUnitId])
+  @@index([eventType])
+  @@index([createdAt])
+}
+
+model ModuleProgress {
+  id               String         @id @default(cuid())
+  userId           String
+  moduleId         String
+  status           ProgressStatus @default(NOT_STARTED)
+  progressPercent  Int            @default(0)
+  masteryScore     Float?
+  isPassed         Boolean        @default(false)
+  remedialRequired Boolean        @default(false)
+  startedAt        DateTime?
+  completedAt      DateTime?
+  lastAccessedAt   DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  module Module @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, moduleId])
+  @@index([userId])
+  @@index([moduleId])
+  @@index([status])
+}
+
+model UnitProgress {
+  id               String         @id @default(cuid())
+  userId           String
+  microUnitId      String
+  status           ProgressStatus @default(NOT_STARTED)
+  progressPercent  Int            @default(0)
+  score            Float?
+  attempts         Int            @default(0)
+  isPassed         Boolean        @default(false)
+  remedialRequired Boolean        @default(false)
+  startedAt        DateTime?
+  completedAt      DateTime?
+  lastAccessedAt   DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  microUnit MicroUnit @relation(fields: [microUnitId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, microUnitId])
+  @@index([userId])
+  @@index([microUnitId])
+  @@index([status])
+}
