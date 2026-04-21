@@ -20,9 +20,19 @@ export async function POST(req: Request) {
 
     const { email, password } = parsed.data;
 
+    console.log("LOGIN_ATTEMPT", { email });
+
     const user = await prisma.user.findUnique({
       where: { email },
+      select: {
+        id: true,
+        email: true,
+        passwordHash: true,
+        role: true,
+      },
     });
+
+    console.log("LOGIN_USER_FOUND", !!user);
 
     if (!user) {
       return NextResponse.json(
@@ -67,8 +77,15 @@ export async function POST(req: Request) {
     });
 
     return res;
-  } catch (error) {
-    console.error("LOGIN_ERROR", error);
+  } catch (error: any) {
+    console.error("LOGIN_ERROR", {
+      name: error?.name,
+      message: error?.message,
+      code: error?.code,
+      meta: error?.meta,
+      stack: error?.stack,
+    });
+
     return NextResponse.json(
       { error: "Terjadi kesalahan server" },
       { status: 500 },
