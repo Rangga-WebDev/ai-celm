@@ -25,26 +25,26 @@ async function main() {
   // =========================
   // 1. USERS
   // =========================
-  // const adminPassword = await bcrypt.hash("Admin123!", 10);
+  const adminPassword = await bcrypt.hash("Admin123!", 10);
   const lecturerPassword = await bcrypt.hash("Lecturer123!", 10);
   const studentPassword = await bcrypt.hash("Student123!", 10);
 
-  // const admin = await prisma.user.upsert({
-  //   where: { email: "admin@aicelm.local" },
-  //   update: {
-  //     firstName: "System",
-  //     lastName: "Admin",
-  //     passwordHash: adminPassword,
-  //     role: Role.ADMIN,
-  //   },
-  //   create: {
-  //     firstName: "System",
-  //     lastName: "Admin",
-  //     email: "admin@aicelm.local",
-  //     passwordHash: adminPassword,
-  //     role: Role.ADMIN,
-  //   },
-  // });
+  const admin = await prisma.user.upsert({
+    where: { email: "admin@aicelm.local" },
+    update: {
+      firstName: "System",
+      lastName: "Admin",
+      passwordHash: adminPassword,
+      role: Role.ADMIN,
+    },
+    create: {
+      firstName: "System",
+      lastName: "Admin",
+      email: "admin@aicelm.local",
+      passwordHash: adminPassword,
+      role: Role.ADMIN,
+    },
+  });
 
   const lecturer = await prisma.user.upsert({
     where: { email: "dosen@aicelm.local" },
