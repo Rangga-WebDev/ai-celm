@@ -9,7 +9,7 @@ import { useEffect, useMemo, useState } from "react";
 import {
   ArrowLeft,
   BookOpen,
-  CheckCircle2,
+  // CheckCircle2,
   ChevronRight,
   ClipboardCheck,
   FileText,
@@ -267,11 +267,11 @@ export default function LecturerCourseDetailClient({
               {data.course.code ?? "Tanpa kode"}
             </div>
 
-            <h1 className="mt-5 break-words text-3xl font-semibold text-white sm:text-4xl">
+            <h1 className="mt-5 wrap-break-words text-3xl font-semibold text-white sm:text-4xl">
               {data.course.title}
             </h1>
 
-            <p className="mt-4 max-w-3xl break-words text-slate-300">
+            <p className="mt-4 max-w-3xl wrap-break-words text-slate-300">
               {data.course.description ?? "Belum ada deskripsi course."}
             </p>
 
@@ -314,7 +314,7 @@ export default function LecturerCourseDetailClient({
                   </div>
                   <div className="mt-4 h-2 w-full rounded-full bg-slate-800">
                     <div
-                      className="h-2 rounded-full bg-gradient-to-r from-teal-400 via-cyan-400 to-sky-400"
+                      className="h-2 rounded-full bg-linear-to-r from-teal-400 via-cyan-400 to-sky-400"
                       style={{
                         width: `${topStudent.progress.averageProgress}%`,
                       }}
@@ -379,18 +379,18 @@ export default function LecturerCourseDetailClient({
             data.modules.map((module) => (
               <div
                 key={module.id}
-                className="rounded-[24px] border border-white/10 bg-slate-900/70 p-5"
+                className="rounded-3xl border border-white/10 bg-slate-900/70 p-5"
               >
                 <div className="flex flex-wrap items-start justify-between gap-4">
                   <div className="min-w-0">
                     <div className="text-xs uppercase tracking-wide text-slate-400">
                       Modul {module.order}
                     </div>
-                    <h3 className="mt-1 break-words text-lg font-semibold text-white">
+                    <h3 className="mt-1 wrap-break-words text-lg font-semibold text-white">
                       {module.title}
                     </h3>
                     {module.description ? (
-                      <p className="mt-2 max-w-3xl break-words text-sm leading-7 text-slate-300">
+                      <p className="mt-2 max-w-3xl wrap-break-words text-sm leading-7 text-slate-300">
                         {module.description}
                       </p>
                     ) : null}
@@ -403,7 +403,7 @@ export default function LecturerCourseDetailClient({
                     </div>
                     <div className="h-2 w-full rounded-full bg-slate-800">
                       <div
-                        className="h-2 rounded-full bg-gradient-to-r from-teal-400 via-cyan-400 to-sky-400"
+                        className="h-2 rounded-full bg-linear-to-r from-teal-400 via-cyan-400 to-sky-400"
                         style={{ width: `${module.avgProgress}%` }}
                       />
                     </div>
@@ -448,7 +448,7 @@ export default function LecturerCourseDetailClient({
                         >
                           <div className="flex flex-wrap items-start justify-between gap-3">
                             <div className="min-w-0">
-                              <div className="break-words text-sm font-semibold text-white">
+                              <div className="wrap-break-words text-sm font-semibold text-white">
                                 {student.studentName}
                               </div>
                             </div>
@@ -509,11 +509,11 @@ export default function LecturerCourseDetailClient({
               data.students.map((student) => (
                 <div
                   key={student.id}
-                  className="rounded-[24px] border border-white/10 bg-slate-900/70 p-5"
+                  className="rounded-3xl border border-white/10 bg-slate-900/70 p-5"
                 >
                   <div className="flex flex-wrap items-start justify-between gap-4">
                     <div className="min-w-0">
-                      <div className="break-words text-lg font-semibold text-white">
+                      <div className="wrap-break-words text-lg font-semibold text-white">
                         {student.name}
                       </div>
                       <div className="mt-1 text-sm text-slate-400">
@@ -576,7 +576,7 @@ export default function LecturerCourseDetailClient({
               value={data.course.rps?.assessmentPolicy ?? "Belum tersedia"}
             />
 
-            <div className="rounded-[24px] border border-white/10 bg-slate-900/70 p-5">
+            <div className="rounded-3xl border border-white/10 bg-slate-900/70 p-5">
               <div className="text-sm font-semibold text-white">Resource</div>
               <div className="mt-3 grid gap-3">
                 {data.course.resources.length === 0 ? (
@@ -622,7 +622,7 @@ function StatCard({
   suffix?: string;
 }) {
   return (
-    <div className="rounded-[24px] border border-white/10 bg-white/5 p-5">
+    <div className="rounded-3xl border border-white/10 bg-white/5 p-5">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <div className="text-sm text-slate-400">{label}</div>
@@ -660,7 +660,7 @@ function InfoRow({
           <div className="text-xs uppercase tracking-wide text-slate-400">
             {label}
           </div>
-          <div className="mt-1 break-words text-sm font-medium text-white">
+          <div className="mt-1 wrap-break-words text-sm font-medium text-white">
             {value}
           </div>
         </div>
@@ -682,11 +682,11 @@ function MiniInfo({ label, value }: { label: string; value: string }) {
 
 function InfoBox({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-[24px] border border-white/10 bg-slate-900/70 p-5">
+    <div className="rounded-3xl border border-white/10 bg-slate-900/70 p-5">
       <div className="text-xs uppercase tracking-wide text-slate-400">
         {label}
       </div>
-      <div className="mt-2 break-words text-sm leading-7 text-slate-300">
+      <div className="mt-2 wrap-break-words text-sm leading-7 text-slate-300">
         {value}
       </div>
     </div>

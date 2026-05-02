@@ -116,6 +116,19 @@ enum AnalyticsEventType {
   AI_RESPONSE
 }
 
+enum QuizStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum QuizQuestionType {
+  MULTIPLE_CHOICE
+  TRUE_FALSE
+  SHORT_ANSWER
+  ESSAY
+}
+
 model User {
   id           String   @id @default(cuid())
   firstName    String
@@ -137,6 +150,7 @@ model User {
   projectSubmissions ProjectSubmission[]
   aiLogs             AIResponseLog[]
   analyticsEvents    LearningAnalyticsEvent[]
+  quizAttempts       QuizAttempt[]
 }
 
 model Course {
@@ -296,6 +310,7 @@ model Module {
   units           MicroUnit[]
   progresses      ModuleProgress[]
   resources       LearningResource[]
+  quizzes         Quiz[]
   aiLogs          AIResponseLog[]
   analyticsEvents LearningAnalyticsEvent[]
 
@@ -582,4 +597,99 @@ model UnitProgress {
   @@index([userId])
   @@index([microUnitId])
   @@index([status])
+}
+
+model Quiz {
+  id                 String     @id @default(cuid())
+  moduleId           String
+  title              String
+  description        String?
+  status             QuizStatus @default(DRAFT)
+  timeLimitMinutes   Int?
+  passingScore       Float      @default(75)
+  showScoreToStudent Boolean    @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  module    Module         @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  questions QuizQuestion[]
+  attempts  QuizAttempt[]
+
+  @@index([moduleId])
+  @@index([status])
+}
+
+model QuizQuestion {
+  id           String           @id @default(cuid())
+  quizId       String
+  questionText String
+  questionType QuizQuestionType @default(MULTIPLE_CHOICE)
+  explanation  String?
+  order        Int
+  points       Float            @default(1)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  quiz    Quiz         @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  options QuizOption[]
+  answers QuizAnswer[]
+
+  @@unique([quizId, order])
+  @@index([quizId])
+  @@index([questionType])
+}
+
+model QuizOption {
+  id         String  @id @default(cuid())
+  questionId String
+  optionText String
+  isCorrect  Boolean @default(false)
+  order      Int
+
+  question QuizQuestion @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  answers  QuizAnswer[]
+
+  @@unique([questionId, order])
+  @@index([questionId])
+}
+
+model QuizAttempt {
+  id          String    @id @default(cuid())
+  quizId      String
+  studentId   String
+  score       Float?
+  maxScore    Float?
+  percentage  Float?
+  isPassed    Boolean   @default(false)
+  startedAt   DateTime  @default(now())
+  submittedAt DateTime?
+
+  quiz    Quiz         @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  student User         @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  answers QuizAnswer[]
+
+  @@index([quizId])
+  @@index([studentId])
+  @@index([submittedAt])
+}
+
+model QuizAnswer {
+  id               String   @id @default(cuid())
+  attemptId        String
+  questionId       String
+  selectedOptionId String?
+  answerText       String?
+  isCorrect        Boolean?
+  earnedPoints     Float    @default(0)
+
+  attempt        QuizAttempt  @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+  question       QuizQuestion @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  selectedOption QuizOption?  @relation(fields: [selectedOptionId], references: [id], onDelete: SetNull)
+
+  @@unique([attemptId, questionId])
+  @@index([attemptId])
+  @@index([questionId])
+  @@index([selectedOptionId])
 }
