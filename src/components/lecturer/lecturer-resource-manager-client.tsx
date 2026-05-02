@@ -288,14 +288,14 @@ export default function LecturerResourceManagerClient({
 
       <section className="grid gap-4">
         {resources.length === 0 ? (
-          <div className="rounded-[24px] border border-white/10 bg-white/5 p-6 text-slate-400">
+          <div className="rounded-3xl border border-white/10 bg-white/5 p-6 text-slate-400">
             Belum ada resource pada modul ini.
           </div>
         ) : (
           resources.map((resource) => (
             <div
               key={resource.id}
-              className="rounded-[24px] border border-white/10 bg-white/5 p-6"
+              className="rounded-3xl border border-white/10 bg-white/5 p-6"
             >
               <div className="flex flex-wrap items-start justify-between gap-4">
                 <div>
