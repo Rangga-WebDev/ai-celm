@@ -1,427 +1,326 @@
-/** @format */
-
 "use client";
 
 /** @format */
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
 import {
   ArrowRight,
+  BarChart3,
   BookOpen,
   CheckCircle2,
-  GraduationCap,
-  Layers3,
+  ClipboardList,
+  FileText,
+  LayoutDashboard,
   Users,
 } from "lucide-react";
 
-type LecturerDashboardClientProps = {
-  user: {
+type LecturerUser = {
+  id: string;
+  firstName?: string | null;
+  lastName?: string | null;
+  email: string;
+  role: string;
+};
+
+type LecturerCourseSummary = {
+  id: string;
+  title: string;
+  slug: string;
+  code: string | null;
+  description: string | null;
+  isPublished: boolean;
+  enrollmentCount: number;
+  moduleCount: number;
+  resourceCount: number;
+  modules: {
     id: string;
-    firstName?: string | null;
-    lastName?: string | null;
-    name?: string | null;
-    email: string;
-    role: string;
-  };
+    title: string;
+    slug: string;
+    status: string;
+    order: number;
+    unitCount: number;
+    resourceCount: number;
+  }[];
 };
 
-type LecturerDashboardResponse = {
-  success: boolean;
-  message: string;
-  data: {
-    lecturer: {
-      id: string;
-      name: string;
-      email: string;
-    };
-    summary: {
-      totalCourses: number;
-      totalStudents: number;
-      totalModules: number;
-      totalUnits: number;
-      averageCourseProgress: number;
-    };
-    courses: Array<{
-      id: string;
-      title: string;
-      slug: string;
-      code: string | null;
-      description: string | null;
-      isPublished: boolean;
-      totalStudents: number;
-      totalModules: number;
-      totalUnits: number;
-      averageProgress: number;
-      averageMastery: number | null;
-      completedStudents: number;
-      students: Array<{
-        id: string;
-        name: string;
-        email: string;
-        enrolledAt: string;
-        progress: {
-          completedModules: number;
-          inProgressModules: number;
-          totalModules: number;
-          averageProgress: number;
-        };
-      }>;
-    }>;
-  };
+type Props = {
+  user: LecturerUser;
+  courses: LecturerCourseSummary[];
 };
 
-export default function LecturerDashboardClient({
-  user,
-}: LecturerDashboardClientProps) {
-  const [dashboard, setDashboard] = useState<
-    LecturerDashboardResponse["data"] | null
-  >(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+export default function LecturerDashboardClient({ user, courses }: Props) {
+  const lecturerName =
+    `${user.firstName ?? ""} ${user.lastName ?? ""}`.trim() || user.email;
 
-  useEffect(() => {
-    async function fetchDashboard() {
-      try {
-        setLoading(true);
-        setError(null);
-
-        const res = await fetch(`/api/lecturers/${user.id}/dashboard`, {
-          cache: "no-store",
-        });
-
-        const json = await res.json();
-
-        if (!res.ok || !json.success) {
-          throw new Error(json.message || "Failed to fetch lecturer dashboard");
-        }
-
-        setDashboard(json.data);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : "Unknown error");
-      } finally {
-        setLoading(false);
-      }
-    }
-
-    fetchDashboard();
-  }, [user.id]);
-
-  const topCourse = useMemo(() => {
-    if (!dashboard || dashboard.courses.length === 0) return null;
-
-    return [...dashboard.courses].sort(
-      (a, b) => b.averageProgress - a.averageProgress,
-    )[0];
-  }, [dashboard]);
-
-  if (loading) {
-    return (
-      <main className="space-y-6 p-6">
-        <section className="rounded-[28px] border border-white/10 bg-white/5 p-6">
-          <p className="text-slate-300">Memuat dashboard dosen...</p>
-        </section>
-      </main>
-    );
-  }
-
-  if (error) {
-    return (
-      <main className="space-y-6 p-6">
-        <section className="rounded-[28px] border border-red-400/20 bg-red-500/5 p-6">
-          <p className="text-red-300">Error: {error}</p>
-        </section>
-      </main>
-    );
-  }
-
-  if (!dashboard) {
-    return (
-      <main className="space-y-6 p-6">
-        <section className="rounded-[28px] border border-white/10 bg-white/5 p-6">
-          <p className="text-slate-300">Data dashboard dosen belum tersedia.</p>
-        </section>
-      </main>
-    );
-  }
+  const totalCourses = courses.length;
+  const totalStudents = courses.reduce(
+    (sum, course) => sum + course.enrollmentCount,
+    0,
+  );
+  const totalModules = courses.reduce(
+    (sum, course) => sum + course.moduleCount,
+    0,
+  );
+  const totalResources = courses.reduce(
+    (sum, course) => sum + course.resourceCount,
+    0,
+  );
 
   return (
-    <main className="space-y-6 p-6">
-      <section className="rounded-[30px] border border-white/10 bg-white/5 p-6 shadow-[0_20px_60px_rgba(0,0,0,0.18)] backdrop-blur-xl">
-        <div className="grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
-          <div className="min-w-0">
-            <div className="inline-flex items-center gap-2 rounded-full border border-cyan-400/20 bg-cyan-400/10 px-4 py-2 text-sm text-cyan-200">
-              <GraduationCap size={16} />
-              Dashboard Dosen
-            </div>
-
-            <h1 className="mt-5 break-words text-3xl font-semibold text-white sm:text-4xl">
-              Halo, {dashboard.lecturer.name} 👋
-            </h1>
-
-            <p className="mt-4 max-w-3xl break-words text-slate-300">
-              Kamu sedang mengampu {dashboard.summary.totalCourses} course
-              dengan {dashboard.summary.totalStudents} mahasiswa aktif.
-            </p>
-
-            <div className="mt-6 flex flex-wrap gap-3">
-              <Link
-                href="/lecturer/courses"
-                className="inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-teal-400 via-cyan-400 to-sky-400 px-5 py-3 text-sm font-semibold text-slate-950 transition hover:brightness-110"
-              >
-                Kelola Course
-                <ArrowRight size={16} />
-              </Link>
-            </div>
-          </div>
-
-          <div className="rounded-[28px] border border-white/10 bg-slate-900/70 p-5">
-            <div className="text-sm font-semibold text-white">
-              Course dengan progres tertinggi
-            </div>
-            <div className="mt-3">
-              {topCourse ? (
-                <>
-                  <div className="text-lg font-semibold text-white">
-                    {topCourse.title}
-                  </div>
-                  <div className="mt-1 text-sm text-slate-400">
-                    {topCourse.code ?? "Tanpa kode"}
-                  </div>
-                  <div className="mt-4 h-2 w-full rounded-full bg-slate-800">
-                    <div
-                      className="h-2 rounded-full bg-gradient-to-r from-teal-400 via-cyan-400 to-sky-400"
-                      style={{ width: `${topCourse.averageProgress}%` }}
-                    />
-                  </div>
-                  <div className="mt-2 text-sm text-slate-300">
-                    Rata-rata progres: {topCourse.averageProgress}%
-                  </div>
-                </>
-              ) : (
-                <div className="text-sm text-slate-400">
-                  Belum ada course untuk ditampilkan.
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section className="grid gap-4 sm:grid-cols-2 2xl:grid-cols-5">
-        <StatCard
-          icon={BookOpen}
-          label="Total Course"
-          value={dashboard.summary.totalCourses}
-          subtitle="Course yang diampu"
-        />
-        <StatCard
-          icon={Users}
-          label="Total Mahasiswa"
-          value={dashboard.summary.totalStudents}
-          subtitle="Mahasiswa aktif"
-        />
-        <StatCard
-          icon={Layers3}
-          label="Total Modul"
-          value={dashboard.summary.totalModules}
-          subtitle="Modul pembelajaran"
-        />
-        <StatCard
-          icon={CheckCircle2}
-          label="Total Unit"
-          value={dashboard.summary.totalUnits}
-          subtitle="Micro-unit aktif"
-        />
-        <StatCard
-          icon={GraduationCap}
-          label="Avg Progress"
-          value={dashboard.summary.averageCourseProgress}
-          subtitle="Rata-rata progres"
-          suffix="%"
-        />
-      </section>
-
-      <section className="rounded-[28px] border border-white/10 bg-white/5 p-6 shadow-[0_12px_40px_rgba(0,0,0,0.14)] backdrop-blur-xl">
-        <div className="mb-5">
-          <h2 className="text-lg font-semibold text-white">
-            Course yang Diampu
-          </h2>
-          <p className="mt-1 text-sm text-slate-400">
-            Ringkasan course, mahasiswa, dan progres pembelajaran
-          </p>
-        </div>
-
-        {dashboard.courses.length === 0 ? (
-          <div className="rounded-2xl border border-white/10 bg-slate-900/70 p-4 text-sm text-slate-400">
-            Belum ada course yang diampu.
-          </div>
-        ) : (
-          <div className="grid gap-4">
-            {dashboard.courses.map((course) => (
-              <div
-                key={course.id}
-                className="rounded-[24px] border border-white/10 bg-slate-900/70 p-5"
-              >
-                <div className="flex flex-wrap items-start justify-between gap-4">
-                  <div className="min-w-0">
-                    <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs text-slate-300">
-                      {course.code ?? "Tanpa kode"}
-                    </div>
-
-                    <h3 className="mt-3 break-words text-xl font-semibold text-white">
-                      {course.title}
-                    </h3>
-
-                    <p className="mt-2 max-w-3xl break-words text-sm leading-7 text-slate-300">
-                      {course.description ?? "Belum ada deskripsi course."}
-                    </p>
-                  </div>
-
-                  <div className="w-full max-w-xs rounded-2xl border border-white/10 bg-white/5 p-4">
-                    <div className="mb-2 flex items-center justify-between text-xs text-slate-400">
-                      <span>Rata-rata progres</span>
-                      <span>{course.averageProgress}%</span>
-                    </div>
-                    <div className="h-2 w-full rounded-full bg-slate-800">
-                      <div
-                        className="h-2 rounded-full bg-gradient-to-r from-teal-400 via-cyan-400 to-sky-400"
-                        style={{ width: `${course.averageProgress}%` }}
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                <div className="mt-5 grid gap-3 sm:grid-cols-4">
-                  <MiniInfo
-                    label="Mahasiswa"
-                    value={`${course.totalStudents}`}
-                  />
-                  <MiniInfo label="Modul" value={`${course.totalModules}`} />
-                  <MiniInfo label="Unit" value={`${course.totalUnits}`} />
-                  <MiniInfo
-                    label="Selesai"
-                    value={`${course.completedStudents}/${course.totalStudents}`}
-                  />
-                </div>
-
-                <div className="mt-5">
-                  <details className="group rounded-2xl border border-white/10 bg-white/5 p-4">
-                    <summary className="flex cursor-pointer list-none items-center justify-between gap-3">
-                      <span className="text-sm font-medium text-white">
-                        Lihat mahasiswa pada course ini
-                      </span>
-                      <ArrowRight
-                        size={16}
-                        className="transition group-open:rotate-90"
-                      />
-                    </summary>
-
-                    <div className="mt-4 grid gap-3">
-                      {course.students.length === 0 ? (
-                        <div className="rounded-2xl border border-white/10 bg-slate-950/40 p-4 text-sm text-slate-400">
-                          Belum ada mahasiswa aktif pada course ini.
-                        </div>
-                      ) : (
-                        course.students.map((student) => (
-                          <div
-                            key={student.id}
-                            className="rounded-2xl border border-white/10 bg-slate-950/40 p-4"
-                          >
-                            <div className="flex flex-wrap items-start justify-between gap-3">
-                              <div className="min-w-0">
-                                <div className="break-words text-sm font-semibold text-white">
-                                  {student.name}
-                                </div>
-                                <div className="mt-1 text-xs text-slate-400">
-                                  {student.email}
-                                </div>
-                              </div>
-
-                              <div className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-slate-300">
-                                {student.progress.averageProgress}%
-                              </div>
-                            </div>
-
-                            <div className="mt-4 grid gap-3 sm:grid-cols-3">
-                              <MiniInfo
-                                label="Modul selesai"
-                                value={`${student.progress.completedModules}/${student.progress.totalModules}`}
-                              />
-                              <MiniInfo
-                                label="Sedang berjalan"
-                                value={`${student.progress.inProgressModules}`}
-                              />
-                              <MiniInfo
-                                label="Progress"
-                                value={`${student.progress.averageProgress}%`}
-                              />
-                            </div>
-                          </div>
-                        ))
-                      )}
-                    </div>
-                  </details>
-                </div>
-
-                <div className="mt-5 flex flex-wrap gap-3">
-                  <Link
-                    href={`/lecturer/courses/${course.slug}`}
-                    className="inline-flex items-center gap-2 rounded-2xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white transition hover:bg-white/10"
-                  >
-                    Detail Course
-                    <ArrowRight size={14} />
-                  </Link>
-                </div>
+    <main className="min-h-screen bg-slate-950 p-4 text-white sm:p-6">
+      <div className="mx-auto max-w-7xl space-y-6">
+        <section className="overflow-hidden rounded-[32px] border border-white/10 bg-white/5 p-6 shadow-2xl shadow-black/20">
+          <div className="flex flex-wrap items-start justify-between gap-5">
+            <div>
+              <div className="inline-flex items-center gap-2 rounded-full border border-teal-300/20 bg-teal-400/10 px-4 py-2 text-sm text-teal-200">
+                <LayoutDashboard size={16} />
+                Dashboard Dosen
               </div>
-            ))}
+
+              <h1 className="mt-5 text-3xl font-semibold tracking-tight text-white sm:text-4xl">
+                Selamat datang, {lecturerName}
+              </h1>
+
+              <p className="mt-3 max-w-3xl text-sm leading-7 text-slate-300 sm:text-base">
+                Kelola course, modul pembelajaran, resource materi, serta pantau
+                aktivitas mahasiswa dalam platform AI-CELM.
+              </p>
+            </div>
+
+            <div className="rounded-[24px] border border-white/10 bg-slate-900/70 p-5">
+              <div className="text-sm text-slate-400">Role Aktif</div>
+              <div className="mt-2 text-xl font-semibold text-teal-300">
+                {user.role}
+              </div>
+            </div>
           </div>
-        )}
-      </section>
+        </section>
+
+        <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          <DashboardStatCard
+            icon={<BookOpen size={20} />}
+            label="Course Diampu"
+            value={totalCourses}
+            description="Jumlah course yang terhubung dengan akun dosen."
+          />
+
+          <DashboardStatCard
+            icon={<Users size={20} />}
+            label="Mahasiswa"
+            value={totalStudents}
+            description="Total mahasiswa yang terdaftar pada course dosen."
+          />
+
+          <DashboardStatCard
+            icon={<ClipboardList size={20} />}
+            label="Modul"
+            value={totalModules}
+            description="Total modul pembelajaran yang tersedia."
+          />
+
+          <DashboardStatCard
+            icon={<FileText size={20} />}
+            label="Resource"
+            value={totalResources}
+            description="Total materi atau file pendukung pada course."
+          />
+        </section>
+
+        <section className="rounded-[32px] border border-white/10 bg-white/5 p-6">
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div>
+              <div className="inline-flex items-center gap-2 rounded-full border border-teal-300/20 bg-teal-400/10 px-4 py-2 text-sm text-teal-200">
+                <BookOpen size={16} />
+                Course yang Diampu
+              </div>
+
+              <h2 className="mt-5 text-2xl font-semibold text-white">
+                Kelola Modul Pembelajaran
+              </h2>
+
+              <p className="mt-2 max-w-3xl text-sm leading-7 text-slate-300">
+                Dosen dapat menambahkan, mengedit, menghapus, dan
+                mempublikasikan modul pembelajaran serta menambahkan resource
+                seperti PDF, Word, slide, video, atau link materi.
+              </p>
+            </div>
+          </div>
+
+          <div className="mt-6 grid gap-4">
+            {courses.length === 0 ? (
+              <div className="rounded-[24px] border border-white/10 bg-slate-900/70 p-6 text-sm text-slate-400">
+                Belum ada course yang ditugaskan kepada akun dosen ini.
+              </div>
+            ) : (
+              courses.map((course) => (
+                <CourseCard key={course.id} course={course} />
+              ))
+            )}
+          </div>
+        </section>
+
+        <section className="grid gap-4 lg:grid-cols-2">
+          <div className="rounded-[28px] border border-white/10 bg-white/5 p-6">
+            <div className="inline-flex items-center gap-2 rounded-full border border-cyan-300/20 bg-cyan-400/10 px-4 py-2 text-sm text-cyan-200">
+              <BarChart3 size={16} />
+              Monitoring Pembelajaran
+            </div>
+
+            <h2 className="mt-5 text-xl font-semibold text-white">
+              Pantau perkembangan kelas
+            </h2>
+
+            <p className="mt-3 text-sm leading-7 text-slate-300">
+              Gunakan dashboard course untuk melihat progres mahasiswa, modul
+              yang aktif, serta resource yang sudah tersedia dalam pembelajaran.
+            </p>
+          </div>
+
+          <div className="rounded-[28px] border border-white/10 bg-white/5 p-6">
+            <div className="inline-flex items-center gap-2 rounded-full border border-violet-300/20 bg-violet-400/10 px-4 py-2 text-sm text-violet-200">
+              <CheckCircle2 size={16} />
+              Status Fitur
+            </div>
+
+            <h2 className="mt-5 text-xl font-semibold text-white">
+              Module management aktif
+            </h2>
+
+            <p className="mt-3 text-sm leading-7 text-slate-300">
+              Dosen sudah dapat masuk ke halaman Kelola Modul untuk menambahkan
+              modul dan resource berbasis URL. Fitur upload file langsung dapat
+              ditambahkan pada tahap berikutnya melalui Supabase Storage.
+            </p>
+          </div>
+        </section>
+      </div>
     </main>
   );
 }
 
-function StatCard({
-  icon: Icon,
+function DashboardStatCard({
+  icon,
   label,
   value,
-  subtitle,
-  suffix = "",
+  description,
 }: {
-  icon: React.ComponentType<{ size?: number; className?: string }>;
+  icon: React.ReactNode;
   label: string;
   value: number;
-  subtitle: string;
-  suffix?: string;
+  description: string;
 }) {
   return (
-    <div className="rounded-[24px] border border-white/10 bg-white/5 p-5">
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <div className="text-sm text-slate-400">{label}</div>
-          <div className="mt-2 text-3xl font-semibold text-white">
-            {value}
-            {suffix}
-          </div>
-          <div className="mt-2 text-sm text-slate-300">{subtitle}</div>
+    <div className="rounded-[28px] border border-white/10 bg-white/5 p-5">
+      <div className="flex items-start justify-between gap-4">
+        <div className="rounded-2xl bg-teal-400/10 p-3 text-teal-300">
+          {icon}
         </div>
 
-        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white/5 text-teal-300">
-          <Icon size={20} />
+        <div className="text-right">
+          <div className="text-3xl font-semibold text-white">{value}</div>
+          <div className="mt-1 text-sm text-slate-400">{label}</div>
         </div>
       </div>
+
+      <p className="mt-4 text-sm leading-6 text-slate-400">{description}</p>
     </div>
   );
 }
 
-function MiniInfo({ label, value }: { label: string; value: string }) {
+function CourseCard({ course }: { course: LecturerCourseSummary }) {
   return (
-    <div className="rounded-2xl border border-white/10 bg-white/5 px-3 py-4 text-center">
-      <div className="text-[11px] uppercase tracking-wide text-slate-400">
-        {label}
+    <div className="rounded-[28px] border border-white/10 bg-slate-900/70 p-6">
+      <div className="flex flex-wrap items-start justify-between gap-5">
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap gap-2">
+            {course.code ? (
+              <span className="rounded-full bg-white/5 px-3 py-1 text-xs text-slate-300">
+                {course.code}
+              </span>
+            ) : null}
+
+            <span
+              className={`rounded-full px-3 py-1 text-xs ${
+                course.isPublished
+                  ? "bg-teal-400/10 text-teal-300"
+                  : "bg-amber-400/10 text-amber-300"
+              }`}
+            >
+              {course.isPublished ? "Published" : "Draft"}
+            </span>
+          </div>
+
+          <h3 className="mt-3 text-xl font-semibold text-white">
+            {course.title}
+          </h3>
+
+          <p className="mt-2 max-w-3xl text-sm leading-7 text-slate-300">
+            {course.description ?? "Belum ada deskripsi course."}
+          </p>
+
+          <div className="mt-4 flex flex-wrap gap-2 text-xs text-slate-400">
+            <span className="inline-flex items-center gap-1 rounded-full bg-white/5 px-3 py-1">
+              <Users size={13} />
+              {course.enrollmentCount} mahasiswa
+            </span>
+
+            <span className="inline-flex items-center gap-1 rounded-full bg-white/5 px-3 py-1">
+              <BookOpen size={13} />
+              {course.moduleCount} modul
+            </span>
+
+            <span className="inline-flex items-center gap-1 rounded-full bg-white/5 px-3 py-1">
+              <FileText size={13} />
+              {course.resourceCount} resource
+            </span>
+          </div>
+
+          {course.modules.length > 0 ? (
+            <div className="mt-5 grid gap-2">
+              {course.modules.map((courseModule) => (
+                <div
+                  key={courseModule.id}
+                  className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3"
+                >
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <div>
+                      <div className="text-sm font-medium text-white">
+                        {courseModule.order}. {courseModule.title}
+                      </div>
+
+                      <div className="mt-1 text-xs text-slate-400">
+                        {courseModule.status} • {courseModule.unitCount} unit •{" "}
+                        {courseModule.resourceCount} resource
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="mt-5 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-slate-400">
+              Belum ada modul pada course ini.
+            </div>
+          )}
+        </div>
+
+        <div className="flex shrink-0 flex-wrap gap-2">
+          <Link
+            href={`/lecturer/courses/${course.slug}`}
+            className="inline-flex items-center justify-center rounded-2xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white transition hover:bg-white/10"
+          >
+            Detail Course
+          </Link>
+
+          <Link
+            href={`/lecturer/courses/${course.slug}/modules`}
+            className="inline-flex items-center gap-2 rounded-2xl bg-teal-400 px-4 py-2.5 text-sm font-semibold text-slate-950 transition hover:bg-teal-300"
+          >
+            Kelola Modul
+            <ArrowRight size={15} />
+          </Link>
+        </div>
       </div>
-      <div className="mt-2 text-sm font-semibold text-white">{value}</div>
     </div>
   );
 }
