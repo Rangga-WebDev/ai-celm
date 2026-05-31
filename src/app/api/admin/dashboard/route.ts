@@ -7,8 +7,15 @@ import {
   ModuleStatus,
   Role,
 } from "@/generated/prisma/client";
+import { requireUser } from "@/lib/api-guard";
 
 export async function GET() {
+  const { response } = await requireUser([Role.ADMIN]);
+
+  if (response) {
+    return response;
+  }
+
   try {
     const [
       totalStudents,

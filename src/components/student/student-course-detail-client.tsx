@@ -201,7 +201,7 @@ export default function StudentCourseDetailClient({
 
         const [courseRes, progressRes] = await Promise.all([
           fetch(`/api/courses/${slug}`, { cache: "no-store" }),
-          fetch(`/api/courses/${slug}/progress?userId=${user.id}`, {
+          fetch(`/api/courses/${slug}/progress`, {
             cache: "no-store",
           }),
         ]);
@@ -231,7 +231,7 @@ export default function StudentCourseDetailClient({
     }
 
     fetchCourseDetail();
-  }, [slug, user.id]);
+  }, [slug]);
 
   const derived = useMemo(() => {
     if (!course || !progress) return null;

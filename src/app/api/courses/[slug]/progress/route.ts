@@ -1,7 +1,9 @@
 /** @format */
 
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
+import { EnrollmentStatus, Role } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
+import { requireUser } from "@/lib/api-guard";
 
 type Params = {
   params: Promise<{
@@ -9,20 +11,16 @@ type Params = {
   }>;
 };
 
-export async function GET(request: NextRequest, { params }: Params) {
+export async function GET(_: Request, { params }: Params) {
   try {
-    const { slug } = await params;
-    const userId = request.nextUrl.searchParams.get("userId");
+    const auth = await requireUser([Role.STUDENT]);
 
-    if (!userId) {
-      return NextResponse.json(
-        {
-          success: false,
-          message: "userId is required",
-        },
-        { status: 400 },
-      );
+    if (auth.response) {
+      return auth.response;
     }
+
+    const userId = auth.user.id;
+    const { slug } = await params;
 
     const course = await prisma.course.findUnique({
       where: { slug },
@@ -57,32 +55,39 @@ export async function GET(request: NextRequest, { params }: Params) {
       },
     });
 
-    if (!enrollment) {
+    if (!enrollment || enrollment.status !== EnrollmentStatus.ACTIVE) {
       return NextResponse.json(
         {
           success: false,
-          message: "Student is not enrolled in this course",
+          message: "You are not enrolled in this course",
         },
-        { status: 404 },
+        { status: 403 },
       );
     }
 
-    const moduleIds = course.modules.map((m) => m.id);
-    const unitIds = course.modules.flatMap((m) => m.units.map((u) => u.id));
+    const moduleIds = course.modules.map((module) => module.id);
+    const unitIds = course.modules.flatMap((module) =>
+      module.units.map((unit) => unit.id),
+    );
 
-    const moduleProgresses = await prisma.moduleProgress.findMany({
-      where: {
-        userId,
-        moduleId: { in: moduleIds },
-      },
-    });
-
-    const unitProgresses = await prisma.unitProgress.findMany({
-      where: {
-        userId,
-        microUnitId: { in: unitIds },
-      },
-    });
+    const [moduleProgresses, unitProgresses] = await Promise.all([
+      prisma.moduleProgress.findMany({
+        where: {
+          userId,
+          moduleId: {
+            in: moduleIds,
+          },
+        },
+      }),
+      prisma.unitProgress.findMany({
+        where: {
+          userId,
+          microUnitId: {
+            in: unitIds,
+          },
+        },
+      }),
+    ]);
 
     const moduleProgressMap = new Map(
       moduleProgresses.map((item) => [item.moduleId, item]),
@@ -165,7 +170,7 @@ export async function GET(request: NextRequest, { params }: Params) {
 
     const totalModules = modules.length;
     const completedModules = modules.filter(
-      (m) => m.progress.status === "COMPLETED",
+      (module) => module.progress.status === "COMPLETED",
     ).length;
 
     const overallProgress =

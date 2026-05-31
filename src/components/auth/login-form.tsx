@@ -50,7 +50,8 @@ export default function LoginForm() {
         return;
       }
 
-      router.push(data.redirectTo ?? "/");
+      router.replace(data.redirectTo ?? "/");
+      router.refresh();
     } catch (err) {
       console.error(err);
       setError("Terjadi kesalahan saat menghubungi server.");

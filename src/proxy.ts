@@ -19,7 +19,7 @@ export async function proxy(req: NextRequest) {
 
   if (!token) {
     return NextResponse.redirect(new URL("/login", req.url));
-  }
+  } 
 
   try {
     const session = await verifySession(token);

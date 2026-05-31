@@ -7,6 +7,7 @@ import {
   ProgressStatus,
   Role,
 } from "@/generated/prisma/client";
+import { requireUser, forbiddenResponse } from "@/lib/api-guard";
 
 type Params = {
   params: Promise<{
@@ -18,8 +19,23 @@ export async function GET(_: Request, { params }: Params) {
   try {
     const { userId } = await params;
 
+    const auth = await requireUser([Role.LECTURER, Role.ADMIN]);
+
+    if (auth.response) {
+      return auth.response;
+    }
+
+    const currentUser = auth.user;
+
+    if (currentUser.role === Role.LECTURER && currentUser.id !== userId) {
+      return forbiddenResponse("Lecturer can only access their own dashboard");
+    }
+
+    const targetUserId =
+      currentUser.role === Role.ADMIN ? userId : currentUser.id;
+
     const lecturer = await prisma.user.findUnique({
-      where: { id: userId },
+      where: { id: targetUserId },
       select: {
         id: true,
         firstName: true,
@@ -41,7 +57,7 @@ export async function GET(_: Request, { params }: Params) {
 
     const courses = await prisma.course.findMany({
       where: {
-        lecturerId: userId,
+        lecturerId: targetUserId,
       },
       orderBy: {
         createdAt: "desc",

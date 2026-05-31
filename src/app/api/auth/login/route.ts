@@ -77,13 +77,14 @@ export async function POST(req: Request) {
     });
 
     return res;
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const err = error instanceof Error ? error : null;
     console.error("LOGIN_ERROR", {
-      name: error?.name,
-      message: error?.message,
-      code: error?.code,
-      meta: error?.meta,
-      stack: error?.stack,
+      name: err?.name,
+      message: err?.message,
+      code: (error as { code?: unknown })?.code,
+      meta: (error as { meta?: unknown })?.meta,
+      stack: err?.stack,
     });
 
     return NextResponse.json(

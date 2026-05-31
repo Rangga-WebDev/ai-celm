@@ -214,6 +214,7 @@ export default function StudentModuleDetailClient({
         const modulesRes = await fetch(`/api/courses/${courseSlug}/modules`, {
           cache: "no-store",
         });
+
         const modulesJson = (await modulesRes.json()) as CourseModulesResponse;
 
         if (!modulesRes.ok || !modulesJson.success) {
@@ -234,7 +235,7 @@ export default function StudentModuleDetailClient({
           fetch(`/api/modules/${currentModule.id}/units`, {
             cache: "no-store",
           }),
-          fetch(`/api/courses/${courseSlug}/progress?userId=${user.id}`, {
+          fetch(`/api/courses/${courseSlug}/progress`, {
             cache: "no-store",
           }),
         ]);
@@ -269,7 +270,7 @@ export default function StudentModuleDetailClient({
     }
 
     fetchModuleDetail();
-  }, [courseSlug, moduleSlug, user.id]);
+  }, [courseSlug, moduleSlug]);
 
   const derived = useMemo(() => {
     if (!moduleMeta || !progressModule) return null;

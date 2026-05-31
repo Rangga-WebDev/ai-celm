@@ -1,8 +1,14 @@
 /** @format */
 
 import { NextRequest, NextResponse } from "next/server";
-import { ProgressStatus } from "@/generated/prisma/client";
+import {
+  AnalyticsEventType,
+  EnrollmentStatus,
+  ProgressStatus,
+  Role,
+} from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
+import { requireUser } from "@/lib/api-guard";
 
 type Params = {
   params: Promise<{
@@ -19,34 +25,34 @@ function calculateModuleStatus(
   return ProgressStatus.COMPLETED;
 }
 
+function clampProgress(value: unknown) {
+  if (typeof value !== "number" || Number.isNaN(value)) return 0;
+  return Math.min(100, Math.max(0, Math.round(value)));
+}
+
 export async function PATCH(request: NextRequest, { params }: Params) {
   try {
+    const auth = await requireUser([Role.STUDENT]);
+
+    if (auth.response) {
+      return auth.response;
+    }
+
+    const userId = auth.user.id;
     const { unitId } = await params;
     const body = await request.json();
 
     const {
-      userId,
       status,
       progressPercent,
       score,
       attempts,
     }: {
-      userId?: string;
       status?: ProgressStatus;
       progressPercent?: number;
       score?: number | null;
       attempts?: number;
     } = body;
-
-    if (!userId) {
-      return NextResponse.json(
-        {
-          success: false,
-          message: "userId is required",
-        },
-        { status: 400 },
-      );
-    }
 
     const unit = await prisma.microUnit.findUnique({
       where: { id: unitId },
@@ -69,21 +75,43 @@ export async function PATCH(request: NextRequest, { params }: Params) {
       );
     }
 
+    const enrollment = await prisma.enrollment.findUnique({
+      where: {
+        userId_courseId: {
+          userId,
+          courseId: unit.module.courseId,
+        },
+      },
+      select: {
+        id: true,
+        status: true,
+      },
+    });
+
+    if (!enrollment || enrollment.status !== EnrollmentStatus.ACTIVE) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "You are not enrolled in this course",
+        },
+        { status: 403 },
+      );
+    }
+
     const now = new Date();
 
     const nextStatus = status ?? ProgressStatus.IN_PROGRESS;
-    const nextProgressPercent =
-      typeof progressPercent === "number" ? progressPercent : 0;
+    const nextProgressPercent = clampProgress(progressPercent);
+
+    const threshold = unit.masteryThreshold ?? unit.module.masteryThreshold;
 
     const isPassed =
       typeof score === "number"
-        ? score >= (unit.masteryThreshold ?? unit.module.masteryThreshold)
+        ? score >= threshold
         : nextStatus === ProgressStatus.COMPLETED;
 
     const remedialRequired =
-      typeof score === "number"
-        ? score < (unit.masteryThreshold ?? unit.module.masteryThreshold)
-        : false;
+      typeof score === "number" ? score < threshold : false;
 
     const unitProgress = await prisma.unitProgress.upsert({
       where: {
@@ -122,7 +150,7 @@ export async function PATCH(request: NextRequest, { params }: Params) {
       where: {
         userId,
         microUnitId: {
-          in: unit.module.units.map((u) => u.id),
+          in: unit.module.units.map((item) => item.id),
         },
       },
     });
@@ -132,6 +160,7 @@ export async function PATCH(request: NextRequest, { params }: Params) {
     ).length;
 
     const totalUnits = unit.module.units.length;
+
     const moduleProgressPercent =
       totalUnits > 0 ? Math.round((completedUnits / totalUnits) * 100) : 0;
 
@@ -201,8 +230,8 @@ export async function PATCH(request: NextRequest, { params }: Params) {
         microUnitId: unit.id,
         eventType:
           nextStatus === ProgressStatus.COMPLETED
-            ? "UNIT_COMPLETE"
-            : "UNIT_VIEW",
+            ? AnalyticsEventType.UNIT_COMPLETE
+            : AnalyticsEventType.UNIT_VIEW,
         value: typeof score === "number" ? score : null,
         metadata: {
           status: nextStatus,

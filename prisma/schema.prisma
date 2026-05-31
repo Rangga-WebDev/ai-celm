@@ -116,6 +116,26 @@ enum AnalyticsEventType {
   AI_RESPONSE
 }
 
+enum CerAssignmentStatus {
+  DRAFT
+  ACTIVE
+  CLOSED
+  ARCHIVED
+}
+
+enum DiscussionThreadStatus {
+  DRAFT
+  OPEN
+  CLOSED
+  ARCHIVED
+}
+
+enum DiscussionPostStatus {
+  VISIBLE
+  HIDDEN
+  FLAGGED
+}
+
 model User {
   id           String   @id @default(cuid())
   firstName    String
@@ -126,17 +146,19 @@ model User {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
-  enrollments        Enrollment[]
-  taughtCourses      Course[]                 @relation("CourseLecturer")
-  uploadedResources  LearningResource[]       @relation("ResourceUploader")
-  moduleProgresses   ModuleProgress[]
-  unitProgresses     UnitProgress[]
-  discussionThreads  DiscussionThread[]
-  discussionPosts    DiscussionPost[]
-  createdProjects    CivicActionProject[]     @relation("ProjectCreator")
-  projectSubmissions ProjectSubmission[]
-  aiLogs             AIResponseLog[]
-  analyticsEvents    LearningAnalyticsEvent[]
+  enrollments           Enrollment[]
+  taughtCourses         Course[]                 @relation("CourseLecturer")
+  uploadedResources     LearningResource[]       @relation("ResourceUploader")
+  moduleProgresses      ModuleProgress[]
+  unitProgresses        UnitProgress[]
+  discussionThreads     DiscussionThread[]
+  discussionPosts       DiscussionPost[]
+  createdProjects       CivicActionProject[]     @relation("ProjectCreator")
+  projectSubmissions    ProjectSubmission[]
+  createdCerAssignments CerAssignment[]          @relation("CerAssignmentCreator")
+  cerSubmissions        CerSubmission[]          @relation("CerSubmissionStudent")
+  aiLogs                AIResponseLog[]
+  analyticsEvents       LearningAnalyticsEvent[]
 }
 
 model Course {
@@ -164,6 +186,7 @@ model Course {
   projects        CivicActionProject[]
   aiLogs          AIResponseLog[]
   analyticsEvents LearningAnalyticsEvent[]
+  cerAssignments  CerAssignment[]
 
   @@index([lecturerId])
 }
@@ -292,12 +315,14 @@ model Module {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  course          Course                   @relation(fields: [courseId], references: [id], onDelete: Cascade)
-  units           MicroUnit[]
-  progresses      ModuleProgress[]
-  resources       LearningResource[]
-  aiLogs          AIResponseLog[]
-  analyticsEvents LearningAnalyticsEvent[]
+  course            Course                   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  units             MicroUnit[]
+  progresses        ModuleProgress[]
+  resources         LearningResource[]
+  aiLogs            AIResponseLog[]
+  discussionThreads DiscussionThread[]
+  analyticsEvents   LearningAnalyticsEvent[]
+  cerAssignments    CerAssignment[]
 
   @@unique([courseId, slug])
   @@unique([courseId, order])
@@ -332,6 +357,7 @@ model MicroUnit {
   threads         DiscussionThread[]
   subCpmkMappings MicroUnitSubCPMK[]
   aiLogs          AIResponseLog[]
+  cerAssignments  CerAssignment[]
   analyticsEvents LearningAnalyticsEvent[]
 
   @@unique([moduleId, slug])
@@ -352,6 +378,71 @@ model MicroUnitSubCPMK {
   @@unique([microUnitId, subCpmkId])
   @@index([microUnitId])
   @@index([subCpmkId])
+}
+
+model CerAssignment {
+  id          String  @id @default(cuid())
+  courseId    String
+  moduleId    String?
+  microUnitId String?
+  createdById String
+
+  title             String
+  slug              String
+  description       String?
+  prompt            String
+  claimQuestion     String?
+  evidenceQuestion  String?
+  reasoningQuestion String?
+  rubric            Json?
+  dueAt             DateTime?
+  status            CerAssignmentStatus @default(DRAFT)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  course    Course     @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  module    Module?    @relation(fields: [moduleId], references: [id], onDelete: SetNull)
+  microUnit MicroUnit? @relation(fields: [microUnitId], references: [id], onDelete: SetNull)
+  createdBy User       @relation("CerAssignmentCreator", fields: [createdById], references: [id], onDelete: Cascade)
+
+  submissions CerSubmission[]
+
+  @@unique([courseId, slug])
+  @@index([courseId])
+  @@index([moduleId])
+  @@index([microUnitId])
+  @@index([createdById])
+  @@index([status])
+  @@index([dueAt])
+}
+
+model CerSubmission {
+  id           String @id @default(cuid())
+  assignmentId String
+  studentId    String
+
+  claim      String?
+  evidence   String?
+  reasoning  String?
+  answerJson Json?
+
+  status      SubmissionStatus @default(DRAFT)
+  score       Float?
+  feedback    String?
+  submittedAt DateTime?
+  reviewedAt  DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  assignment CerAssignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+  student    User          @relation("CerSubmissionStudent", fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@unique([assignmentId, studentId])
+  @@index([assignmentId])
+  @@index([studentId])
+  @@index([status])
 }
 
 model LearningResource {
@@ -380,49 +471,62 @@ model LearningResource {
 }
 
 model DiscussionThread {
-  id          String       @id @default(cuid())
+  id          String  @id @default(cuid())
   courseId    String
+  moduleId    String?
   microUnitId String?
-  authorId    String
+  createdById String
+
   title       String
+  slug        String
+  description String?
   prompt      String?
-  type        ThreadType   @default(GENERAL)
-  status      ThreadStatus @default(OPEN)
-  isPinned    Boolean      @default(false)
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
+  status      DiscussionThreadStatus @default(DRAFT)
+  isPinned    Boolean                @default(false)
+  isLocked    Boolean                @default(false)
 
-  course    Course           @relation(fields: [courseId], references: [id], onDelete: Cascade)
-  microUnit MicroUnit?       @relation(fields: [microUnitId], references: [id], onDelete: SetNull)
-  author    User             @relation(fields: [authorId], references: [id], onDelete: Cascade)
-  posts     DiscussionPost[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
+  course    Course     @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  module    Module?    @relation(fields: [moduleId], references: [id], onDelete: SetNull)
+  microUnit MicroUnit? @relation(fields: [microUnitId], references: [id], onDelete: SetNull)
+  createdBy User       @relation(fields: [createdById], references: [id], onDelete: Cascade)
+
+  posts DiscussionPost[]
+
+  @@unique([courseId, slug])
   @@index([courseId])
+  @@index([moduleId])
   @@index([microUnitId])
-  @@index([authorId])
-  @@index([type])
+  @@index([createdById])
   @@index([status])
 }
 
 model DiscussionPost {
-  id               String   @id @default(cuid())
-  threadId         String
-  authorId         String
-  parentId         String?
-  content          String
-  aiModerationNote String?
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
+  id       String  @id @default(cuid())
+  threadId String
+  authorId String
+  parentId String?
 
-  thread  DiscussionThread @relation(fields: [threadId], references: [id], onDelete: Cascade)
-  author  User             @relation(fields: [authorId], references: [id], onDelete: Cascade)
-  parent  DiscussionPost?  @relation("DiscussionReplies", fields: [parentId], references: [id], onDelete: Cascade)
-  replies DiscussionPost[] @relation("DiscussionReplies")
-  aiLogs  AIResponseLog[]
+  content String
+  status  DiscussionPostStatus @default(VISIBLE)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  thread DiscussionThread @relation(fields: [threadId], references: [id], onDelete: Cascade)
+  author User             @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  parent  DiscussionPost?  @relation("DiscussionPostReplies", fields: [parentId], references: [id], onDelete: SetNull)
+  replies DiscussionPost[] @relation("DiscussionPostReplies")
+
+  aiLogs AIResponseLog[]
 
   @@index([threadId])
   @@index([authorId])
   @@index([parentId])
+  @@index([status])
 }
 
 model CivicActionProject {

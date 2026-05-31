@@ -160,7 +160,6 @@ type CourseProgressResponse = {
 };
 
 type PatchProgressPayload = {
-  userId: string;
   status: "NOT_STARTED" | "IN_PROGRESS" | "COMPLETED" | "LOCKED" | "REMEDIAL";
   progressPercent: number;
   score?: number | null;
@@ -229,6 +228,7 @@ export default function StudentUnitDetailClient({
       const modulesRes = await fetch(`/api/courses/${courseSlug}/modules`, {
         cache: "no-store",
       });
+
       const modulesJson = (await modulesRes.json()) as CourseModulesResponse;
 
       if (!modulesRes.ok || !modulesJson.success) {
@@ -247,7 +247,7 @@ export default function StudentUnitDetailClient({
         fetch(`/api/modules/${selectedModule.id}/units`, {
           cache: "no-store",
         }),
-        fetch(`/api/courses/${courseSlug}/progress?userId=${user.id}`, {
+        fetch(`/api/courses/${courseSlug}/progress`, {
           cache: "no-store",
         }),
       ]);
@@ -266,6 +266,7 @@ export default function StudentUnitDetailClient({
       const selectedUnit = unitsJson.data.units.find(
         (item) => item.slug === unitSlug,
       );
+
       if (!selectedUnit) {
         throw new Error("Unit tidak ditemukan");
       }
@@ -288,7 +289,7 @@ export default function StudentUnitDetailClient({
     } finally {
       setLoading(false);
     }
-  }, [courseSlug, moduleSlug, unitSlug, user.id]);
+  }, [courseSlug, moduleSlug, unitSlug]);
 
   useEffect(() => {
     fetchUnitDetail();
@@ -366,7 +367,6 @@ export default function StudentUnitDetailClient({
     const nextAttempts = (currentUnitProgress.attempts ?? 0) + 1;
 
     await patchProgress({
-      userId: user.id,
       status: "IN_PROGRESS",
       progressPercent:
         currentUnitProgress.progressPercent > 0
@@ -381,7 +381,6 @@ export default function StudentUnitDetailClient({
     const nextAttempts = ((currentUnitProgress?.attempts ?? 0) || 0) + 1;
 
     await patchProgress({
-      userId: user.id,
       status: "COMPLETED",
       progressPercent: 100,
       attempts: nextAttempts,
