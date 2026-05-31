@@ -13,7 +13,7 @@ export async function GET(_: Request, { params }: Params) {
   try {
     const { moduleId } = await params;
 
-    const module = await prisma.module.findUnique({
+    const targetModule = await prisma.module.findUnique({
       where: { id: moduleId },
       include: {
         units: {
@@ -32,7 +32,7 @@ export async function GET(_: Request, { params }: Params) {
       },
     });
 
-    if (!module) {
+    if (!targetModule) {
       return NextResponse.json(
         {
           success: false,
@@ -42,7 +42,7 @@ export async function GET(_: Request, { params }: Params) {
       );
     }
 
-    const result = module.units.map((unit) => ({
+    const result = targetModule.units.map((unit) => ({
       id: unit.id,
       title: unit.title,
       slug: unit.slug,
@@ -65,9 +65,9 @@ export async function GET(_: Request, { params }: Params) {
         success: true,
         message: "Units fetched successfully",
         data: {
-          moduleId: module.id,
-          moduleTitle: module.title,
-          moduleSlug: module.slug,
+          moduleId: targetModule.id,
+          moduleTitle: targetModule.title,
+          moduleSlug: targetModule.slug,
           units: result,
         },
       },

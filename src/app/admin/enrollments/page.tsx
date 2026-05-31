@@ -4,6 +4,8 @@ import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/session";
 import AdminEnrollmentsClient from "@/components/admin/admin-enrollments-client";
 
+export const dynamic = "force-dynamic";
+
 export default async function AdminEnrollmentsPage() {
   const user = await getCurrentUser();
 

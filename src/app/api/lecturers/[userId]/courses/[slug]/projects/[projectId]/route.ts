@@ -1,7 +1,7 @@
 /** @format */
 
 import { NextRequest, NextResponse } from "next/server";
-import { ProjectStatus, Role } from "@/generated/prisma/client";
+import { Prisma, ProjectStatus, Role } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/api-guard";
 
@@ -13,8 +13,6 @@ type Params = {
   }>;
 };
 
-type TargetType = "COURSE" | "MODULE" | "UNIT";
-
 const projectStatusOptions = Object.values(ProjectStatus);
 
 function isValidProjectStatus(value: unknown): value is ProjectStatus {
@@ -22,10 +20,6 @@ function isValidProjectStatus(value: unknown): value is ProjectStatus {
     typeof value === "string" &&
     projectStatusOptions.includes(value as ProjectStatus)
   );
-}
-
-function isValidTargetType(value: unknown): value is TargetType {
-  return value === "COURSE" || value === "MODULE" || value === "UNIT";
 }
 
 function slugify(value: string) {
@@ -54,6 +48,45 @@ function parseDate(value: unknown) {
   return date;
 }
 
+function buildRubric({
+  objective,
+  outputType,
+}: {
+  objective: string | null;
+  outputType: string | null;
+}): Prisma.InputJsonValue | typeof Prisma.JsonNull {
+  if (!objective && !outputType) return Prisma.JsonNull;
+
+  return {
+    objective,
+    outputType,
+  };
+}
+
+function readRubricText(rubric: unknown, key: "objective" | "outputType") {
+  if (!rubric || typeof rubric !== "object" || Array.isArray(rubric)) {
+    return null;
+  }
+
+  const record = rubric as Record<string, unknown>;
+  return typeof record[key] === "string" ? record[key] : null;
+}
+
+function normalizeProject<T extends { brief: string | null; rubric: unknown }>(
+  project: T,
+) {
+  return {
+    ...project,
+    moduleId: null,
+    microUnitId: null,
+    module: null,
+    microUnit: null,
+    instruction: project.brief,
+    objective: readRubricText(project.rubric, "objective"),
+    outputType: readRubricText(project.rubric, "outputType"),
+  };
+}
+
 async function getOwnedCourse(userId: string, slug: string) {
   return prisma.course.findFirst({
     where: {
@@ -80,102 +113,11 @@ async function getOwnedProject(projectId: string, courseId: string) {
   });
 }
 
-async function resolveProjectTarget({
-  courseId,
-  targetType,
-  moduleId,
-  microUnitId,
-}: {
-  courseId: string;
-  targetType: TargetType;
-  moduleId: string | null;
-  microUnitId: string | null;
-}) {
-  if (targetType === "COURSE") {
-    return {
-      moduleId: null,
-      microUnitId: null,
-      error: null,
-    };
-  }
-
-  if (targetType === "MODULE") {
-    if (!moduleId) {
-      return {
-        moduleId: null,
-        microUnitId: null,
-        error: "Module is required for module-level project",
-      };
-    }
-
-    const targetModule = await prisma.module.findFirst({
-      where: {
-        id: moduleId,
-        courseId,
-      },
-      select: {
-        id: true,
-      },
-    });
-
-    if (!targetModule) {
-      return {
-        moduleId: null,
-        microUnitId: null,
-        error: "Selected module is not found in this course",
-      };
-    }
-
-    return {
-      moduleId: targetModule.id,
-      microUnitId: null,
-      error: null,
-    };
-  }
-
-  if (!microUnitId) {
-    return {
-      moduleId: null,
-      microUnitId: null,
-      error: "Micro-unit is required for unit-level project",
-    };
-  }
-
-  const targetUnit = await prisma.microUnit.findFirst({
-    where: {
-      id: microUnitId,
-      module: {
-        courseId,
-      },
-    },
-    select: {
-      id: true,
-      moduleId: true,
-    },
-  });
-
-  if (!targetUnit) {
-    return {
-      moduleId: null,
-      microUnitId: null,
-      error: "Selected micro-unit is not found in this course",
-    };
-  }
-
-  return {
-    moduleId: targetUnit.moduleId,
-    microUnitId: targetUnit.id,
-    error: null,
-  };
-}
-
 export async function PATCH(request: NextRequest, { params }: Params) {
   try {
     const auth = await requireUser([Role.LECTURER]);
 
-    if (auth.response) {
-      return auth.response;
-    }
+    if (auth.response) return auth.response;
 
     const { userId, slug, projectId } = await params;
 
@@ -223,9 +165,6 @@ export async function PATCH(request: NextRequest, { params }: Params) {
     const outputType = optionalText(body.outputType);
     const dueAt = parseDate(body.dueAt);
     const status = body.status ?? ProjectStatus.DRAFT;
-    const targetType = body.targetType ?? "COURSE";
-    const moduleId = optionalText(body.moduleId);
-    const microUnitId = optionalText(body.microUnitId);
 
     if (!title) {
       return NextResponse.json(
@@ -242,16 +181,6 @@ export async function PATCH(request: NextRequest, { params }: Params) {
         {
           success: false,
           message: "Valid project status is required",
-        },
-        { status: 400 },
-      );
-    }
-
-    if (!isValidTargetType(targetType)) {
-      return NextResponse.json(
-        {
-          success: false,
-          message: "Valid target type is required",
         },
         { status: 400 },
       );
@@ -281,58 +210,20 @@ export async function PATCH(request: NextRequest, { params }: Params) {
       );
     }
 
-    const target = await resolveProjectTarget({
-      courseId: course.id,
-      targetType,
-      moduleId,
-      microUnitId,
-    });
-
-    if (target.error) {
-      return NextResponse.json(
-        {
-          success: false,
-          message: target.error,
-        },
-        { status: 400 },
-      );
-    }
-
     const updatedProject = await prisma.civicActionProject.update({
       where: {
         id: projectId,
       },
       data: {
-        moduleId: target.moduleId,
-        microUnitId: target.microUnitId,
         title,
         slug: projectSlug,
         description,
-        instruction,
-        objective,
-        outputType,
+        brief: instruction,
+        rubric: buildRubric({ objective, outputType }),
         dueAt,
         status,
       },
       include: {
-        module: {
-          select: {
-            id: true,
-            title: true,
-            slug: true,
-            order: true,
-          },
-        },
-        microUnit: {
-          select: {
-            id: true,
-            title: true,
-            slug: true,
-            order: true,
-            moduleId: true,
-            unitType: true,
-          },
-        },
         createdBy: {
           select: {
             id: true,
@@ -369,7 +260,7 @@ export async function PATCH(request: NextRequest, { params }: Params) {
       {
         success: true,
         message: "Civic action project updated successfully",
-        data: updatedProject,
+        data: normalizeProject(updatedProject),
       },
       { status: 200 },
     );
@@ -383,6 +274,10 @@ export async function PATCH(request: NextRequest, { params }: Params) {
       {
         success: false,
         message: "Failed to update civic action project",
+        detail:
+          process.env.NODE_ENV === "development" && error instanceof Error
+            ? error.message
+            : undefined,
       },
       { status: 500 },
     );
@@ -393,9 +288,7 @@ export async function DELETE(_: NextRequest, { params }: Params) {
   try {
     const auth = await requireUser([Role.LECTURER]);
 
-    if (auth.response) {
-      return auth.response;
-    }
+    if (auth.response) return auth.response;
 
     const { userId, slug, projectId } = await params;
 
@@ -456,6 +349,10 @@ export async function DELETE(_: NextRequest, { params }: Params) {
       {
         success: false,
         message: "Failed to delete civic action project",
+        detail:
+          process.env.NODE_ENV === "development" && error instanceof Error
+            ? error.message
+            : undefined,
       },
       { status: 500 },
     );

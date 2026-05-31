@@ -458,34 +458,6 @@ function StatCard({
   );
 }
 
-function InfoRow({
-  icon: Icon,
-  label,
-  value,
-}: {
-  icon: React.ComponentType<{ size?: number; className?: string }>;
-  label: string;
-  value: string;
-}) {
-  return (
-    <div className="rounded-2xl border border-white/10 bg-slate-900/70 p-4">
-      <div className="flex items-start gap-3">
-        <div className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-white/5 text-cyan-300">
-          <Icon size={18} />
-        </div>
-        <div className="min-w-0">
-          <div className="text-xs uppercase tracking-wide text-slate-400">
-            {label}
-          </div>
-          <div className="mt-1 break-words text-sm font-medium text-white">
-            {value}
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 function MiniInfo({ label, value }: { label: string; value: string }) {
   return (
     <div className="rounded-2xl border border-white/10 bg-white/5 px-3 py-4 text-center">

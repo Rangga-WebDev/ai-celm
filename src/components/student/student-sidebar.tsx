@@ -12,12 +12,9 @@ import {
   LayoutDashboard,
   LineChart,
   MessageSquareMore,
-  PanelLeftClose,
-  PanelLeftOpen,
   ShieldCheck,
   Sparkles,
   UserSquare2,
-  X,
 } from "lucide-react";
 
 const navItems = [
@@ -48,6 +45,8 @@ export default function StudentSidebar({
   onToggle: () => void;
   onClose: () => void;
 }) {
+  void onToggle;
+
   const pathname = usePathname();
   const initials = `${user.firstName?.[0] ?? ""}${user.lastName?.[0] ?? ""}`;
 

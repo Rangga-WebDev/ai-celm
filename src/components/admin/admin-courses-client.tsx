@@ -17,7 +17,6 @@ import {
   RefreshCcw,
   Search,
   Trash2,
-  UserRoundCog,
 } from "lucide-react";
 
 type Lecturer = {

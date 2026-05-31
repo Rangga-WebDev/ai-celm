@@ -11,7 +11,6 @@ import {
   ArrowRight,
   BookOpen,
   CheckCircle2,
-  ChevronRight,
   Clock3,
   FileText,
   Layers3,
@@ -202,6 +201,8 @@ export default function StudentUnitDetailClient({
   moduleSlug,
   unitSlug,
 }: StudentUnitDetailClientProps) {
+  void user;
+
   const [courseTitle, setCourseTitle] = useState("");
   const [moduleMeta, setModuleMeta] = useState<
     CourseModulesResponse["data"]["modules"][number] | null

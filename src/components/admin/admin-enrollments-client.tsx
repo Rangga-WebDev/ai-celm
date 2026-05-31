@@ -6,7 +6,6 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import {
   ArrowLeft,
-  BookOpen,
   CheckCircle2,
   GraduationCap,
   Loader2,

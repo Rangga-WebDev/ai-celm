@@ -8,7 +8,6 @@ import {
   ArrowLeft,
   BookOpen,
   CheckCircle2,
-  Layers3,
   Loader2,
   Lock,
   MessageSquareMore,

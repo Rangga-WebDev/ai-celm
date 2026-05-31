@@ -9,7 +9,6 @@ import {
   BookOpen,
   CheckCircle2,
   FileText,
-  Layers3,
   Loader2,
   Pencil,
   Plus,

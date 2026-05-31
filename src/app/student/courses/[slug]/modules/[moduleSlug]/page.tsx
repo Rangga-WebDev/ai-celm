@@ -4,6 +4,8 @@ import { getCurrentUser } from "@/lib/session";
 import { redirect } from "next/navigation";
 import StudentModuleDetailClient from "@/components/student/student-module-detail-client";
 
+export const dynamic = "force-dynamic";
+
 type PageProps = {
   params: Promise<{
     slug: string;

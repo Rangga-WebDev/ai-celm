@@ -184,6 +184,8 @@ export default function StudentCourseDetailClient({
   user,
   slug,
 }: StudentCourseDetailClientProps) {
+  void user;
+
   const [course, setCourse] = useState<CourseDetailResponse["data"] | null>(
     null,
   );

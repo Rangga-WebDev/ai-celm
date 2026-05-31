@@ -12,8 +12,9 @@ import {
   CheckCircle2,
   Clock3,
   Layers3,
-  User2,
 } from "lucide-react";
+
+export const dynamic = "force-dynamic";
 
 function getReadableStatus(status?: ProgressStatus | string) {
   switch (status) {

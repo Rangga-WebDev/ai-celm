@@ -27,10 +27,8 @@ import {
   Flame,
   FolderKanban,
   Medal,
-  MessageSquareMore,
   Sparkles,
   Target,
-  TrendingUp,
   WandSparkles,
 } from "lucide-react";
 import AnimatedCounter from "@/components/student/animated-counter";
@@ -204,7 +202,7 @@ export default function StudentDashboardClient({
             : item.course.summary.overallProgress >= 40
               ? "Sedang berkembang"
               : "Perlu penguatan",
-        href: `/student/courses/${item.course.slug}`,
+        href: `/student/courses/${item.course.slug}/learn`,
       }));
   }, [dashboard]);
 

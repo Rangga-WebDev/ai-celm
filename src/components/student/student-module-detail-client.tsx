@@ -11,10 +11,8 @@ import {
   ArrowRight,
   BookOpen,
   CheckCircle2,
-  ChevronRight,
   ClipboardCheck,
   Clock3,
-  FileText,
   Layers3,
   PlayCircle,
   Target,
@@ -194,6 +192,8 @@ export default function StudentModuleDetailClient({
   courseSlug,
   moduleSlug,
 }: StudentModuleDetailClientProps) {
+  void user;
+
   const [moduleMeta, setModuleMeta] = useState<
     CourseModulesResponse["data"]["modules"][number] | null
   >(null);
@@ -699,14 +699,6 @@ function FocusCard({ title, value }: { title: string; value: string }) {
       <div className="mt-2 break-words text-sm leading-7 text-slate-300">
         {value}
       </div>
-    </div>
-  );
-}
-
-function NoteItem({ text }: { text: string }) {
-  return (
-    <div className="rounded-2xl border border-white/10 bg-slate-900/70 p-4 text-sm leading-7 text-slate-300">
-      {text}
     </div>
   );
 }

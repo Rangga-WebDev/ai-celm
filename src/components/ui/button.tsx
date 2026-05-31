@@ -1,7 +1,6 @@
 /** @format */
 
 import { ButtonHTMLAttributes, ReactNode } from "react";
-import { ArrowRight } from "lucide-react";
 import clsx from "clsx";
 
 type ButtonVariant = "primary" | "secondary" | "ghost" | "outline";
