@@ -413,8 +413,7 @@ function CourseCard({ course }: { course: CourseItem }) {
 
           {course.modules.length === 0 ? (
             <div className="rounded-2xl border border-white/10 bg-slate-950/50 p-4 text-sm text-slate-400">
-              Belum ada modul. Pada Tahap 4B, dosen akan bisa membuat dan
-              mengelola modul di course ini.
+              Belum ada modul. Gunakan menu Modules untuk membuat modul dan mengelola micro-unit.
             </div>
           ) : (
             <div className="grid gap-3">
@@ -515,7 +514,7 @@ function CourseCard({ course }: { course: CourseItem }) {
         </Link>
 
         <Link
-          href={`/lecturer/courses/${course.slug}/forum`}
+          href={`/lecturer/courses/${course.slug}/forums`}
           className="inline-flex items-center gap-2 rounded-2xl border border-white/10 bg-white/[0.04] px-5 py-3 text-sm text-white transition hover:bg-white/[0.08]"
         >
           <MessageSquareMore size={16} />
@@ -523,7 +522,7 @@ function CourseCard({ course }: { course: CourseItem }) {
         </Link>
 
         <Link
-          href={`/lecturer/courses/${course.slug}/project`}
+          href={`/lecturer/courses/${course.slug}/projects`}
           className="inline-flex items-center gap-2 rounded-2xl border border-white/10 bg-white/[0.04] px-5 py-3 text-sm text-white transition hover:bg-white/[0.08]"
         >
           <Target size={16} />

@@ -1,7 +1,12 @@
 /** @format */
 
 import { NextRequest, NextResponse } from "next/server";
-import { EnrollmentStatus, ProgressStatus, Role } from "@/generated/prisma/client";
+import {
+  AnalyticsEventType,
+  EnrollmentStatus,
+  ProgressStatus,
+  Role,
+} from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/api-guard";
 
@@ -13,10 +18,31 @@ type Params = {
   }>;
 };
 
+const MIN_LEARNING_SECONDS = 20;
+
 function isValidProgressStatus(value: unknown): value is ProgressStatus {
   return (
     value === ProgressStatus.IN_PROGRESS || value === ProgressStatus.COMPLETED
   );
+}
+
+function getElapsedSeconds(startedAt: Date | null) {
+  if (!startedAt) return 0;
+
+  return Math.floor((Date.now() - startedAt.getTime()) / 1000);
+}
+
+function calculateModuleStatus(
+  completedRequiredUnits: number,
+  totalRequiredUnits: number,
+): ProgressStatus {
+  if (totalRequiredUnits === 0) return ProgressStatus.NOT_STARTED;
+  if (completedRequiredUnits === 0) return ProgressStatus.IN_PROGRESS;
+  if (completedRequiredUnits < totalRequiredUnits) {
+    return ProgressStatus.IN_PROGRESS;
+  }
+
+  return ProgressStatus.COMPLETED;
 }
 
 async function recalculateModuleProgress({
@@ -48,7 +74,7 @@ async function recalculateModuleProgress({
 
   const requiredUnitIds = targetModule.units.map((unit) => unit.id);
 
-  const completedCount =
+  const completedRequiredUnits =
     requiredUnitIds.length > 0
       ? await prisma.unitProgress.count({
           where: {
@@ -63,15 +89,18 @@ async function recalculateModuleProgress({
 
   const progressPercent =
     requiredUnitIds.length > 0
-      ? Math.round((completedCount / requiredUnitIds.length) * 100)
+      ? Math.round((completedRequiredUnits / requiredUnitIds.length) * 100)
       : 0;
 
-  const status =
-    requiredUnitIds.length > 0 && completedCount === requiredUnitIds.length
-      ? ProgressStatus.COMPLETED
-      : ProgressStatus.IN_PROGRESS;
+  const moduleStatus = calculateModuleStatus(
+    completedRequiredUnits,
+    requiredUnitIds.length,
+  );
 
-  const isPassed = progressPercent >= targetModule.masteryThreshold;
+  const isPassed =
+    moduleStatus === ProgressStatus.COMPLETED &&
+    progressPercent >= targetModule.masteryThreshold;
+
   const now = new Date();
 
   return prisma.moduleProgress.upsert({
@@ -82,23 +111,24 @@ async function recalculateModuleProgress({
       },
     },
     update: {
-      status,
+      status: moduleStatus,
       progressPercent,
       isPassed,
       remedialRequired: false,
       lastAccessedAt: now,
-      completedAt: status === ProgressStatus.COMPLETED ? now : undefined,
+      completedAt: moduleStatus === ProgressStatus.COMPLETED ? now : null,
     },
     create: {
       userId,
       moduleId,
-      status,
+      status: moduleStatus,
       progressPercent,
+      masteryScore: null,
       isPassed,
       remedialRequired: false,
       startedAt: now,
       lastAccessedAt: now,
-      completedAt: status === ProgressStatus.COMPLETED ? now : null,
+      completedAt: moduleStatus === ProgressStatus.COMPLETED ? now : null,
     },
   });
 }
@@ -146,12 +176,14 @@ export async function PATCH(request: NextRequest, { params }: Params) {
       },
       select: {
         id: true,
-        isLocked: true,
         moduleId: true,
+        isLocked: true,
+        masteryThreshold: true,
         module: {
           select: {
             id: true,
             courseId: true,
+            masteryThreshold: true,
           },
         },
       },
@@ -198,29 +230,103 @@ export async function PATCH(request: NextRequest, { params }: Params) {
       );
     }
 
-    const progressPercent =
-      statusInput === ProgressStatus.COMPLETED ? 100 : 50;
+    const existingProgress = await prisma.unitProgress.findUnique({
+      where: {
+        userId_microUnitId: {
+          userId,
+          microUnitId: targetUnit.id,
+        },
+      },
+      select: {
+        id: true,
+        status: true,
+        startedAt: true,
+        completedAt: true,
+        attempts: true,
+      },
+    });
+
+    if (
+      existingProgress?.status === ProgressStatus.COMPLETED &&
+      statusInput === ProgressStatus.IN_PROGRESS
+    ) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "This unit has already been completed",
+        },
+        { status: 409 },
+      );
+    }
+
+    if (statusInput === ProgressStatus.COMPLETED) {
+      if (!existingProgress?.startedAt) {
+        return NextResponse.json(
+          {
+            success: false,
+            message: "Start this unit before marking it as completed",
+            remainingSeconds: MIN_LEARNING_SECONDS,
+            minimumSeconds: MIN_LEARNING_SECONDS,
+          },
+          { status: 409 },
+        );
+      }
+
+      const elapsedSeconds = getElapsedSeconds(existingProgress.startedAt);
+      const remainingSeconds = Math.max(
+        MIN_LEARNING_SECONDS - elapsedSeconds,
+        0,
+      );
+
+      if (remainingSeconds > 0) {
+        return NextResponse.json(
+          {
+            success: false,
+            message: `Please continue learning for ${remainingSeconds} more seconds before completing this unit`,
+            remainingSeconds,
+            minimumSeconds: MIN_LEARNING_SECONDS,
+          },
+          { status: 409 },
+        );
+      }
+    }
+
     const now = new Date();
+    const progressPercent =
+      statusInput === ProgressStatus.COMPLETED ? 100 : 25;
+
+    const unitThreshold =
+      targetUnit.masteryThreshold ?? targetUnit.module.masteryThreshold ?? 70;
+
+    const isPassed =
+      statusInput === ProgressStatus.COMPLETED &&
+      progressPercent >= unitThreshold;
 
     const unitProgress = await prisma.unitProgress.upsert({
       where: {
         userId_microUnitId: {
           userId,
-          microUnitId: unitId,
+          microUnitId: targetUnit.id,
         },
       },
       update: {
         status: statusInput,
         progressPercent,
-        startedAt: now,
+        attempts: existingProgress?.attempts ?? 1,
+        isPassed,
+        remedialRequired: false,
+        startedAt: existingProgress?.startedAt ?? now,
         completedAt: statusInput === ProgressStatus.COMPLETED ? now : null,
         lastAccessedAt: now,
       },
       create: {
         userId,
-        microUnitId: unitId,
+        microUnitId: targetUnit.id,
         status: statusInput,
         progressPercent,
+        attempts: 1,
+        isPassed,
+        remedialRequired: false,
         startedAt: now,
         completedAt: statusInput === ProgressStatus.COMPLETED ? now : null,
         lastAccessedAt: now,
@@ -232,6 +338,26 @@ export async function PATCH(request: NextRequest, { params }: Params) {
       moduleId: targetUnit.moduleId,
     });
 
+    await prisma.learningAnalyticsEvent.create({
+      data: {
+        userId,
+        courseId: targetUnit.module.courseId,
+        moduleId: targetUnit.moduleId,
+        microUnitId: targetUnit.id,
+        eventType:
+          statusInput === ProgressStatus.COMPLETED
+            ? AnalyticsEventType.UNIT_COMPLETE
+            : AnalyticsEventType.UNIT_START,
+        value: progressPercent,
+        metadata: {
+          status: statusInput,
+          progressPercent,
+          minimumSeconds: MIN_LEARNING_SECONDS,
+          source: "student_learning_flow",
+        },
+      },
+    });
+
     return NextResponse.json(
       {
         success: true,
@@ -239,6 +365,7 @@ export async function PATCH(request: NextRequest, { params }: Params) {
         data: {
           unitProgress,
           moduleProgress,
+          minimumSeconds: MIN_LEARNING_SECONDS,
         },
       },
       { status: 200 },

@@ -16,10 +16,7 @@ type Params = {
 const projectStatusOptions = Object.values(ProjectStatus);
 
 function isValidProjectStatus(value: unknown): value is ProjectStatus {
-  return (
-    typeof value === "string" &&
-    projectStatusOptions.includes(value as ProjectStatus)
-  );
+  return typeof value === "string" && projectStatusOptions.includes(value as ProjectStatus);
 }
 
 function slugify(value: string) {
@@ -38,13 +35,9 @@ function optionalText(value: unknown) {
 
 function parseDate(value: unknown) {
   const text = String(value ?? "").trim();
-
   if (!text) return null;
-
   const date = new Date(text);
-
   if (Number.isNaN(date.getTime())) return null;
-
   return date;
 }
 
@@ -56,25 +49,16 @@ function buildRubric({
   outputType: string | null;
 }): Prisma.InputJsonValue | typeof Prisma.JsonNull {
   if (!objective && !outputType) return Prisma.JsonNull;
-
-  return {
-    objective,
-    outputType,
-  };
+  return { objective, outputType };
 }
 
 function readRubricText(rubric: unknown, key: "objective" | "outputType") {
-  if (!rubric || typeof rubric !== "object" || Array.isArray(rubric)) {
-    return null;
-  }
-
+  if (!rubric || typeof rubric !== "object" || Array.isArray(rubric)) return null;
   const record = rubric as Record<string, unknown>;
   return typeof record[key] === "string" ? record[key] : null;
 }
 
-function normalizeProject<T extends { brief: string | null; rubric: unknown }>(
-  project: T,
-) {
+function normalizeProject<T extends { brief: string | null; rubric: unknown }>(project: T) {
   return {
     ...project,
     moduleId: null,
@@ -89,44 +73,46 @@ function normalizeProject<T extends { brief: string | null; rubric: unknown }>(
 
 async function getOwnedCourse(userId: string, slug: string) {
   return prisma.course.findFirst({
-    where: {
-      slug,
-      lecturerId: userId,
-    },
-    select: {
-      id: true,
-      title: true,
-      slug: true,
-    },
+    where: { slug, lecturerId: userId },
+    select: { id: true, title: true, slug: true },
   });
 }
 
 async function getOwnedProject(projectId: string, courseId: string) {
   return prisma.civicActionProject.findFirst({
-    where: {
-      id: projectId,
-      courseId,
-    },
-    select: {
-      id: true,
-    },
+    where: { id: projectId, courseId },
+    select: { id: true },
   });
 }
+
+const projectInclude = {
+  createdBy: {
+    select: { id: true, firstName: true, lastName: true, email: true },
+  },
+  submissions: {
+    orderBy: { updatedAt: "desc" as const },
+    take: 3,
+    include: {
+      student: {
+        select: { id: true, firstName: true, lastName: true, email: true },
+      },
+    },
+  },
+  _count: {
+    select: { submissions: true },
+  },
+};
 
 export async function PATCH(request: NextRequest, { params }: Params) {
   try {
     const auth = await requireUser([Role.LECTURER]);
-
     if (auth.response) return auth.response;
 
     const { userId, slug, projectId } = await params;
 
     if (auth.user.id !== userId) {
       return NextResponse.json(
-        {
-          success: false,
-          message: "Lecturer can only update projects from their own courses",
-        },
+        { success: false, message: "Lecturer can only update projects from their own courses" },
         { status: 403 },
       );
     }
@@ -135,10 +121,7 @@ export async function PATCH(request: NextRequest, { params }: Params) {
 
     if (!course) {
       return NextResponse.json(
-        {
-          success: false,
-          message: "Course not found or you are not assigned to this course",
-        },
+        { success: false, message: "Course not found or you are not assigned to this course" },
         { status: 404 },
       );
     }
@@ -147,16 +130,12 @@ export async function PATCH(request: NextRequest, { params }: Params) {
 
     if (!ownedProject) {
       return NextResponse.json(
-        {
-          success: false,
-          message: "Project not found in this course",
-        },
+        { success: false, message: "Project not found in this course" },
         { status: 404 },
       );
     }
 
     const body = await request.json();
-
     const title = String(body.title ?? "").trim();
     const rawSlug = String(body.slug ?? "").trim();
     const description = optionalText(body.description);
@@ -167,53 +146,30 @@ export async function PATCH(request: NextRequest, { params }: Params) {
     const status = body.status ?? ProjectStatus.DRAFT;
 
     if (!title) {
-      return NextResponse.json(
-        {
-          success: false,
-          message: "Project title is required",
-        },
-        { status: 400 },
-      );
+      return NextResponse.json({ success: false, message: "Project title is required" }, { status: 400 });
     }
 
     if (!isValidProjectStatus(status)) {
-      return NextResponse.json(
-        {
-          success: false,
-          message: "Valid project status is required",
-        },
-        { status: 400 },
-      );
+      return NextResponse.json({ success: false, message: "Valid project status is required" }, { status: 400 });
     }
 
     const projectSlug = rawSlug ? slugify(rawSlug) : slugify(title);
 
+    if (!projectSlug) {
+      return NextResponse.json({ success: false, message: "Valid project slug is required" }, { status: 400 });
+    }
+
     const slugOwner = await prisma.civicActionProject.findUnique({
-      where: {
-        courseId_slug: {
-          courseId: course.id,
-          slug: projectSlug,
-        },
-      },
-      select: {
-        id: true,
-      },
+      where: { courseId_slug: { courseId: course.id, slug: projectSlug } },
+      select: { id: true },
     });
 
     if (slugOwner && slugOwner.id !== projectId) {
-      return NextResponse.json(
-        {
-          success: false,
-          message: "Project slug already used by another project",
-        },
-        { status: 409 },
-      );
+      return NextResponse.json({ success: false, message: "Project slug already used by another project" }, { status: 409 });
     }
 
     const updatedProject = await prisma.civicActionProject.update({
-      where: {
-        id: projectId,
-      },
+      where: { id: projectId },
       data: {
         title,
         slug: projectSlug,
@@ -223,61 +179,20 @@ export async function PATCH(request: NextRequest, { params }: Params) {
         dueAt,
         status,
       },
-      include: {
-        createdBy: {
-          select: {
-            id: true,
-            firstName: true,
-            lastName: true,
-            email: true,
-          },
-        },
-        submissions: {
-          orderBy: {
-            updatedAt: "desc",
-          },
-          take: 3,
-          include: {
-            student: {
-              select: {
-                id: true,
-                firstName: true,
-                lastName: true,
-                email: true,
-              },
-            },
-          },
-        },
-        _count: {
-          select: {
-            submissions: true,
-          },
-        },
-      },
+      include: projectInclude,
     });
 
     return NextResponse.json(
-      {
-        success: true,
-        message: "Civic action project updated successfully",
-        data: normalizeProject(updatedProject),
-      },
+      { success: true, message: "Civic action project updated successfully", data: normalizeProject(updatedProject) },
       { status: 200 },
     );
   } catch (error) {
-    console.error(
-      "PATCH /api/lecturers/[userId]/courses/[slug]/projects/[projectId] error:",
-      error,
-    );
-
+    console.error("PATCH /api/lecturers/[userId]/courses/[slug]/projects/[projectId] error:", error);
     return NextResponse.json(
       {
         success: false,
         message: "Failed to update civic action project",
-        detail:
-          process.env.NODE_ENV === "development" && error instanceof Error
-            ? error.message
-            : undefined,
+        detail: process.env.NODE_ENV === "development" && error instanceof Error ? error.message : undefined,
       },
       { status: 500 },
     );
@@ -287,17 +202,13 @@ export async function PATCH(request: NextRequest, { params }: Params) {
 export async function DELETE(_: NextRequest, { params }: Params) {
   try {
     const auth = await requireUser([Role.LECTURER]);
-
     if (auth.response) return auth.response;
 
     const { userId, slug, projectId } = await params;
 
     if (auth.user.id !== userId) {
       return NextResponse.json(
-        {
-          success: false,
-          message: "Lecturer can only delete projects from their own courses",
-        },
+        { success: false, message: "Lecturer can only delete projects from their own courses" },
         { status: 403 },
       );
     }
@@ -306,10 +217,7 @@ export async function DELETE(_: NextRequest, { params }: Params) {
 
     if (!course) {
       return NextResponse.json(
-        {
-          success: false,
-          message: "Course not found or you are not assigned to this course",
-        },
+        { success: false, message: "Course not found or you are not assigned to this course" },
         { status: 404 },
       );
     }
@@ -318,41 +226,24 @@ export async function DELETE(_: NextRequest, { params }: Params) {
 
     if (!ownedProject) {
       return NextResponse.json(
-        {
-          success: false,
-          message: "Project not found in this course",
-        },
+        { success: false, message: "Project not found in this course" },
         { status: 404 },
       );
     }
 
-    await prisma.civicActionProject.delete({
-      where: {
-        id: projectId,
-      },
-    });
+    await prisma.civicActionProject.delete({ where: { id: projectId } });
 
     return NextResponse.json(
-      {
-        success: true,
-        message: "Civic action project deleted successfully",
-      },
+      { success: true, message: "Civic action project deleted successfully" },
       { status: 200 },
     );
   } catch (error) {
-    console.error(
-      "DELETE /api/lecturers/[userId]/courses/[slug]/projects/[projectId] error:",
-      error,
-    );
-
+    console.error("DELETE /api/lecturers/[userId]/courses/[slug]/projects/[projectId] error:", error);
     return NextResponse.json(
       {
         success: false,
         message: "Failed to delete civic action project",
-        detail:
-          process.env.NODE_ENV === "development" && error instanceof Error
-            ? error.message
-            : undefined,
+        detail: process.env.NODE_ENV === "development" && error instanceof Error ? error.message : undefined,
       },
       { status: 500 },
     );

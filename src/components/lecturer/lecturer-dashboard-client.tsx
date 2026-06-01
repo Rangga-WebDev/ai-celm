@@ -11,6 +11,8 @@ import {
   ClipboardList,
   FileText,
   LayoutDashboard,
+  MessageSquareMore,
+  Target,
   Users,
 } from "lucide-react";
 
@@ -304,23 +306,50 @@ function CourseCard({ course }: { course: LecturerCourseSummary }) {
           )}
         </div>
 
-        <div className="flex shrink-0 flex-wrap gap-2">
+        <div className="flex shrink-0 flex-col gap-2 sm:min-w-44">
           <Link
             href={`/lecturer/courses/${course.slug}`}
-            className="inline-flex items-center justify-center rounded-2xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white transition hover:bg-white/10"
+            className="inline-flex items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white transition hover:bg-white/10"
           >
-            Detail Course
+            Detail
+            <ArrowRight size={15} />
           </Link>
 
           <Link
             href={`/lecturer/courses/${course.slug}/modules`}
-            className="inline-flex items-center gap-2 rounded-2xl bg-teal-400 px-4 py-2.5 text-sm font-semibold text-slate-950 transition hover:bg-teal-300"
+            className="inline-flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-teal-300 via-cyan-300 to-sky-400 px-4 py-2.5 text-sm font-semibold text-slate-950 transition hover:brightness-110"
           >
-            Kelola Modul
-            <ArrowRight size={15} />
+            Modules
+            <BookOpen size={15} />
           </Link>
+
+          <div className="grid grid-cols-2 gap-2">
+            <QuickIconLink href={`/lecturer/courses/${course.slug}/resources`} label="Resources" icon={FileText} />
+            <QuickIconLink href={`/lecturer/courses/${course.slug}/cer`} label="CER" icon={ClipboardList} />
+            <QuickIconLink href={`/lecturer/courses/${course.slug}/forums`} label="Forums" icon={MessageSquareMore} />
+            <QuickIconLink href={`/lecturer/courses/${course.slug}/projects`} label="Projects" icon={Target} />
+          </div>
         </div>
       </div>
     </div>
+  );
+}
+function QuickIconLink({
+  href,
+  label,
+  icon: Icon,
+}: {
+  href: string;
+  label: string;
+  icon: React.ComponentType<{ size?: number; className?: string }>;
+}) {
+  return (
+    <Link
+      href={href}
+      title={label}
+      className="inline-flex items-center justify-center rounded-2xl border border-white/10 bg-white/[0.045] px-3 py-2.5 text-slate-300 transition hover:border-cyan-300/30 hover:bg-cyan-400/10 hover:text-cyan-200"
+    >
+      <Icon size={15} />
+    </Link>
   );
 }

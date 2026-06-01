@@ -8,6 +8,7 @@ import {
   ArrowLeft,
   BookOpen,
   CheckCircle2,
+  Clock3,
   ExternalLink,
   FileText,
   Layers3,
@@ -139,6 +140,20 @@ type ApiResponse = {
   data: LearningData;
 };
 
+const MIN_LEARNING_SECONDS = 20;
+
+function getRemainingLearningSeconds(startedAt: string | null, now: number) {
+  if (!startedAt) return MIN_LEARNING_SECONDS;
+
+  const startedTime = new Date(startedAt).getTime();
+
+  if (Number.isNaN(startedTime)) return MIN_LEARNING_SECONDS;
+
+  const elapsedSeconds = Math.floor((now - startedTime) / 1000);
+
+  return Math.max(MIN_LEARNING_SECONDS - elapsedSeconds, 0);
+}
+
 export default function StudentLearningClient({
   user,
   courseSlug,
@@ -151,6 +166,7 @@ export default function StudentLearningClient({
   const [loading, setLoading] = useState(true);
   const [updatingUnitId, setUpdatingUnitId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [nowTick, setNowTick] = useState(Date.now());
 
   const activeUnit = useMemo(() => {
     if (!data || !activeUnitId) return null;
@@ -171,6 +187,16 @@ export default function StudentLearningClient({
       ) ?? null
     );
   }, [data, activeUnitId]);
+
+  const activeUnitStatus = activeUnit?.progress?.status ?? "NOT_STARTED";
+  const isUnitNotStarted = activeUnitStatus === "NOT_STARTED";
+  const isUnitInProgress = activeUnitStatus === "IN_PROGRESS";
+  const isUnitCompleted = activeUnitStatus === "COMPLETED";
+  const remainingLearningSeconds = getRemainingLearningSeconds(
+    activeUnit?.progress?.startedAt ?? null,
+    nowTick,
+  );
+  const canCompleteUnit = isUnitInProgress && remainingLearningSeconds === 0;
 
   async function fetchLearningData() {
     try {
@@ -205,7 +231,10 @@ export default function StudentLearningClient({
     }
   }
 
-  async function updateProgress(unitId: string, status: ProgressStatus) {
+  async function updateProgress(
+    unitId: string,
+    status: Extract<ProgressStatus, "IN_PROGRESS" | "COMPLETED">,
+  ) {
     try {
       setUpdatingUnitId(unitId);
       setError(null);
@@ -239,6 +268,14 @@ export default function StudentLearningClient({
     fetchLearningData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user.id, courseSlug]);
+
+  useEffect(() => {
+    const interval = window.setInterval(() => {
+      setNowTick(Date.now());
+    }, 1000);
+
+    return () => window.clearInterval(interval);
+  }, []);
 
   if (loading) {
     return (
@@ -305,7 +342,7 @@ export default function StudentLearningClient({
             </div>
 
             <div className="mt-2 text-sm text-slate-400">
-              Progress keseluruhan: {" "}
+              Progress keseluruhan:{" "}
               <span className="font-semibold text-white">
                 {data.summary.overallProgress}%
               </span>{" "}
@@ -373,7 +410,7 @@ export default function StudentLearningClient({
                       {learningModule.order}. {learningModule.title}
                     </div>
                     <div className="mt-1 text-xs text-slate-500">
-                      {learningModule.units.length} unit · {" "}
+                      {learningModule.units.length} unit ·{" "}
                       {learningModule.progress?.progressPercent ?? 0}%
                     </div>
                   </div>
@@ -423,6 +460,8 @@ export default function StudentLearningClient({
                               size={16}
                               className="text-emerald-300"
                             />
+                          ) : unit.progress?.status === "IN_PROGRESS" ? (
+                            <Clock3 size={16} className="text-cyan-300" />
                           ) : (
                             <PlayCircle size={16} className="text-cyan-300" />
                           )}
@@ -433,7 +472,7 @@ export default function StudentLearningClient({
                             {unit.order}. {unit.title}
                           </div>
                           <div className="mt-1 text-xs text-slate-500">
-                            {unit.unitType} · {" "}
+                            {unit.unitType} ·{" "}
                             {unit.estimatedMinutes
                               ? `${unit.estimatedMinutes} menit`
                               : "estimasi belum ada"}
@@ -464,7 +503,7 @@ export default function StudentLearningClient({
                     ) : (
                       <Badge>Optional</Badge>
                     )}
-                    <Badge>{activeUnit.progress?.status ?? "NOT_STARTED"}</Badge>
+                    <Badge>{activeUnitStatus}</Badge>
                   </div>
 
                   <h2 className="mt-4 break-words text-2xl font-semibold text-white">
@@ -476,36 +515,88 @@ export default function StudentLearningClient({
                   </p>
                 </div>
 
-                <div className="flex flex-wrap gap-3">
+                <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
                   <button
                     type="button"
-                    disabled={updatingUnitId === activeUnit.id}
+                    disabled={updatingUnitId === activeUnit.id || isUnitCompleted}
                     onClick={() => updateProgress(activeUnit.id, "IN_PROGRESS")}
-                    className="inline-flex items-center gap-2 rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-slate-300 transition hover:bg-white/[0.08] hover:text-white disabled:opacity-60"
+                    className={`inline-flex items-center justify-center gap-2 rounded-2xl border px-4 py-3 text-sm transition ${
+                      isUnitCompleted
+                        ? "cursor-not-allowed border-emerald-400/20 bg-emerald-400/10 text-emerald-300"
+                        : isUnitInProgress
+                          ? "border-cyan-400/20 bg-cyan-400/10 text-cyan-200"
+                          : "border-white/10 bg-white/[0.04] text-slate-300 hover:bg-white/[0.08] hover:text-white"
+                    } disabled:opacity-70`}
                   >
                     {updatingUnitId === activeUnit.id ? (
                       <Loader2 size={16} className="animate-spin" />
+                    ) : isUnitCompleted ? (
+                      <CheckCircle2 size={16} />
+                    ) : isUnitInProgress ? (
+                      <Clock3 size={16} />
                     ) : (
                       <PlayCircle size={16} />
                     )}
-                    Mulai
+
+                    {isUnitCompleted
+                      ? "Sudah Selesai"
+                      : isUnitInProgress
+                        ? "Sedang Dipelajari"
+                        : "Mulai Belajar"}
                   </button>
 
                   <button
                     type="button"
-                    disabled={updatingUnitId === activeUnit.id}
+                    disabled={
+                      updatingUnitId === activeUnit.id ||
+                      isUnitNotStarted ||
+                      isUnitCompleted ||
+                      !canCompleteUnit
+                    }
                     onClick={() => updateProgress(activeUnit.id, "COMPLETED")}
-                    className="inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-teal-400 via-cyan-400 to-sky-400 px-4 py-3 text-sm font-semibold text-slate-950 transition hover:brightness-110 disabled:opacity-60"
+                    className="inline-flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-teal-400 via-cyan-400 to-sky-400 px-4 py-3 text-sm font-semibold text-slate-950 transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     {updatingUnitId === activeUnit.id ? (
                       <Loader2 size={16} className="animate-spin" />
                     ) : (
                       <CheckCircle2 size={16} />
                     )}
-                    Tandai Selesai
+
+                    {isUnitCompleted
+                      ? "Selesai"
+                      : isUnitNotStarted
+                        ? "Mulai Dulu"
+                        : canCompleteUnit
+                          ? "Tandai Selesai"
+                          : `Tunggu ${remainingLearningSeconds}s`}
                   </button>
                 </div>
               </div>
+
+              {isUnitNotStarted ? (
+                <div className="mt-4 rounded-2xl border border-amber-400/20 bg-amber-400/10 p-4 text-sm leading-6 text-amber-100">
+                  Klik <span className="font-semibold">Mulai Belajar</span> untuk
+                  membuka sesi pembelajaran. Unit belum bisa diselesaikan sebelum
+                  sesi dimulai.
+                </div>
+              ) : null}
+
+              {isUnitInProgress ? (
+                <div className="mt-4 rounded-2xl border border-cyan-400/20 bg-cyan-400/10 p-4 text-sm leading-6 text-cyan-100">
+                  Sesi belajar sedang berjalan. Tombol selesai akan aktif setelah
+                  interaksi minimum terpenuhi
+                  {remainingLearningSeconds > 0
+                    ? ` dalam ${remainingLearningSeconds} detik.`
+                    : "."}
+                </div>
+              ) : null}
+
+              {isUnitCompleted ? (
+                <div className="mt-4 rounded-2xl border border-emerald-400/20 bg-emerald-400/10 p-4 text-sm leading-6 text-emerald-100">
+                  Unit ini sudah selesai. Progress tersimpan dan akan dihitung ke
+                  progress module.
+                </div>
+              ) : null}
 
               <div className="mt-6 grid gap-4 sm:grid-cols-3">
                 <InfoBox
@@ -522,7 +613,11 @@ export default function StudentLearningClient({
                 />
                 <InfoBox
                   label="Mastery"
-                  value={`${activeUnit.masteryThreshold ?? 0}%`}
+                  value={
+                    activeUnit.masteryThreshold && activeUnit.masteryThreshold > 0
+                      ? `${activeUnit.masteryThreshold}%`
+                      : "Belum diatur"
+                  }
                 />
               </div>
 

@@ -60,8 +60,8 @@ type ModuleOption = {
 type ProjectSubmission = {
   id: string;
   title: string | null;
-  description: string | null;
-  evidenceUrl: string | null;
+  summary: string | null;
+  artifactUrl: string | null;
   reflection: string | null;
   status: string;
   score: number | null;
@@ -892,7 +892,7 @@ function ProjectCard({
                     </div>
                     <div className="mt-2 line-clamp-2 text-sm leading-6 text-slate-300">
                       {submission.title ??
-                        submission.description ??
+                        submission.summary ??
                         "Submission"}
                     </div>
                   </div>

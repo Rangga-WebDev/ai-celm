@@ -15,6 +15,7 @@ import {
   FileText,
   GraduationCap,
   Layers3,
+  MessageSquareMore,
   Target,
   Users,
 } from "lucide-react";
@@ -334,6 +335,8 @@ export default function LecturerCourseDetailClient({
         </div>
       </section>
 
+      <CourseFeatureAccess slug={data.course.slug} />
+
       <section className="grid gap-4 sm:grid-cols-2 2xl:grid-cols-4">
         <StatCard
           icon={Users}
@@ -605,6 +608,43 @@ export default function LecturerCourseDetailClient({
         </section>
       </section>
     </main>
+  );
+}
+
+function CourseFeatureAccess({ slug }: { slug: string }) {
+  const actions = [
+    { label: "Modules", href: `/lecturer/courses/${slug}/modules`, icon: Layers3, description: "Bangun struktur modul dan buka micro-unit." },
+    { label: "Resources", href: `/lecturer/courses/${slug}/resources`, icon: FileText, description: "Kelola PDF, link, slide, video, dan bahan ajar." },
+    { label: "CER", href: `/lecturer/courses/${slug}/cer`, icon: ClipboardCheck, description: "Buat tugas Claim–Evidence–Reasoning." },
+    { label: "Forums", href: `/lecturer/courses/${slug}/forums`, icon: MessageSquareMore, description: "Aktifkan ruang deliberasi mahasiswa." },
+    { label: "Projects", href: `/lecturer/courses/${slug}/projects`, icon: Target, description: "Kelola civic action project dan output mahasiswa." },
+  ];
+
+  return (
+    <section className="grid gap-4 md:grid-cols-2 2xl:grid-cols-5">
+      {actions.map((action) => {
+        const Icon = action.icon;
+
+        return (
+          <Link
+            key={action.href}
+            href={action.href}
+            className="group relative overflow-hidden rounded-[28px] border border-white/10 bg-white/[0.055] p-5 shadow-[0_18px_55px_rgba(0,0,0,0.16)] backdrop-blur-xl transition hover:-translate-y-0.5 hover:border-cyan-300/30 hover:bg-white/[0.075]"
+          >
+            <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(34,211,238,0.16),transparent_32%)] opacity-0 transition group-hover:opacity-100" />
+            <div className="relative flex items-start justify-between gap-4">
+              <div>
+                <div className="text-sm font-semibold text-white">{action.label}</div>
+                <p className="mt-2 text-sm leading-6 text-slate-400">{action.description}</p>
+              </div>
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-cyan-400/10 text-cyan-300 transition group-hover:bg-cyan-300 group-hover:text-slate-950">
+                <Icon size={19} />
+              </div>
+            </div>
+          </Link>
+        );
+      })}
+    </section>
   );
 }
 
