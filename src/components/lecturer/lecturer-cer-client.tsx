@@ -131,10 +131,10 @@ const initialForm: FormState = {
   slug: "",
   description: "",
   prompt: "",
-  claimQuestion: "Apa claim utama Anda terhadap isu/kasus ini?",
-  evidenceQuestion: "Bukti atau data apa yang mendukung claim Anda?",
+  claimQuestion: "Apa pendapat/klaim utama Anda terhadap isu/kasus ini?",
+  evidenceQuestion: "Bukti atau data apa yang mendukung pendapat Anda?",
   reasoningQuestion:
-    "Bagaimana reasoning Anda menghubungkan claim dan evidence?",
+    "Bagaimana alasan/penalaran Anda menghubungkan pendapat dan bukti?",
   rubricText: "",
   dueAt: "",
   status: "DRAFT",
@@ -149,6 +149,19 @@ const fallbackStatuses: CerAssignmentStatus[] = [
   "CLOSED",
   "ARCHIVED",
 ];
+
+const statusLabels: Record<CerAssignmentStatus, string> = {
+  DRAFT: "Draf",
+  ACTIVE: "Aktif",
+  CLOSED: "Ditutup",
+  ARCHIVED: "Diarsipkan",
+};
+
+const targetLabels: Record<TargetType, string> = {
+  COURSE: "Tingkat Kelas",
+  MODULE: "Tingkat Modul",
+  UNIT: "Tingkat Unit",
+};
 
 function slugify(value: string) {
   return value
@@ -269,7 +282,7 @@ export default function LecturerCerClient({
       const json = (await res.json()) as ApiResponse;
 
       if (!res.ok || !json.success) {
-        throw new Error(json.message || "Gagal mengambil CER assignment");
+        throw new Error(json.message || "Gagal mengambil Tugas Argumentasi");
       }
 
       setCourse(json.data.course);
@@ -277,7 +290,7 @@ export default function LecturerCerClient({
       setAssignments(json.data.assignments);
       setStatuses(json.data.statuses);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Unknown error");
+      setError(err instanceof Error ? err.message : "Terjadi kesalahan");
     } finally {
       setLoading(false);
     }
@@ -389,19 +402,19 @@ export default function LecturerCerClient({
       const json = await res.json();
 
       if (!res.ok || !json.success) {
-        throw new Error(json.message || "Gagal menyimpan CER assignment");
+        throw new Error(json.message || "Gagal menyimpan Tugas Argumentasi");
       }
 
       setMessage(
         isEditing
-          ? "CER assignment berhasil diperbarui."
-          : "CER assignment berhasil dibuat.",
+          ? "Tugas Argumentasi berhasil diperbarui."
+          : "Tugas Argumentasi berhasil dibuat.",
       );
 
       resetForm();
       await fetchCerAssignments();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Unknown error");
+      setError(err instanceof Error ? err.message : "Terjadi kesalahan");
     } finally {
       setSubmitting(false);
     }
@@ -409,7 +422,7 @@ export default function LecturerCerClient({
 
   async function handleDelete(assignment: CerAssignment) {
     const confirmed = window.confirm(
-      `Hapus CER assignment "${assignment.title}"? Submission mahasiswa yang terkait dapat ikut terhapus.`,
+      `Hapus Tugas Argumentasi "${assignment.title}"? Jawaban mahasiswa yang terkait dapat ikut terhapus.`,
     );
 
     if (!confirmed) return;
@@ -429,13 +442,13 @@ export default function LecturerCerClient({
       const json = await res.json();
 
       if (!res.ok || !json.success) {
-        throw new Error(json.message || "Gagal menghapus CER assignment");
+        throw new Error(json.message || "Gagal menghapus Tugas Argumentasi");
       }
 
-      setMessage("CER assignment berhasil dihapus.");
+      setMessage("Tugas Argumentasi berhasil dihapus.");
       await fetchCerAssignments();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Unknown error");
+      setError(err instanceof Error ? err.message : "Terjadi kesalahan");
     } finally {
       setSubmitting(false);
     }
@@ -443,58 +456,58 @@ export default function LecturerCerClient({
 
   if (loading) {
     return (
-      <main className="space-y-6 p-6">
-        <section className="rounded-[28px] border border-white/10 bg-white/5 p-6 text-slate-300">
-          Memuat CER assignment...
+      <div className="space-y-6">
+        <section className="rounded-3xl border border-slate-200 bg-white p-6 text-base text-slate-600">
+          Memuat...
         </section>
-      </main>
+      </div>
     );
   }
 
   if (error) {
     return (
-      <main className="space-y-6 p-6">
-        <section className="rounded-[28px] border border-red-400/20 bg-red-500/5 p-6 text-red-300">
-          Error: {error}
+      <div className="space-y-6">
+        <section className="rounded-3xl border border-rose-200 bg-rose-50 p-6 text-base text-rose-700">
+          Terjadi kesalahan: {error}
         </section>
-      </main>
+      </div>
     );
   }
 
   return (
-    <main className="space-y-6 p-6">
-      <section className="rounded-[30px] border border-white/10 bg-white/5 p-6 shadow-[0_20px_60px_rgba(0,0,0,0.18)] backdrop-blur-xl">
+    <div className="space-y-6">
+      <section className="rounded-3xl bg-teal-600 p-6 text-white sm:p-8">
         <div className="flex flex-col gap-5 xl:flex-row xl:items-center xl:justify-between">
           <div className="min-w-0">
             <Link
               href={`/lecturer/courses/${courseSlug}`}
-              className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-4 py-2 text-sm text-slate-300 transition hover:bg-white/[0.08] hover:text-white"
+              className="inline-flex items-center gap-2 rounded-full bg-white/15 px-3 py-1.5 text-sm font-medium text-white transition hover:bg-white/25"
             >
-              <ArrowLeft size={16} />
-              Kembali ke Detail Course
+              <ArrowLeft size={16} aria-hidden />
+              Kembali ke Detail Kelas
             </Link>
 
-            <div className="mt-5 inline-flex items-center gap-2 rounded-full border border-cyan-400/20 bg-cyan-400/10 px-4 py-2 text-sm text-cyan-200">
-              <Target size={16} />
-              Lecturer CER Assignment
+            <div className="mt-5 inline-flex items-center gap-2 rounded-full bg-white/15 px-3 py-1.5 text-sm">
+              <Target size={16} aria-hidden />
+              Tugas Argumentasi
             </div>
 
-            <h1 className="mt-5 break-words text-3xl font-semibold text-white sm:text-4xl">
-              Kelola Tugas CER
+            <h1 className="mt-5 break-words text-3xl font-bold sm:text-4xl">
+              Kelola Tugas Argumentasi
             </h1>
 
-            <p className="mt-3 max-w-3xl text-sm leading-7 text-slate-300 sm:text-base">
-              Dosen membuat tugas berbasis Claim–Evidence–Reasoning untuk
-              melatih argumentasi mahasiswa secara terstruktur.
+            <p className="mt-3 max-w-3xl text-base leading-7 text-teal-50">
+              Dosen membuat tugas berbasis Pendapat–Bukti–Penalaran untuk
+              melatih kemampuan argumentasi mahasiswa secara terstruktur.
             </p>
           </div>
 
-          <div className="rounded-[28px] border border-white/10 bg-slate-900/70 p-4">
-            <div className="text-sm text-slate-400">Course</div>
+          <div className="rounded-2xl bg-white/15 p-4">
+            <div className="text-sm text-teal-50">Kelas</div>
             <div className="mt-1 font-semibold text-white">
-              {course?.title ?? "Course"}
+              {course?.title ?? "Kelas"}
             </div>
-            <div className="mt-1 text-sm text-slate-400">
+            <div className="mt-1 text-sm text-teal-50">
               {course?.code ?? "Tanpa kode"} · /{course?.slug}
             </div>
           </div>
@@ -502,67 +515,53 @@ export default function LecturerCerClient({
       </section>
 
       <section className="grid gap-4 sm:grid-cols-2 2xl:grid-cols-5">
-        <SummaryCard icon={Target} label="Total CER" value={summary.total} />
-        <SummaryCard
-          icon={CheckCircle2}
-          label="Active"
-          value={summary.active}
-        />
-        <SummaryCard icon={BookOpen} label="Draft" value={summary.draft} />
-        <SummaryCard icon={FileText} label="Closed" value={summary.closed} />
+        <SummaryCard icon={Target} label="Total Tugas" value={summary.total} />
+        <SummaryCard icon={CheckCircle2} label="Aktif" value={summary.active} />
+        <SummaryCard icon={BookOpen} label="Draf" value={summary.draft} />
+        <SummaryCard icon={FileText} label="Ditutup" value={summary.closed} />
         <SummaryCard
           icon={Layers3}
-          label="Submissions"
+          label="Jawaban Mahasiswa"
           value={summary.submissions}
         />
       </section>
 
       <section className="grid gap-6 xl:grid-cols-[0.85fr_1.5fr]">
-        <div className="rounded-[30px] border border-white/10 bg-white/5 p-6 backdrop-blur-xl">
+        <div className="rounded-3xl border border-slate-200 bg-white p-6">
           <div className="mb-5">
-            <h2 className="text-lg font-semibold text-white">
+            <h2 className="text-lg font-bold text-slate-900">
               {editingAssignment
-                ? "Edit CER Assignment"
-                : "Tambah CER Assignment"}
+                ? "Ubah Tugas Argumentasi"
+                : "Tambah Tugas Argumentasi"}
             </h2>
-            <p className="mt-1 text-sm text-slate-400">
-              CER assignment dapat ditempel pada course, module, atau
-              micro-unit.
+            <p className="mt-1 text-base text-slate-600">
+              Tugas Argumentasi dapat ditempel pada kelas, modul, atau unit.
             </p>
           </div>
 
           {message ? (
-            <div className="mb-4 rounded-2xl border border-emerald-400/20 bg-emerald-400/10 px-4 py-3 text-sm text-emerald-200">
+            <div className="mb-4 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-base text-emerald-700">
               {message}
             </div>
           ) : null}
 
           {error ? (
-            <div className="mb-4 rounded-2xl border border-red-400/20 bg-red-400/10 px-4 py-3 text-sm text-red-200">
+            <div className="mb-4 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-base text-rose-700">
               {error}
             </div>
           ) : null}
 
           <form onSubmit={handleSubmit} className="grid gap-4">
             <FormField
-              label="Judul CER"
+              label="Judul Tugas"
               value={form.title}
               onChange={updateTitle}
               placeholder="Contoh: Analisis Isu Kewargaan Digital"
             />
 
-            <FormField
-              label="Slug"
-              value={form.slug}
-              onChange={(value) =>
-                setForm((prev) => ({ ...prev, slug: slugify(value) }))
-              }
-              placeholder="analisis-isu-kewargaan-digital"
-            />
-
             <div className="grid gap-4 sm:grid-cols-2">
               <div>
-                <label className="text-sm font-medium text-slate-300">
+                <label className="text-sm font-medium text-slate-700">
                   Status
                 </label>
                 <select
@@ -573,18 +572,18 @@ export default function LecturerCerClient({
                       status: event.target.value as CerAssignmentStatus,
                     }))
                   }
-                  className="mt-2 w-full rounded-2xl border border-white/10 bg-slate-950 px-4 py-3 text-sm text-white outline-none"
+                  className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-base text-slate-900 outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-100"
                 >
                   {statuses.map((status) => (
                     <option key={status} value={status}>
-                      {status}
+                      {statusLabels[status] ?? status}
                     </option>
                   ))}
                 </select>
               </div>
 
               <FormField
-                label="Deadline"
+                label="Tenggat Waktu"
                 type="datetime-local"
                 value={form.dueAt}
                 onChange={(value) =>
@@ -594,31 +593,31 @@ export default function LecturerCerClient({
             </div>
 
             <div>
-              <label className="text-sm font-medium text-slate-300">
-                Target CER
+              <label className="text-sm font-medium text-slate-700">
+                Target Tugas
               </label>
               <select
                 value={form.targetType}
                 onChange={(event) =>
                   updateTargetType(event.target.value as TargetType)
                 }
-                className="mt-2 w-full rounded-2xl border border-white/10 bg-slate-950 px-4 py-3 text-sm text-white outline-none"
+                className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-base text-slate-900 outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-100"
               >
-                <option value="COURSE">Course Level</option>
-                <option value="MODULE">Module Level</option>
-                <option value="UNIT">Micro-Unit Level</option>
+                <option value="COURSE">Tingkat Kelas</option>
+                <option value="MODULE">Tingkat Modul</option>
+                <option value="UNIT">Tingkat Unit</option>
               </select>
             </div>
 
             {(form.targetType === "MODULE" || form.targetType === "UNIT") && (
               <div>
-                <label className="text-sm font-medium text-slate-300">
+                <label className="text-sm font-medium text-slate-700">
                   Pilih Modul
                 </label>
                 <select
                   value={form.moduleId}
                   onChange={(event) => updateModuleId(event.target.value)}
-                  className="mt-2 w-full rounded-2xl border border-white/10 bg-slate-950 px-4 py-3 text-sm text-white outline-none"
+                  className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-base text-slate-900 outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-100"
                 >
                   <option value="">Pilih modul</option>
                   {modules.map((courseModule) => (
@@ -632,8 +631,8 @@ export default function LecturerCerClient({
 
             {form.targetType === "UNIT" && (
               <div>
-                <label className="text-sm font-medium text-slate-300">
-                  Pilih Micro-Unit
+                <label className="text-sm font-medium text-slate-700">
+                  Pilih Unit
                 </label>
                 <select
                   value={form.microUnitId}
@@ -643,9 +642,9 @@ export default function LecturerCerClient({
                       microUnitId: event.target.value,
                     }))
                   }
-                  className="mt-2 w-full rounded-2xl border border-white/10 bg-slate-950 px-4 py-3 text-sm text-white outline-none"
+                  className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-base text-slate-900 outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-100"
                 >
-                  <option value="">Pilih micro-unit</option>
+                  <option value="">Pilih unit</option>
                   {selectedModuleUnits.map((unit) => (
                     <option key={unit.id} value={unit.id}>
                       {unit.order}. {unit.title} — {unit.unitType}
@@ -662,11 +661,11 @@ export default function LecturerCerClient({
                 setForm((prev) => ({ ...prev, description: value }))
               }
               rows={3}
-              placeholder="Tuliskan deskripsi singkat tugas CER..."
+              placeholder="Tuliskan deskripsi singkat tugas..."
             />
 
             <TextareaField
-              label="Prompt Utama"
+              label="Pertanyaan Utama"
               value={form.prompt}
               onChange={(value) =>
                 setForm((prev) => ({ ...prev, prompt: value }))
@@ -676,7 +675,7 @@ export default function LecturerCerClient({
             />
 
             <TextareaField
-              label="Claim Question"
+              label="Pertanyaan Pendapat/Klaim"
               value={form.claimQuestion}
               onChange={(value) =>
                 setForm((prev) => ({ ...prev, claimQuestion: value }))
@@ -685,7 +684,7 @@ export default function LecturerCerClient({
             />
 
             <TextareaField
-              label="Evidence Question"
+              label="Pertanyaan Bukti"
               value={form.evidenceQuestion}
               onChange={(value) =>
                 setForm((prev) => ({ ...prev, evidenceQuestion: value }))
@@ -694,7 +693,7 @@ export default function LecturerCerClient({
             />
 
             <TextareaField
-              label="Reasoning Question"
+              label="Pertanyaan Alasan/Penalaran"
               value={form.reasoningQuestion}
               onChange={(value) =>
                 setForm((prev) => ({ ...prev, reasoningQuestion: value }))
@@ -703,61 +702,61 @@ export default function LecturerCerClient({
             />
 
             <TextareaField
-              label="Rubric Note"
+              label="Catatan Rubrik"
               value={form.rubricText}
               onChange={(value) =>
                 setForm((prev) => ({ ...prev, rubricText: value }))
               }
               rows={4}
-              placeholder="Contoh: Claim 30%, Evidence 35%, Reasoning 35%."
+              placeholder="Contoh: Pendapat 30%, Bukti 35%, Penalaran 35%."
             />
 
             <div className="flex flex-wrap gap-3 pt-2">
               <button
                 type="submit"
                 disabled={submitting}
-                className="inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-teal-400 via-cyan-400 to-sky-400 px-5 py-3 text-sm font-semibold text-slate-950 transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
+                className="inline-flex items-center gap-2 rounded-2xl bg-teal-600 px-5 py-3 text-base font-semibold text-white transition hover:bg-teal-700 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {submitting ? (
-                  <Loader2 size={16} className="animate-spin" />
+                  <Loader2 size={18} className="animate-spin" aria-hidden />
                 ) : (
-                  <Plus size={16} />
+                  <Plus size={18} aria-hidden />
                 )}
-                {editingAssignment ? "Simpan CER" : "Tambah CER"}
+                {editingAssignment ? "Simpan Tugas" : "Tambah Tugas"}
               </button>
 
               {editingAssignment ? (
                 <button
                   type="button"
                   onClick={resetForm}
-                  className="rounded-2xl border border-white/10 bg-white/[0.04] px-5 py-3 text-sm text-slate-300 transition hover:bg-white/[0.08] hover:text-white"
+                  className="rounded-2xl border border-slate-200 px-4 py-2.5 text-base font-medium text-slate-700 transition hover:bg-slate-50"
                 >
-                  Batal Edit
+                  Batal Ubah
                 </button>
               ) : null}
             </div>
           </form>
         </div>
 
-        <div className="rounded-[30px] border border-white/10 bg-white/5 p-6 backdrop-blur-xl">
+        <div className="rounded-3xl border border-slate-200 bg-white p-6">
           <div className="mb-5 flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
             <div>
-              <h2 className="text-lg font-semibold text-white">
-                Daftar CER Assignment
+              <h2 className="text-lg font-bold text-slate-900">
+                Daftar Tugas Argumentasi
               </h2>
-              <p className="mt-1 text-sm text-slate-400">
-                Cari, filter, edit, dan hapus tugas CER.
+              <p className="mt-1 text-base text-slate-600">
+                Cari, filter, ubah, dan hapus tugas argumentasi.
               </p>
             </div>
 
             <div className="flex flex-col gap-3 sm:flex-row">
-              <div className="flex items-center gap-2 rounded-2xl border border-white/10 bg-slate-950 px-4 py-3">
-                <Search size={16} className="text-slate-500" />
+              <div className="flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-3">
+                <Search size={16} className="text-slate-400" aria-hidden />
                 <input
                   value={q}
                   onChange={(event) => setQ(event.target.value)}
-                  placeholder="Cari CER..."
-                  className="w-full bg-transparent text-sm text-white outline-none placeholder:text-slate-500"
+                  placeholder="Cari tugas..."
+                  className="w-full bg-transparent text-base text-slate-900 outline-none placeholder:text-slate-400"
                 />
               </div>
 
@@ -768,12 +767,12 @@ export default function LecturerCerClient({
                     event.target.value as "ALL" | CerAssignmentStatus,
                   )
                 }
-                className="rounded-2xl border border-white/10 bg-slate-950 px-4 py-3 text-sm text-white outline-none"
+                className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-base text-slate-900 outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-100"
               >
                 <option value="ALL">Semua Status</option>
                 {statuses.map((status) => (
                   <option key={status} value={status}>
-                    {status}
+                    {statusLabels[status] ?? status}
                   </option>
                 ))}
               </select>
@@ -783,28 +782,28 @@ export default function LecturerCerClient({
                 onChange={(event) =>
                   setTargetFilter(event.target.value as "ALL" | TargetType)
                 }
-                className="rounded-2xl border border-white/10 bg-slate-950 px-4 py-3 text-sm text-white outline-none"
+                className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-base text-slate-900 outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-100"
               >
                 <option value="ALL">Semua Target</option>
-                <option value="COURSE">Course</option>
-                <option value="MODULE">Module</option>
+                <option value="COURSE">Kelas</option>
+                <option value="MODULE">Modul</option>
                 <option value="UNIT">Unit</option>
               </select>
 
               <button
                 type="button"
                 onClick={fetchCerAssignments}
-                className="inline-flex items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-slate-300 transition hover:bg-white/[0.08] hover:text-white"
+                className="inline-flex items-center justify-center gap-2 rounded-2xl border border-slate-200 px-4 py-2.5 text-base font-medium text-slate-700 transition hover:bg-slate-50"
               >
-                <RefreshCcw size={16} />
-                Refresh
+                <RefreshCcw size={16} aria-hidden />
+                Muat ulang
               </button>
             </div>
           </div>
 
           {filteredAssignments.length === 0 ? (
-            <div className="rounded-2xl border border-white/10 bg-slate-900/70 p-5 text-sm text-slate-300">
-              Belum ada CER assignment sesuai filter.
+            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5 text-base text-slate-600">
+              Belum ada Tugas Argumentasi sesuai filter.
             </div>
           ) : (
             <div className="grid gap-4">
@@ -812,6 +811,7 @@ export default function LecturerCerClient({
                 <AssignmentCard
                   key={assignment.id}
                   assignment={assignment}
+                  courseSlug={courseSlug}
                   onEdit={() => startEdit(assignment)}
                   onDelete={() => handleDelete(assignment)}
                 />
@@ -820,77 +820,87 @@ export default function LecturerCerClient({
           )}
         </div>
       </section>
-    </main>
+    </div>
   );
 }
 
 function AssignmentCard({
   assignment,
+  courseSlug,
   onEdit,
   onDelete,
 }: {
   assignment: CerAssignment;
+  courseSlug: string;
   onEdit: () => void;
   onDelete: () => void;
 }) {
   const targetType = getTargetType(assignment);
 
   return (
-    <div className="rounded-[24px] border border-white/10 bg-slate-900/70 p-5">
+    <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
       <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap gap-2">
             <StatusBadge status={assignment.status} />
-            <span className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-xs text-slate-300">
-              {targetType}
+            <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">
+              {targetLabels[targetType]}
             </span>
-            <span className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-xs text-slate-300">
-              Submission {assignment._count.submissions}
+            <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">
+              Jawaban {assignment._count.submissions}
             </span>
           </div>
 
-          <h3 className="mt-4 break-words text-xl font-semibold text-white">
+          <h3 className="mt-4 break-words text-xl font-bold text-slate-900">
             {assignment.title}
           </h3>
 
-          <div className="mt-1 text-xs text-slate-500">/{assignment.slug}</div>
-
-          <p className="mt-3 break-words text-sm leading-7 text-slate-300">
-            {assignment.description ?? "Belum ada deskripsi CER."}
+          <p className="mt-3 break-words text-base leading-7 text-slate-600">
+            {assignment.description ?? "Belum ada deskripsi tugas."}
           </p>
 
-          <div className="mt-4 rounded-2xl border border-white/10 bg-slate-950/70 p-4 text-sm leading-7 text-slate-400">
+          <div className="mt-4 rounded-2xl border border-slate-200 bg-white p-4 text-base leading-7 text-slate-600">
             {assignment.prompt}
           </div>
 
           <div className="mt-4 grid gap-3 sm:grid-cols-2">
             <MiniInfo
-              label="Module"
-              value={assignment.module?.title ?? "Course level"}
+              label="Modul"
+              value={assignment.module?.title ?? "Tingkat kelas"}
             />
             <MiniInfo
-              label="Micro-Unit"
+              label="Unit"
               value={assignment.microUnit?.title ?? "Tidak spesifik"}
             />
           </div>
         </div>
 
         <div className="flex shrink-0 flex-wrap gap-2">
+          <Link
+            href={`/lecturer/courses/${courseSlug}/cer/${assignment.id}/submissions`}
+            className="inline-flex items-center gap-2 rounded-2xl bg-teal-600 px-5 py-3 text-base font-semibold text-white transition hover:bg-teal-700"
+          >
+            <CheckCircle2 size={16} aria-hidden />
+            Nilai ({assignment._count.submissions})
+          </Link>
+
           <button
             type="button"
             onClick={onEdit}
-            className="inline-flex items-center gap-2 rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-2 text-sm text-slate-300 transition hover:bg-white/[0.08] hover:text-white"
+            aria-label="Ubah tugas"
+            className="inline-flex items-center gap-2 rounded-2xl border border-slate-200 px-4 py-2.5 text-base font-medium text-slate-700 transition hover:bg-slate-50"
           >
-            <Pencil size={15} />
-            Edit
+            <Pencil size={16} aria-hidden />
+            Ubah
           </button>
 
           <button
             type="button"
             onClick={onDelete}
-            className="inline-flex items-center gap-2 rounded-2xl border border-red-400/20 bg-red-400/10 px-4 py-2 text-sm text-red-300 transition hover:bg-red-400/15"
+            aria-label="Hapus tugas"
+            className="inline-flex items-center gap-2 rounded-2xl border border-rose-200 px-4 py-2.5 text-base font-medium text-rose-600 transition hover:bg-rose-50"
           >
-            <Trash2 size={15} />
+            <Trash2 size={16} aria-hidden />
             Hapus
           </button>
         </div>
@@ -909,14 +919,14 @@ function SummaryCard({
   value: number;
 }) {
   return (
-    <div className="rounded-[26px] border border-white/10 bg-white/[0.04] p-5 backdrop-blur-xl">
+    <div className="rounded-3xl border border-slate-200 bg-white p-5">
       <div className="flex items-start justify-between gap-3">
         <div>
-          <div className="text-sm text-slate-400">{label}</div>
-          <div className="mt-2 text-3xl font-semibold text-white">{value}</div>
+          <div className="text-base text-slate-600">{label}</div>
+          <div className="mt-2 text-3xl font-bold text-slate-900">{value}</div>
         </div>
 
-        <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-cyan-400/10 text-cyan-300">
+        <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-teal-50 text-teal-600">
           <Icon size={20} />
         </div>
       </div>
@@ -939,14 +949,14 @@ function FormField({
 }) {
   return (
     <div>
-      <label className="text-sm font-medium text-slate-300">{label}</label>
+      <label className="text-sm font-medium text-slate-700">{label}</label>
 
       <input
         type={type}
         value={value}
         onChange={(event) => onChange(event.target.value)}
         placeholder={placeholder}
-        className="mt-2 w-full rounded-2xl border border-white/10 bg-slate-950 px-4 py-3 text-sm text-white outline-none transition placeholder:text-slate-500 focus:border-cyan-400/50"
+        className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-base text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-teal-500 focus:ring-2 focus:ring-teal-100"
       />
     </div>
   );
@@ -967,14 +977,14 @@ function TextareaField({
 }) {
   return (
     <div>
-      <label className="text-sm font-medium text-slate-300">{label}</label>
+      <label className="text-sm font-medium text-slate-700">{label}</label>
 
       <textarea
         value={value}
         rows={rows}
         onChange={(event) => onChange(event.target.value)}
         placeholder={placeholder}
-        className="mt-2 w-full resize-none rounded-2xl border border-white/10 bg-slate-950 px-4 py-3 text-sm leading-6 text-white outline-none transition placeholder:text-slate-500 focus:border-cyan-400/50"
+        className="mt-2 w-full resize-none rounded-2xl border border-slate-200 bg-white px-4 py-3 text-base leading-6 text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-teal-500 focus:ring-2 focus:ring-teal-100"
       />
     </div>
   );
@@ -982,11 +992,11 @@ function TextareaField({
 
 function MiniInfo({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
+    <div className="rounded-2xl border border-slate-200 bg-white p-4">
       <div className="text-[11px] uppercase tracking-wide text-slate-500">
         {label}
       </div>
-      <div className="mt-2 text-sm font-semibold text-white">{value}</div>
+      <div className="mt-2 text-base font-semibold text-slate-900">{value}</div>
     </div>
   );
 }
@@ -994,18 +1004,18 @@ function MiniInfo({ label, value }: { label: string; value: string }) {
 function StatusBadge({ status }: { status: CerAssignmentStatus }) {
   const className =
     status === "ACTIVE"
-      ? "border-emerald-400/20 bg-emerald-400/10 text-emerald-300"
+      ? "bg-emerald-100 text-emerald-700"
       : status === "DRAFT"
-        ? "border-amber-400/20 bg-amber-400/10 text-amber-300"
+        ? "bg-amber-100 text-amber-700"
         : status === "CLOSED"
-          ? "border-cyan-400/20 bg-cyan-400/10 text-cyan-300"
-          : "border-red-400/20 bg-red-400/10 text-red-300";
+          ? "bg-cyan-100 text-cyan-700"
+          : "bg-slate-100 text-slate-600";
 
   return (
     <span
-      className={`inline-flex rounded-full border px-3 py-1 text-xs font-medium ${className}`}
+      className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${className}`}
     >
-      {status}
+      {statusLabels[status] ?? status}
     </span>
   );
 }

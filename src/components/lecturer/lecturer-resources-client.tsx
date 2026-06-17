@@ -149,6 +149,28 @@ const fallbackResourceTypes: ResourceType[] = [
   "OTHER",
 ];
 
+const resourceTypeLabels: Record<ResourceType, string> = {
+  PDF: "PDF",
+  DOC: "Dokumen",
+  SLIDE: "Slide",
+  VIDEO: "Video",
+  LINK: "Link",
+  IMAGE: "Gambar",
+  QUIZ: "Kuis",
+  TEMPLATE: "Templat",
+  OTHER: "Lainnya",
+};
+
+const targetTypeLabels: Record<TargetType, string> = {
+  COURSE: "Mata Kuliah",
+  MODULE: "Modul",
+  UNIT: "Bagian",
+};
+
+function resourceTypeLabel(type: ResourceType): string {
+  return resourceTypeLabels[type] ?? type;
+}
+
 export default function LecturerResourcesClient({
   user,
   courseSlug,
@@ -239,7 +261,7 @@ export default function LecturerResourcesClient({
       const json = (await res.json()) as ApiResponse;
 
       if (!res.ok || !json.success) {
-        throw new Error(json.message || "Gagal mengambil resource");
+        throw new Error(json.message || "Gagal mengambil bahan belajar");
       }
 
       setCourse(json.data.course);
@@ -341,13 +363,13 @@ export default function LecturerResourcesClient({
       const json = await res.json();
 
       if (!res.ok || !json.success) {
-        throw new Error(json.message || "Gagal menyimpan resource");
+        throw new Error(json.message || "Gagal menyimpan bahan belajar");
       }
 
       setMessage(
         isEditing
-          ? "Resource berhasil diperbarui."
-          : "Resource berhasil dibuat.",
+          ? "Bahan belajar berhasil diperbarui."
+          : "Bahan belajar berhasil dibuat.",
       );
 
       resetForm();
@@ -360,7 +382,9 @@ export default function LecturerResourcesClient({
   }
 
   async function handleDelete(resource: ResourceItem) {
-    const confirmed = window.confirm(`Hapus resource "${resource.title}"?`);
+    const confirmed = window.confirm(
+      `Hapus bahan belajar "${resource.title}"?`,
+    );
 
     if (!confirmed) return;
 
@@ -379,10 +403,10 @@ export default function LecturerResourcesClient({
       const json = await res.json();
 
       if (!res.ok || !json.success) {
-        throw new Error(json.message || "Gagal menghapus resource");
+        throw new Error(json.message || "Gagal menghapus bahan belajar");
       }
 
-      setMessage("Resource berhasil dihapus.");
+      setMessage("Bahan belajar berhasil dihapus.");
       await fetchResources();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unknown error");
@@ -393,59 +417,61 @@ export default function LecturerResourcesClient({
 
   if (loading) {
     return (
-      <main className="space-y-6 p-6">
-        <section className="rounded-[28px] border border-white/10 bg-white/5 p-6 text-slate-300">
-          Memuat learning resource...
+      <div className="space-y-6">
+        <section className="rounded-3xl border border-slate-200 bg-white p-6 text-base text-slate-600">
+          Memuat...
         </section>
-      </main>
+      </div>
     );
   }
 
   if (error) {
     return (
-      <main className="space-y-6 p-6">
-        <section className="rounded-[28px] border border-red-400/20 bg-red-500/5 p-6 text-red-300">
-          Error: {error}
+      <div className="space-y-6">
+        <section className="rounded-3xl border border-rose-200 bg-rose-50 p-6 text-base text-rose-700">
+          {error}
         </section>
-      </main>
+      </div>
     );
   }
 
   return (
-    <main className="space-y-6 p-6">
-      <section className="rounded-[30px] border border-white/10 bg-white/5 p-6 shadow-[0_20px_60px_rgba(0,0,0,0.18)] backdrop-blur-xl">
+    <div className="space-y-6">
+      <div>
+        <Link
+          href={`/lecturer/courses/${courseSlug}`}
+          className="inline-flex items-center gap-2 text-base font-medium text-teal-700 transition hover:text-teal-800"
+        >
+          <ArrowLeft size={18} aria-hidden="true" />
+          Kembali ke Detail Mata Kuliah
+        </Link>
+      </div>
+
+      <section className="rounded-3xl bg-teal-600 p-6 text-white sm:p-8">
         <div className="flex flex-col gap-5 xl:flex-row xl:items-center xl:justify-between">
           <div className="min-w-0">
-            <Link
-              href={`/lecturer/courses/${courseSlug}`}
-              className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-4 py-2 text-sm text-slate-300 transition hover:bg-white/[0.08] hover:text-white"
-            >
-              <ArrowLeft size={16} />
-              Kembali ke Detail Course
-            </Link>
+            <span className="inline-flex items-center gap-2 rounded-full bg-white/15 px-3 py-1.5 text-sm">
+              <FileText size={16} aria-hidden="true" />
+              Pengelolaan Bahan Belajar
+            </span>
 
-            <div className="mt-5 inline-flex items-center gap-2 rounded-full border border-cyan-400/20 bg-cyan-400/10 px-4 py-2 text-sm text-cyan-200">
-              <FileText size={16} />
-              Lecturer Resource Management
-            </div>
-
-            <h1 className="mt-5 break-words text-3xl font-semibold text-white sm:text-4xl">
-              Kelola Learning Resource
+            <h1 className="mt-4 break-words text-2xl font-bold sm:text-3xl">
+              Kelola Bahan Belajar
             </h1>
 
-            <p className="mt-3 max-w-3xl text-sm leading-7 text-slate-300 sm:text-base">
-              Dosen mengelola resource pembelajaran berupa PDF, slide, video,
-              link, dokumen, template, gambar, atau bahan eksternal lain pada
-              level course, modul, atau micro-unit.
+            <p className="mt-3 max-w-3xl text-base text-teal-50">
+              Kelola bahan belajar berupa PDF, slide, video, link, dokumen,
+              templat, gambar, atau bahan dari luar pada tingkat mata kuliah,
+              modul, atau bagian.
             </p>
           </div>
 
-          <div className="rounded-[28px] border border-white/10 bg-slate-900/70 p-4">
-            <div className="text-sm text-slate-400">Course</div>
-            <div className="mt-1 font-semibold text-white">
-              {course?.title ?? "Course"}
+          <div className="rounded-2xl bg-white/15 p-4">
+            <div className="text-sm text-teal-50">Mata Kuliah</div>
+            <div className="mt-1 font-semibold">
+              {course?.title ?? "Mata Kuliah"}
             </div>
-            <div className="mt-1 text-sm text-slate-400">
+            <div className="mt-1 text-sm text-teal-50">
               {course?.code ?? "Tanpa kode"} · /{course?.slug}
             </div>
           </div>
@@ -454,40 +480,44 @@ export default function LecturerResourcesClient({
 
       <section className="grid gap-4 sm:grid-cols-2 2xl:grid-cols-6">
         <SummaryCard icon={FileText} label="Total" value={summary.total} />
-        <SummaryCard icon={BookOpen} label="Course" value={summary.course} />
-        <SummaryCard icon={Layers3} label="Module" value={summary.module} />
-        <SummaryCard icon={LinkIcon} label="Unit" value={summary.unit} />
+        <SummaryCard
+          icon={BookOpen}
+          label="Mata Kuliah"
+          value={summary.course}
+        />
+        <SummaryCard icon={Layers3} label="Modul" value={summary.module} />
+        <SummaryCard icon={LinkIcon} label="Bagian" value={summary.unit} />
         <SummaryCard icon={Video} label="Video" value={summary.video} />
         <SummaryCard icon={FileText} label="PDF" value={summary.pdf} />
       </section>
 
       <section className="grid gap-6 xl:grid-cols-[0.85fr_1.5fr]">
-        <div className="rounded-[30px] border border-white/10 bg-white/5 p-6 backdrop-blur-xl">
+        <div className="rounded-3xl border border-slate-200 bg-white p-6">
           <div className="mb-5">
-            <h2 className="text-lg font-semibold text-white">
-              {editingResource ? "Edit Resource" : "Tambah Resource Baru"}
+            <h2 className="text-lg font-bold text-slate-900">
+              {editingResource ? "Ubah Bahan Belajar" : "Tambah Bahan Belajar"}
             </h2>
-            <p className="mt-1 text-sm text-slate-400">
-              Tahap ini memakai URL/link dulu. Upload file fisik bisa dibuat
-              pada tahap lanjutan.
+            <p className="mt-1 text-base text-slate-600">
+              Untuk saat ini gunakan URL/link. Unggah berkas langsung bisa
+              dibuat pada tahap lanjutan.
             </p>
           </div>
 
           {message ? (
-            <div className="mb-4 rounded-2xl border border-emerald-400/20 bg-emerald-400/10 px-4 py-3 text-sm text-emerald-200">
+            <div className="mb-4 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
               {message}
             </div>
           ) : null}
 
           {error ? (
-            <div className="mb-4 rounded-2xl border border-red-400/20 bg-red-400/10 px-4 py-3 text-sm text-red-200">
+            <div className="mb-4 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
               {error}
             </div>
           ) : null}
 
           <form onSubmit={handleSubmit} className="grid gap-4">
             <FormField
-              label="Judul Resource"
+              label="Judul Bahan Belajar"
               value={form.title}
               onChange={(value) =>
                 setForm((prev) => ({ ...prev, title: value }))
@@ -497,8 +527,8 @@ export default function LecturerResourcesClient({
 
             <div className="grid gap-4 sm:grid-cols-2">
               <div>
-                <label className="text-sm font-medium text-slate-300">
-                  Tipe Resource
+                <label className="text-sm font-medium text-slate-700">
+                  Jenis Bahan
                 </label>
 
                 <select
@@ -509,18 +539,18 @@ export default function LecturerResourcesClient({
                       type: event.target.value as ResourceType,
                     }))
                   }
-                  className="mt-2 w-full rounded-2xl border border-white/10 bg-slate-950 px-4 py-3 text-sm text-white outline-none transition focus:border-cyan-400/50"
+                  className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-base text-slate-900 outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-100"
                 >
                   {resourceTypes.map((type) => (
                     <option key={type} value={type}>
-                      {type}
+                      {resourceTypeLabel(type)}
                     </option>
                   ))}
                 </select>
               </div>
 
               <FormField
-                label="Sort Order"
+                label="Urutan"
                 type="number"
                 value={form.sortOrder}
                 onChange={(value) =>
@@ -531,15 +561,15 @@ export default function LecturerResourcesClient({
             </div>
 
             <FormField
-              label="URL Resource"
+              label="URL Bahan Belajar"
               value={form.url}
               onChange={(value) => setForm((prev) => ({ ...prev, url: value }))}
               placeholder="https://drive.google.com/... atau /resources/file.pdf"
             />
 
             <div>
-              <label className="text-sm font-medium text-slate-300">
-                Target Resource
+              <label className="text-sm font-medium text-slate-700">
+                Target Bahan Belajar
               </label>
 
               <select
@@ -547,24 +577,24 @@ export default function LecturerResourcesClient({
                 onChange={(event) =>
                   updateTargetType(event.target.value as TargetType)
                 }
-                className="mt-2 w-full rounded-2xl border border-white/10 bg-slate-950 px-4 py-3 text-sm text-white outline-none transition focus:border-cyan-400/50"
+                className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-base text-slate-900 outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-100"
               >
-                <option value="COURSE">Course Level</option>
-                <option value="MODULE">Module Level</option>
-                <option value="UNIT">Micro-Unit Level</option>
+                <option value="COURSE">Tingkat Mata Kuliah</option>
+                <option value="MODULE">Tingkat Modul</option>
+                <option value="UNIT">Tingkat Bagian</option>
               </select>
             </div>
 
             {(form.targetType === "MODULE" || form.targetType === "UNIT") && (
               <div>
-                <label className="text-sm font-medium text-slate-300">
+                <label className="text-sm font-medium text-slate-700">
                   Pilih Modul
                 </label>
 
                 <select
                   value={form.moduleId}
                   onChange={(event) => updateModuleId(event.target.value)}
-                  className="mt-2 w-full rounded-2xl border border-white/10 bg-slate-950 px-4 py-3 text-sm text-white outline-none transition focus:border-cyan-400/50"
+                  className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-base text-slate-900 outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-100"
                 >
                   <option value="">Pilih modul</option>
                   {modules.map((courseModule) => (
@@ -578,8 +608,8 @@ export default function LecturerResourcesClient({
 
             {form.targetType === "UNIT" && (
               <div>
-                <label className="text-sm font-medium text-slate-300">
-                  Pilih Micro-Unit
+                <label className="text-sm font-medium text-slate-700">
+                  Pilih Bagian
                 </label>
 
                 <select
@@ -590,9 +620,9 @@ export default function LecturerResourcesClient({
                       microUnitId: event.target.value,
                     }))
                   }
-                  className="mt-2 w-full rounded-2xl border border-white/10 bg-slate-950 px-4 py-3 text-sm text-white outline-none transition focus:border-cyan-400/50"
+                  className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-base text-slate-900 outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-100"
                 >
-                  <option value="">Pilih micro-unit</option>
+                  <option value="">Pilih bagian</option>
                   {selectedModuleUnits.map((unit) => (
                     <option key={unit.id} value={unit.id}>
                       {unit.order}. {unit.title} — {unit.unitType}
@@ -603,8 +633,8 @@ export default function LecturerResourcesClient({
             )}
 
             <div>
-              <label className="text-sm font-medium text-slate-300">
-                Deskripsi Resource
+              <label className="text-sm font-medium text-slate-700">
+                Deskripsi Bahan Belajar
               </label>
 
               <textarea
@@ -616,8 +646,8 @@ export default function LecturerResourcesClient({
                   }))
                 }
                 rows={5}
-                placeholder="Tuliskan keterangan singkat resource..."
-                className="mt-2 w-full resize-none rounded-2xl border border-white/10 bg-slate-950 px-4 py-3 text-sm leading-6 text-white outline-none transition placeholder:text-slate-500 focus:border-cyan-400/50"
+                placeholder="Tuliskan keterangan singkat bahan belajar..."
+                className="mt-2 w-full resize-none rounded-2xl border border-slate-200 bg-white px-4 py-3 text-base leading-6 text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-teal-500 focus:ring-2 focus:ring-teal-100"
               />
             </div>
 
@@ -625,48 +655,58 @@ export default function LecturerResourcesClient({
               <button
                 type="submit"
                 disabled={submitting}
-                className="inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-teal-400 via-cyan-400 to-sky-400 px-5 py-3 text-sm font-semibold text-slate-950 transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
+                className="inline-flex items-center gap-2 rounded-2xl bg-teal-600 px-5 py-3 text-base font-semibold text-white transition hover:bg-teal-700 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {submitting ? (
-                  <Loader2 size={16} className="animate-spin" />
+                  <Loader2
+                    size={18}
+                    className="animate-spin"
+                    aria-hidden="true"
+                  />
                 ) : (
-                  <Plus size={16} />
+                  <Plus size={18} aria-hidden="true" />
                 )}
-                {editingResource ? "Simpan Resource" : "Tambah Resource"}
+                {editingResource
+                  ? "Simpan Bahan Belajar"
+                  : "Tambah Bahan Belajar"}
               </button>
 
               {editingResource ? (
                 <button
                   type="button"
                   onClick={resetForm}
-                  className="rounded-2xl border border-white/10 bg-white/[0.04] px-5 py-3 text-sm text-slate-300 transition hover:bg-white/[0.08] hover:text-white"
+                  className="rounded-2xl border border-slate-200 px-4 py-2.5 text-base font-medium text-slate-700 transition hover:bg-slate-50"
                 >
-                  Batal Edit
+                  Batal Ubah
                 </button>
               ) : null}
             </div>
           </form>
         </div>
 
-        <div className="rounded-[30px] border border-white/10 bg-white/5 p-6 backdrop-blur-xl">
+        <div className="rounded-3xl border border-slate-200 bg-white p-6">
           <div className="mb-5 flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
             <div>
-              <h2 className="text-lg font-semibold text-white">
-                Daftar Resource
+              <h2 className="text-lg font-bold text-slate-900">
+                Daftar Bahan Belajar
               </h2>
-              <p className="mt-1 text-sm text-slate-400">
-                Cari, filter, edit, dan hapus learning resource.
+              <p className="mt-1 text-base text-slate-600">
+                Cari, saring, ubah, dan hapus bahan belajar.
               </p>
             </div>
 
             <div className="flex flex-col gap-3 sm:flex-row">
-              <div className="flex items-center gap-2 rounded-2xl border border-white/10 bg-slate-950 px-4 py-3">
-                <Search size={16} className="text-slate-500" />
+              <div className="flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-3">
+                <Search
+                  size={16}
+                  className="text-slate-400"
+                  aria-hidden="true"
+                />
                 <input
                   value={q}
                   onChange={(event) => setQ(event.target.value)}
-                  placeholder="Cari resource..."
-                  className="w-full bg-transparent text-sm text-white outline-none placeholder:text-slate-500"
+                  placeholder="Cari bahan belajar..."
+                  className="w-full bg-transparent text-base text-slate-900 outline-none placeholder:text-slate-400"
                 />
               </div>
 
@@ -675,12 +715,12 @@ export default function LecturerResourcesClient({
                 onChange={(event) =>
                   setTypeFilter(event.target.value as "ALL" | ResourceType)
                 }
-                className="rounded-2xl border border-white/10 bg-slate-950 px-4 py-3 text-sm text-white outline-none"
+                className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-base text-slate-900 outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-100"
               >
-                <option value="ALL">Semua Tipe</option>
+                <option value="ALL">Semua Jenis</option>
                 {resourceTypes.map((type) => (
                   <option key={type} value={type}>
-                    {type}
+                    {resourceTypeLabel(type)}
                   </option>
                 ))}
               </select>
@@ -690,28 +730,28 @@ export default function LecturerResourcesClient({
                 onChange={(event) =>
                   setTargetFilter(event.target.value as "ALL" | TargetType)
                 }
-                className="rounded-2xl border border-white/10 bg-slate-950 px-4 py-3 text-sm text-white outline-none"
+                className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-base text-slate-900 outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-100"
               >
                 <option value="ALL">Semua Target</option>
-                <option value="COURSE">Course</option>
-                <option value="MODULE">Module</option>
-                <option value="UNIT">Unit</option>
+                <option value="COURSE">Mata Kuliah</option>
+                <option value="MODULE">Modul</option>
+                <option value="UNIT">Bagian</option>
               </select>
 
               <button
                 type="button"
                 onClick={fetchResources}
-                className="inline-flex items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-slate-300 transition hover:bg-white/[0.08] hover:text-white"
+                className="inline-flex items-center justify-center gap-2 rounded-2xl border border-slate-200 px-4 py-2.5 text-base font-medium text-slate-700 transition hover:bg-slate-50"
               >
-                <RefreshCcw size={16} />
-                Refresh
+                <RefreshCcw size={16} aria-hidden="true" />
+                Muat ulang
               </button>
             </div>
           </div>
 
           {filteredResources.length === 0 ? (
-            <div className="rounded-2xl border border-white/10 bg-slate-900/70 p-5 text-sm text-slate-300">
-              Belum ada resource sesuai filter.
+            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5 text-base text-slate-600">
+              Belum ada bahan belajar sesuai saringan.
             </div>
           ) : (
             <div className="grid gap-4">
@@ -727,7 +767,7 @@ export default function LecturerResourcesClient({
           )}
         </div>
       </section>
-    </main>
+    </div>
   );
 }
 
@@ -749,33 +789,33 @@ function ResourceCard({
   const targetType = getResourceTargetType(resource);
 
   return (
-    <div className="rounded-[24px] border border-white/10 bg-slate-900/70 p-5">
+    <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
       <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap gap-2">
             <ResourceTypeBadge type={resource.type} />
 
-            <span className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-xs text-slate-300">
-              {targetType}
+            <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">
+              {targetTypeLabels[targetType]}
             </span>
 
             {resource.sortOrder ? (
-              <span className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-xs text-slate-300">
-                Order {resource.sortOrder}
+              <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">
+                Urutan {resource.sortOrder}
               </span>
             ) : null}
           </div>
 
-          <h3 className="mt-4 break-words text-xl font-semibold text-white">
+          <h3 className="mt-4 break-words text-xl font-bold text-slate-900">
             {resource.title}
           </h3>
 
-          <p className="mt-3 break-words text-sm leading-7 text-slate-300">
-            {resource.description ?? "Belum ada deskripsi resource."}
+          <p className="mt-3 break-words text-base leading-7 text-slate-600">
+            {resource.description ?? "Belum ada deskripsi bahan belajar."}
           </p>
 
-          <div className="mt-4 rounded-2xl border border-white/10 bg-slate-950/70 p-4">
-            <div className="text-xs uppercase tracking-wide text-slate-500">
+          <div className="mt-4 rounded-2xl border border-slate-200 bg-white p-4">
+            <div className="text-xs font-semibold uppercase tracking-wide text-slate-400">
               URL
             </div>
 
@@ -783,20 +823,20 @@ function ResourceCard({
               href={resource.url}
               target="_blank"
               rel="noreferrer"
-              className="mt-2 inline-flex max-w-full items-center gap-2 break-all text-sm text-cyan-300 hover:text-cyan-200"
+              className="mt-2 inline-flex max-w-full items-center gap-2 break-all text-base font-medium text-teal-700 hover:text-teal-800"
             >
               {resource.url}
-              <ExternalLink size={14} />
+              <ExternalLink size={16} aria-hidden="true" />
             </a>
           </div>
 
           <div className="mt-4 grid gap-3 sm:grid-cols-2">
             <MiniInfo
-              label="Module"
-              value={resource.module?.title ?? "Course level"}
+              label="Modul"
+              value={resource.module?.title ?? "Tingkat mata kuliah"}
             />
             <MiniInfo
-              label="Micro-Unit"
+              label="Bagian"
               value={resource.microUnit?.title ?? "Tidak spesifik"}
             />
           </div>
@@ -806,18 +846,18 @@ function ResourceCard({
           <button
             type="button"
             onClick={onEdit}
-            className="inline-flex items-center gap-2 rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-2 text-sm text-slate-300 transition hover:bg-white/[0.08] hover:text-white"
+            className="inline-flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-base font-medium text-slate-700 transition hover:bg-slate-50"
           >
-            <Pencil size={15} />
-            Edit
+            <Pencil size={16} aria-hidden="true" />
+            Ubah
           </button>
 
           <button
             type="button"
             onClick={onDelete}
-            className="inline-flex items-center gap-2 rounded-2xl border border-red-400/20 bg-red-400/10 px-4 py-2 text-sm text-red-300 transition hover:bg-red-400/15"
+            className="inline-flex items-center gap-2 rounded-2xl border border-rose-200 px-4 py-2.5 text-base font-medium text-rose-600 transition hover:bg-rose-50"
           >
-            <Trash2 size={15} />
+            <Trash2 size={16} aria-hidden="true" />
             Hapus
           </button>
         </div>
@@ -836,14 +876,14 @@ function SummaryCard({
   value: number;
 }) {
   return (
-    <div className="rounded-[26px] border border-white/10 bg-white/[0.04] p-5 backdrop-blur-xl">
+    <div className="rounded-2xl border border-slate-200 bg-white p-5">
       <div className="flex items-start justify-between gap-3">
         <div>
-          <div className="text-sm text-slate-400">{label}</div>
-          <div className="mt-2 text-3xl font-semibold text-white">{value}</div>
+          <div className="text-sm text-slate-600">{label}</div>
+          <div className="mt-2 text-3xl font-bold text-slate-900">{value}</div>
         </div>
 
-        <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-cyan-400/10 text-cyan-300">
+        <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-teal-100 text-teal-700">
           <Icon size={20} />
         </div>
       </div>
@@ -866,14 +906,14 @@ function FormField({
 }) {
   return (
     <div>
-      <label className="text-sm font-medium text-slate-300">{label}</label>
+      <label className="text-sm font-medium text-slate-700">{label}</label>
 
       <input
         type={type}
         value={value}
         onChange={(event) => onChange(event.target.value)}
         placeholder={placeholder}
-        className="mt-2 w-full rounded-2xl border border-white/10 bg-slate-950 px-4 py-3 text-sm text-white outline-none transition placeholder:text-slate-500 focus:border-cyan-400/50"
+        className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-base text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-teal-500 focus:ring-2 focus:ring-teal-100"
       />
     </div>
   );
@@ -881,11 +921,11 @@ function FormField({
 
 function MiniInfo({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
-      <div className="text-[11px] uppercase tracking-wide text-slate-500">
+    <div className="rounded-2xl border border-slate-200 bg-white p-4">
+      <div className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">
         {label}
       </div>
-      <div className="mt-2 text-sm font-semibold text-white">{value}</div>
+      <div className="mt-2 text-base font-semibold text-slate-900">{value}</div>
     </div>
   );
 }
@@ -893,16 +933,16 @@ function MiniInfo({ label, value }: { label: string; value: string }) {
 function ResourceTypeBadge({ type }: { type: ResourceType }) {
   const className =
     type === "PDF"
-      ? "border-red-400/20 bg-red-400/10 text-red-300"
+      ? "bg-rose-100 text-rose-700"
       : type === "VIDEO"
-        ? "border-violet-400/20 bg-violet-400/10 text-violet-300"
+        ? "bg-violet-100 text-violet-700"
         : type === "SLIDE"
-          ? "border-amber-400/20 bg-amber-400/10 text-amber-300"
+          ? "bg-amber-100 text-amber-700"
           : type === "IMAGE"
-            ? "border-emerald-400/20 bg-emerald-400/10 text-emerald-300"
+            ? "bg-emerald-100 text-emerald-700"
             : type === "DOC"
-              ? "border-sky-400/20 bg-sky-400/10 text-sky-300"
-              : "border-cyan-400/20 bg-cyan-400/10 text-cyan-300";
+              ? "bg-sky-100 text-sky-700"
+              : "bg-teal-100 text-teal-700";
 
   const Icon =
     type === "PDF"
@@ -919,10 +959,10 @@ function ResourceTypeBadge({ type }: { type: ResourceType }) {
 
   return (
     <span
-      className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium ${className}`}
+      className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold ${className}`}
     >
-      <Icon size={13} />
-      {type}
+      <Icon size={14} aria-hidden="true" />
+      {resourceTypeLabel(type)}
     </span>
   );
 }

@@ -6,205 +6,202 @@ import { usePathname } from "next/navigation";
 import clsx from "clsx";
 import {
   BookOpen,
-  ChevronRight,
-  ClipboardCheck,
-  FolderKanban,
-  LayoutDashboard,
-  LineChart,
-  MessageSquareMore,
-  ShieldCheck,
-  Sparkles,
-  UserSquare2,
+  GraduationCap,
+  Home,
+  LifeBuoy,
+  type LucideIcon,
 } from "lucide-react";
 
-const navItems = [
-  { label: "Dashboard", href: "/student/dashboard", icon: LayoutDashboard },
-  { label: "Modul", href: "/student/modules", icon: BookOpen },
-  { label: "Tugas CER", href: "/student/cer-tasks", icon: ClipboardCheck },
-  { label: "Forum", href: "/student/forum", icon: MessageSquareMore },
-  { label: "Project", href: "/student/projects", icon: FolderKanban },
-  { label: "Portofolio", href: "/student/portfolio", icon: UserSquare2 },
-  { label: "Analytics", href: "/student/analytics", icon: LineChart },
-  { label: "Panduan AI", href: "/guide", icon: ShieldCheck },
+/**
+ * Navigasi utama mahasiswa.
+ * Hanya berisi tujuan yang benar-benar tersedia agar tidak ada link rusak (404).
+ * CER, Forum, Project, dan Portofolio dibuka dari dalam masing-masing Mata Kuliah.
+ */
+const navItems: Array<{
+  label: string;
+  href: string;
+  icon: LucideIcon;
+  description: string;
+}> = [
+  {
+    label: "Beranda",
+    href: "/student/dashboard",
+    icon: Home,
+    description: "Ringkasan belajar Anda",
+  },
+  {
+    label: "Mata Kuliah",
+    href: "/student/courses",
+    icon: BookOpen,
+    description: "Kelas yang Anda ikuti",
+  },
+  {
+    label: "Modul Belajar",
+    href: "/student/modules",
+    icon: GraduationCap,
+    description: "Materi langkah demi langkah",
+  },
 ];
 
 export default function StudentSidebar({
   user,
-  open,
   isMobile,
-  onToggle,
+  open,
   onClose,
+  onOpenHelp,
 }: {
   user: {
     firstName: string;
     lastName: string;
     email: string;
   };
-  open: boolean;
   isMobile: boolean;
-  onToggle: () => void;
+  open: boolean;
   onClose: () => void;
+  onOpenHelp: () => void;
 }) {
-  void onToggle;
-
   const pathname = usePathname();
-  const initials = `${user.firstName?.[0] ?? ""}${user.lastName?.[0] ?? ""}`;
+  const initials =
+    `${user.firstName?.[0] ?? ""}${user.lastName?.[0] ?? ""}`.toUpperCase();
+
+  function isActive(href: string) {
+    if (href === "/student/dashboard") {
+      return pathname === href;
+    }
+    return pathname === href || pathname.startsWith(`${href}/`);
+  }
 
   return (
     <>
+      {/* Lapisan gelap saat menu terbuka di layar kecil */}
       {isMobile && (
         <div
           className={clsx(
-            "fixed inset-0 z-40 bg-slate-150/90 backdrop-blur-sm transition",
+            "fixed inset-0 z-40 bg-slate-900/40 transition lg:hidden",
             open
               ? "pointer-events-auto opacity-100"
               : "pointer-events-none opacity-0",
           )}
           onClick={onClose}
+          aria-hidden="true"
         />
       )}
 
       <aside
+        aria-label="Menu utama"
         className={clsx(
-          "fixed left-0 top-0 z-50 h-dvh bg-slate-950/92 backdrop-blur-xl transition-all duration-300",
-          "shadow-[inset_-1px_0_0_rgba(255,255,255,0.03),18px_0_40px_rgba(0,0,0,0.16)]",
+          "fixed left-0 top-0 z-50 flex h-dvh w-70 flex-col border-r border-slate-200 bg-white transition-transform duration-300",
           isMobile
-            ? clsx(
-                "w-[304px] max-w-[88vw]",
-                open ? "translate-x-0" : "-translate-x-full",
-              )
-            : open
-              ? "w-[284px]"
-              : "w-[96px]",
+            ? open
+              ? "translate-x-0 shadow-2xl"
+              : "-translate-x-full"
+            : "translate-x-0",
         )}
       >
-        <div className="pointer-events-none absolute right-0 top-0 h-full w-px bg-gradient-to-b from-transparent via-white/10 to-transparent" />
-
-        <div className="flex h-full min-h-0 flex-col overflow-hidden">
-          <div className="flex shrink-0 items-center justify-between px-4 pb-4 pt-5">
-            {open ? (
-              <div className="min-w-0">
-                <div className="truncate text-sm font-semibold uppercase tracking-[0.35em] text-teal-300">
-                  AI-C☰LM
-                </div>
-                <div className="mt-1 text-[11px] text-slate-400">
-                  Student Workspace
-                </div>
-              </div>
-            ) : (
-              <div className="mx-auto flex h-11 w-11 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.04] text-sm font-semibold text-teal-300">
-                AI
-              </div>
-            )}
+        {/* Logo */}
+        <div className="flex shrink-0 items-center gap-3 border-b border-slate-200 px-5 py-5">
+          <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-teal-600 text-base font-bold text-white">
+            AI
           </div>
-
-          <div className="shrink-0 px-4">
-            <div className="overflow-hidden rounded-[24px] border border-white/10 bg-gradient-to-br from-teal-400/10 via-cyan-400/5 to-transparent p-3">
-              {open ? (
-                <div className="flex items-center gap-3">
-                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-teal-400 via-cyan-400 to-sky-400 text-sm font-semibold text-slate-950">
-                    {initials || "U"}
-                  </div>
-
-                  <div className="min-w-0">
-                    <div className="truncate text-sm font-semibold text-white">
-                      {user.firstName} {user.lastName}
-                    </div>
-                    <div className="mt-1 truncate text-xs text-slate-400">
-                      {user.email}
-                    </div>
-                    <div className="mt-2 inline-flex rounded-full border border-teal-400/20 bg-teal-400/10 px-2.5 py-1 text-[11px] font-medium text-teal-300">
-                      Mahasiswa Aktif
-                    </div>
-                  </div>
-                </div>
-              ) : (
-                <div className="flex justify-center">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-teal-400 via-cyan-400 to-sky-400 text-sm font-semibold text-slate-950">
-                    {initials || "U"}
-                  </div>
-                </div>
-              )}
+          <div className="min-w-0">
+            <div className="truncate text-base font-bold text-slate-900">
+              AI-CELM
+            </div>
+            <div className="truncate text-sm text-slate-500">
+              Ruang Belajar Mahasiswa
             </div>
           </div>
+        </div>
 
-          <div className="mt-6 min-h-0 flex-1 px-3">
-            <nav className="h-full overflow-y-auto pr-1 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
-              <div className="space-y-2">
-                {navItems.map((item) => {
-                  const Icon = item.icon;
-                  const active = pathname === item.href;
+        {/* Kartu profil */}
+        <div className="shrink-0 px-4 pt-4">
+          <div className="flex items-center gap-3 rounded-2xl bg-slate-50 p-3">
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-teal-100 text-base font-bold text-teal-700">
+              {initials || "M"}
+            </div>
+            <div className="min-w-0">
+              <div className="truncate text-base font-semibold text-slate-900">
+                {user.firstName} {user.lastName}
+              </div>
+              <div className="truncate text-sm text-slate-500">
+                {user.email}
+              </div>
+            </div>
+          </div>
+        </div>
 
-                  return (
-                    <Link
-                      key={item.href}
-                      href={item.href}
-                      onClick={() => {
-                        if (isMobile) onClose();
-                      }}
+        {/* Navigasi */}
+        <nav
+          className="mt-4 min-h-0 flex-1 overflow-y-auto px-3"
+          aria-label="Navigasi halaman"
+        >
+          <p className="px-2 pb-2 text-xs font-semibold uppercase tracking-wide text-slate-400">
+            Menu
+          </p>
+          <ul className="space-y-1.5">
+            {navItems.map((item) => {
+              const Icon = item.icon;
+              const active = isActive(item.href);
+
+              return (
+                <li key={item.href}>
+                  <Link
+                    href={item.href}
+                    onClick={() => {
+                      if (isMobile) onClose();
+                    }}
+                    aria-current={active ? "page" : undefined}
+                    className={clsx(
+                      "flex items-center gap-3 rounded-2xl px-3 py-3 transition",
+                      active
+                        ? "bg-teal-50 text-teal-800"
+                        : "text-slate-700 hover:bg-slate-100",
+                    )}
+                  >
+                    <span
                       className={clsx(
-                        "group flex items-center rounded-2xl transition",
-                        open
-                          ? "gap-3 px-4 py-3 text-sm"
-                          : "justify-center px-0 py-3",
+                        "flex h-11 w-11 shrink-0 items-center justify-center rounded-xl",
                         active
-                          ? "border border-teal-300/15 bg-gradient-to-r from-teal-400/12 to-cyan-400/8 text-white"
-                          : "border border-transparent text-slate-300 hover:border-white/10 hover:bg-white/[0.04] hover:text-white",
+                          ? "bg-teal-600 text-white"
+                          : "bg-slate-100 text-slate-500",
                       )}
                     >
-                      <div
-                        className={clsx(
-                          "flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl transition",
-                          active
-                            ? "bg-teal-400/10 text-teal-300"
-                            : "bg-white/[0.04] text-slate-400 group-hover:text-teal-300",
-                        )}
-                      >
-                        <Icon size={18} />
-                      </div>
+                      <Icon size={22} aria-hidden="true" />
+                    </span>
+                    <span className="min-w-0">
+                      <span className="block truncate text-base font-semibold">
+                        {item.label}
+                      </span>
+                      <span className="block truncate text-sm text-slate-500">
+                        {item.description}
+                      </span>
+                    </span>
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+        </nav>
 
-                      {open ? (
-                        <>
-                          <span className="min-w-0 flex-1 truncate">
-                            {item.label}
-                          </span>
-                          <ChevronRight
-                            size={14}
-                            className="shrink-0 text-slate-500"
-                          />
-                        </>
-                      ) : null}
-                    </Link>
-                  );
-                })}
-              </div>
-            </nav>
-          </div>
-
-          <div className="shrink-0 px-4 pb-5 pt-4">
-            <div className="overflow-hidden rounded-[22px] border border-white/10 bg-white/[0.03] p-4">
-              {open ? (
-                <div className="flex items-start gap-3">
-                  <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl bg-teal-400/10 text-teal-300">
-                    <Sparkles size={16} />
-                  </div>
-                  <div className="min-w-0">
-                    <div className="text-sm font-semibold text-white">
-                      Weekly Focus
-                    </div>
-                    <div className="mt-1 text-xs leading-6 text-slate-400">
-                      Selesaikan revisi CER dan unggah bukti project civic
-                      action minggu ini.
-                    </div>
-                  </div>
-                </div>
-              ) : (
-                <div className="flex justify-center text-teal-300">
-                  <Sparkles size={18} />
-                </div>
-              )}
-            </div>
-          </div>
+        {/* Tombol bantuan */}
+        <div className="shrink-0 border-t border-slate-200 p-4">
+          <button
+            type="button"
+            onClick={onOpenHelp}
+            className="flex w-full items-center gap-3 rounded-2xl bg-amber-50 px-3 py-3 text-left transition hover:bg-amber-100"
+          >
+            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-amber-500 text-white">
+              <LifeBuoy size={22} aria-hidden="true" />
+            </span>
+            <span className="min-w-0">
+              <span className="block text-base font-semibold text-amber-900">
+                Butuh Bantuan?
+              </span>
+              <span className="block truncate text-sm text-amber-700">
+                Panduan singkat memakai aplikasi
+              </span>
+            </span>
+          </button>
         </div>
       </aside>
     </>

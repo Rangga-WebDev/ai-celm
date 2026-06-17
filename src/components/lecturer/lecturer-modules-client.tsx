@@ -6,11 +6,8 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import {
   ArrowLeft,
-  BookOpen,
-  CheckCircle2,
-  Eye,
-  EyeOff,
   Layers3,
+  LibraryBig,
   Loader2,
   Lock,
   Pencil,
@@ -18,7 +15,6 @@ import {
   RefreshCcw,
   Search,
   Trash2,
-  Unlock,
 } from "lucide-react";
 
 type ModuleStatus = "DRAFT" | "PUBLISHED" | "ARCHIVED";
@@ -115,7 +111,33 @@ const initialForm: FormState = {
   masteryThreshold: "75",
 };
 
-const moduleStatusOptions: ModuleStatus[] = ["DRAFT", "PUBLISHED", "ARCHIVED"];
+const moduleStatusOptions: { value: ModuleStatus; label: string }[] = [
+  { value: "DRAFT", label: "Draf (belum tampil)" },
+  { value: "PUBLISHED", label: "Terbit (tampil ke mahasiswa)" },
+  { value: "ARCHIVED", label: "Arsip" },
+];
+
+function statusLabel(status: ModuleStatus) {
+  switch (status) {
+    case "PUBLISHED":
+      return "Terbit";
+    case "ARCHIVED":
+      return "Arsip";
+    default:
+      return "Draf";
+  }
+}
+
+function statusBadgeClass(status: ModuleStatus) {
+  switch (status) {
+    case "PUBLISHED":
+      return "bg-emerald-100 text-emerald-700";
+    case "ARCHIVED":
+      return "bg-slate-100 text-slate-600";
+    default:
+      return "bg-amber-100 text-amber-700";
+  }
+}
 
 function slugify(value: string) {
   return value
@@ -171,8 +193,6 @@ export default function LecturerModulesClient({
       published: modules.filter((module) => module.status === "PUBLISHED")
         .length,
       draft: modules.filter((module) => module.status === "DRAFT").length,
-      archived: modules.filter((module) => module.status === "ARCHIVED").length,
-      locked: modules.filter((module) => module.isLocked).length,
       units: modules.reduce((sum, module) => sum + module._count.units, 0),
     };
   }, [modules]);
@@ -192,7 +212,7 @@ export default function LecturerModulesClient({
       const json = (await res.json()) as ApiResponse;
 
       if (!res.ok || !json.success) {
-        throw new Error(json.message || "Gagal mengambil modul course");
+        throw new Error(json.message || "Gagal mengambil modul");
       }
 
       setCourse(json.data.course);
@@ -254,7 +274,7 @@ export default function LecturerModulesClient({
 
       const payload = {
         title: form.title.trim(),
-        slug: form.slug.trim(),
+        slug: (form.slug || slugify(form.title)).trim(),
         description: form.description.trim(),
         order: form.order ? Number(form.order) : undefined,
         estimatedMinutes: form.estimatedMinutes
@@ -300,7 +320,7 @@ export default function LecturerModulesClient({
 
   async function handleDelete(module: ModuleItem) {
     const confirmed = window.confirm(
-      `Hapus modul "${module.title}"? Semua micro-unit dan progress yang terkait dapat ikut terhapus.`,
+      `Hapus modul "${module.title}"? Semua bagian dan progres terkait dapat ikut terhapus.`,
     );
 
     if (!confirmed) return;
@@ -334,182 +354,180 @@ export default function LecturerModulesClient({
 
   if (loading) {
     return (
-      <main className="space-y-6 p-6">
-        <section className="rounded-[28px] border border-white/10 bg-white/5 p-6 text-slate-300">
-          Memuat modul course...
-        </section>
-      </main>
+      <div className="rounded-3xl border border-slate-200 bg-white p-6 text-base text-slate-600">
+        Memuat modul...
+      </div>
     );
   }
 
-  if (error) {
+  if (error && !course) {
     return (
-      <main className="space-y-6 p-6">
-        <section className="rounded-[28px] border border-red-400/20 bg-red-500/5 p-6 text-red-300">
-          Error: {error}
-        </section>
-      </main>
+      <div className="rounded-3xl border border-rose-200 bg-rose-50 p-6 text-base text-rose-700">
+        Terjadi kesalahan: {error}
+      </div>
     );
   }
+
+  const inputClass =
+    "mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-base text-slate-900 outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-100";
 
   return (
-    <main className="space-y-6 p-6">
-      <section className="rounded-[30px] border border-white/10 bg-white/5 p-6 shadow-[0_20px_60px_rgba(0,0,0,0.18)] backdrop-blur-xl">
-        <div className="flex flex-col gap-5 xl:flex-row xl:items-center xl:justify-between">
-          <div className="min-w-0">
-            <Link
-              href={`/lecturer/courses/${courseSlug}`}
-              className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-4 py-2 text-sm text-slate-300 transition hover:bg-white/[0.08] hover:text-white"
-            >
-              <ArrowLeft size={16} />
-              Kembali ke Detail Course
-            </Link>
+    <div className="space-y-6">
+      <Link
+        href={`/lecturer/courses/${courseSlug}`}
+        className="inline-flex items-center gap-2 text-base font-medium text-teal-700 hover:text-teal-800"
+      >
+        <ArrowLeft size={18} aria-hidden="true" />
+        Kembali ke Kelas
+      </Link>
 
-            <div className="mt-5 inline-flex items-center gap-2 rounded-full border border-teal-400/20 bg-teal-400/10 px-4 py-2 text-sm text-teal-200">
-              <Layers3 size={16} />
-              Lecturer Module Management
-            </div>
-
-            <h1 className="mt-5 break-words text-3xl font-semibold text-white sm:text-4xl">
-              Kelola Modul
-            </h1>
-
-            <p className="mt-3 max-w-3xl text-sm leading-7 text-slate-300 sm:text-base">
-              Dosen mengelola struktur modul pada course ini. Micro-unit,
-              resource, CER, forum, dan project akan dikelola pada tahap
-              berikutnya.
-            </p>
-          </div>
-
-          <div className="rounded-[28px] border border-white/10 bg-slate-900/70 p-4">
-            <div className="text-sm text-slate-400">Course</div>
-            <div className="mt-1 font-semibold text-white">
-              {course?.title ?? "Course"}
-            </div>
-            <div className="mt-1 text-sm text-slate-400">
-              {course?.code ?? "Tanpa kode"} · /{course?.slug}
-            </div>
-          </div>
+      {/* Header */}
+      <section className="overflow-hidden rounded-3xl bg-teal-600 p-6 text-white sm:p-8">
+        <div className="inline-flex items-center gap-2 rounded-full bg-white/15 px-3 py-1.5 text-sm font-medium">
+          <LibraryBig size={16} aria-hidden="true" />
+          Kelola Modul
         </div>
+        <h1 className="mt-4 text-2xl font-bold sm:text-3xl">
+          {course?.title ?? "Modul Kelas"}
+        </h1>
+        <p className="mt-3 max-w-2xl text-base leading-7 text-teal-50">
+          Susun modul pembelajaran, lalu buka tiap modul untuk menambahkan
+          bagian materinya.
+        </p>
       </section>
 
-      <section className="grid gap-4 sm:grid-cols-2 2xl:grid-cols-6">
+      {/* Ringkasan */}
+      <section className="grid grid-cols-2 gap-4 sm:grid-cols-4">
         <SummaryCard
-          icon={BookOpen}
+          icon={LibraryBig}
           label="Total Modul"
           value={summary.total}
         />
-        <SummaryCard icon={Eye} label="Published" value={summary.published} />
-        <SummaryCard icon={EyeOff} label="Draft" value={summary.draft} />
+        <SummaryCard label="Terbit" value={summary.published} />
+        <SummaryCard label="Draf" value={summary.draft} />
         <SummaryCard
-          icon={CheckCircle2}
-          label="Archived"
-          value={summary.archived}
+          icon={Layers3}
+          label="Total Bagian"
+          value={summary.units}
         />
-        <SummaryCard icon={Lock} label="Locked" value={summary.locked} />
-        <SummaryCard icon={Layers3} label="Total Unit" value={summary.units} />
       </section>
 
-      <section className="grid gap-6 xl:grid-cols-[0.85fr_1.5fr]">
-        <div className="rounded-[30px] border border-white/10 bg-white/5 p-6 backdrop-blur-xl">
-          <div className="mb-5">
-            <h2 className="text-lg font-semibold text-white">
-              {editingModule ? "Edit Modul" : "Tambah Modul Baru"}
-            </h2>
-            <p className="mt-1 text-sm text-slate-400">
-              Modul adalah tahap besar pembelajaran. Isi unit kecil akan dibuat
-              pada Tahap 4C.
-            </p>
-          </div>
+      <section className="grid gap-6 xl:grid-cols-[0.9fr_1.4fr]">
+        {/* Form */}
+        <div className="rounded-3xl border border-slate-200 bg-white p-6">
+          <h2 className="text-xl font-bold text-slate-900">
+            {editingModule ? "Ubah Modul" : "Tambah Modul Baru"}
+          </h2>
+          <p className="mt-1 text-base text-slate-600">
+            Modul adalah tahap besar pembelajaran. Isi bagian kecil dilakukan di
+            tiap modul.
+          </p>
 
           {message ? (
-            <div className="mb-4 rounded-2xl border border-emerald-400/20 bg-emerald-400/10 px-4 py-3 text-sm text-emerald-200">
+            <div className="mt-4 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-base text-emerald-700">
               {message}
             </div>
           ) : null}
 
           {error ? (
-            <div className="mb-4 rounded-2xl border border-red-400/20 bg-red-400/10 px-4 py-3 text-sm text-red-200">
+            <div className="mt-4 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-base text-rose-700">
               {error}
             </div>
           ) : null}
 
-          <form onSubmit={handleSubmit} className="grid gap-4">
-            <FormField
-              label="Judul Modul"
-              value={form.title}
-              onChange={updateTitle}
-              placeholder="Contoh: Paradigma Baru PKn dan Teori Belajar"
-            />
-
-            <div className="grid gap-4 sm:grid-cols-2">
-              <FormField
-                label="Slug"
-                value={form.slug}
-                onChange={(value) =>
-                  setForm((prev) => ({ ...prev, slug: slugify(value) }))
-                }
-                placeholder="paradigma-baru-pkn"
-              />
-
-              <FormField
-                label="Urutan"
-                type="number"
-                value={form.order}
-                onChange={(value) =>
-                  setForm((prev) => ({ ...prev, order: value }))
-                }
-                placeholder="Auto jika kosong"
-              />
-            </div>
-
-            <div className="grid gap-4 sm:grid-cols-2">
-              <FormField
-                label="Estimasi Menit"
-                type="number"
-                value={form.estimatedMinutes}
-                onChange={(value) =>
-                  setForm((prev) => ({ ...prev, estimatedMinutes: value }))
-                }
-                placeholder="Contoh: 60"
-              />
-
-              <FormField
-                label="Mastery Threshold"
-                type="number"
-                value={form.masteryThreshold}
-                onChange={(value) =>
-                  setForm((prev) => ({ ...prev, masteryThreshold: value }))
-                }
-                placeholder="75"
-              />
-            </div>
-
+          <form onSubmit={handleSubmit} className="mt-5 grid gap-4">
             <div>
-              <label className="text-sm font-medium text-slate-300">
-                Status Modul
+              <label className="text-sm font-medium text-slate-700">
+                Judul Modul
               </label>
-              <select
-                value={form.status}
-                onChange={(event) =>
-                  setForm((prev) => ({
-                    ...prev,
-                    status: event.target.value as ModuleStatus,
-                  }))
-                }
-                className="mt-2 w-full rounded-2xl border border-white/10 bg-slate-950 px-4 py-3 text-sm text-white outline-none transition focus:border-cyan-400/50"
-              >
-                {moduleStatusOptions.map((status) => (
-                  <option key={status} value={status}>
-                    {status}
-                  </option>
-                ))}
-              </select>
+              <input
+                value={form.title}
+                onChange={(event) => updateTitle(event.target.value)}
+                placeholder="Contoh: Pancasila sebagai Dasar Negara"
+                className={inputClass}
+              />
+            </div>
+
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div>
+                <label className="text-sm font-medium text-slate-700">
+                  Urutan tampil
+                </label>
+                <input
+                  type="number"
+                  value={form.order}
+                  onChange={(event) =>
+                    setForm((prev) => ({ ...prev, order: event.target.value }))
+                  }
+                  placeholder="Otomatis jika kosong"
+                  className={inputClass}
+                />
+              </div>
+
+              <div>
+                <label className="text-sm font-medium text-slate-700">
+                  Perkiraan waktu (menit)
+                </label>
+                <input
+                  type="number"
+                  value={form.estimatedMinutes}
+                  onChange={(event) =>
+                    setForm((prev) => ({
+                      ...prev,
+                      estimatedMinutes: event.target.value,
+                    }))
+                  }
+                  placeholder="Contoh: 60"
+                  className={inputClass}
+                />
+              </div>
+            </div>
+
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div>
+                <label className="text-sm font-medium text-slate-700">
+                  Nilai minimal lulus (%)
+                </label>
+                <input
+                  type="number"
+                  value={form.masteryThreshold}
+                  onChange={(event) =>
+                    setForm((prev) => ({
+                      ...prev,
+                      masteryThreshold: event.target.value,
+                    }))
+                  }
+                  placeholder="75"
+                  className={inputClass}
+                />
+              </div>
+
+              <div>
+                <label className="text-sm font-medium text-slate-700">
+                  Status tampil
+                </label>
+                <select
+                  value={form.status}
+                  onChange={(event) =>
+                    setForm((prev) => ({
+                      ...prev,
+                      status: event.target.value as ModuleStatus,
+                    }))
+                  }
+                  className={inputClass}
+                >
+                  {moduleStatusOptions.map((status) => (
+                    <option key={status.value} value={status.value}>
+                      {status.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
 
             <div>
-              <label className="text-sm font-medium text-slate-300">
-                Deskripsi Modul
+              <label className="text-sm font-medium text-slate-700">
+                Deskripsi singkat
               </label>
               <textarea
                 value={form.description}
@@ -519,13 +537,13 @@ export default function LecturerModulesClient({
                     description: event.target.value,
                   }))
                 }
-                rows={5}
-                placeholder="Tuliskan deskripsi singkat modul..."
-                className="mt-2 w-full resize-none rounded-2xl border border-white/10 bg-slate-950 px-4 py-3 text-sm leading-6 text-white outline-none transition placeholder:text-slate-500 focus:border-cyan-400/50"
+                rows={4}
+                placeholder="Tuliskan gambaran singkat modul..."
+                className={`${inputClass} resize-none leading-6`}
               />
             </div>
 
-            <label className="flex items-start gap-3 rounded-2xl border border-white/10 bg-slate-950 p-4">
+            <label className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-base text-slate-700">
               <input
                 type="checkbox"
                 checked={form.isLocked}
@@ -535,107 +553,91 @@ export default function LecturerModulesClient({
                     isLocked: event.target.checked,
                   }))
                 }
-                className="mt-1 h-4 w-4 accent-cyan-400"
+                className="h-5 w-5 accent-teal-600"
               />
-              <span>
-                <span className="block text-sm font-medium text-white">
-                  Kunci modul
-                </span>
-                <span className="mt-1 block text-sm leading-6 text-slate-400">
-                  Jika aktif, modul dapat ditandai terkunci sampai syarat
-                  tertentu terpenuhi.
-                </span>
-              </span>
+              Kunci modul (mahasiswa belum bisa membuka)
             </label>
 
-            <FormField
-              label="Unlock Rule Opsional"
-              value={form.unlockRule}
-              onChange={(value) =>
-                setForm((prev) => ({ ...prev, unlockRule: value }))
-              }
-              placeholder="Contoh: Selesaikan modul sebelumnya"
-            />
-
-            <div className="flex flex-wrap gap-3 pt-2">
+            <div className="flex flex-wrap gap-3 pt-1">
               <button
                 type="submit"
                 disabled={submitting}
-                className="inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-teal-400 via-cyan-400 to-sky-400 px-5 py-3 text-sm font-semibold text-slate-950 transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
+                className="inline-flex items-center gap-2 rounded-2xl bg-teal-600 px-5 py-3 text-base font-semibold text-white transition hover:bg-teal-700 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {submitting ? (
-                  <Loader2 size={16} className="animate-spin" />
+                  <Loader2
+                    size={18}
+                    className="animate-spin"
+                    aria-hidden="true"
+                  />
                 ) : (
-                  <Plus size={16} />
+                  <Plus size={18} aria-hidden="true" />
                 )}
-                {editingModule ? "Simpan Modul" : "Tambah Modul"}
+                {editingModule ? "Simpan Perubahan" : "Tambah Modul"}
               </button>
 
               {editingModule ? (
                 <button
                   type="button"
                   onClick={resetForm}
-                  className="rounded-2xl border border-white/10 bg-white/[0.04] px-5 py-3 text-sm text-slate-300 transition hover:bg-white/[0.08] hover:text-white"
+                  className="rounded-2xl border border-slate-200 px-5 py-3 text-base font-medium text-slate-700 transition hover:bg-slate-50"
                 >
-                  Batal Edit
+                  Batal
                 </button>
               ) : null}
             </div>
           </form>
         </div>
 
-        <div className="rounded-[30px] border border-white/10 bg-white/5 p-6 backdrop-blur-xl">
-          <div className="mb-5 flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
-            <div>
-              <h2 className="text-lg font-semibold text-white">Daftar Modul</h2>
-              <p className="mt-1 text-sm text-slate-400">
-                Cari, filter, edit, dan hapus modul course.
-              </p>
+        {/* Daftar */}
+        <div className="rounded-3xl border border-slate-200 bg-white p-6">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <h2 className="text-xl font-bold text-slate-900">Daftar Modul</h2>
+            <button
+              type="button"
+              onClick={fetchModules}
+              className="inline-flex items-center justify-center gap-2 rounded-2xl border border-slate-200 px-4 py-2.5 text-base font-medium text-slate-700 transition hover:bg-slate-50"
+            >
+              <RefreshCcw size={16} aria-hidden="true" />
+              Muat ulang
+            </button>
+          </div>
+
+          <div className="mt-4 flex flex-col gap-3 sm:flex-row">
+            <div className="flex flex-1 items-center gap-2 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
+              <Search size={18} className="text-slate-400" aria-hidden="true" />
+              <input
+                value={q}
+                onChange={(event) => setQ(event.target.value)}
+                placeholder="Cari modul..."
+                aria-label="Cari modul"
+                className="w-full bg-transparent text-base text-slate-900 outline-none placeholder:text-slate-400"
+              />
             </div>
 
-            <div className="flex flex-col gap-3 sm:flex-row">
-              <div className="flex items-center gap-2 rounded-2xl border border-white/10 bg-slate-950 px-4 py-3">
-                <Search size={16} className="text-slate-500" />
-                <input
-                  value={q}
-                  onChange={(event) => setQ(event.target.value)}
-                  placeholder="Cari modul..."
-                  className="w-full bg-transparent text-sm text-white outline-none placeholder:text-slate-500"
-                />
-              </div>
-
-              <select
-                value={statusFilter}
-                onChange={(event) =>
-                  setStatusFilter(event.target.value as "ALL" | ModuleStatus)
-                }
-                className="rounded-2xl border border-white/10 bg-slate-950 px-4 py-3 text-sm text-white outline-none"
-              >
-                <option value="ALL">Semua Status</option>
-                {moduleStatusOptions.map((status) => (
-                  <option key={status} value={status}>
-                    {status}
-                  </option>
-                ))}
-              </select>
-
-              <button
-                type="button"
-                onClick={fetchModules}
-                className="inline-flex items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-slate-300 transition hover:bg-white/[0.08] hover:text-white"
-              >
-                <RefreshCcw size={16} />
-                Refresh
-              </button>
-            </div>
+            <select
+              value={statusFilter}
+              onChange={(event) =>
+                setStatusFilter(event.target.value as "ALL" | ModuleStatus)
+              }
+              aria-label="Saring status"
+              className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-base text-slate-700 outline-none"
+            >
+              <option value="ALL">Semua Status</option>
+              {moduleStatusOptions.map((status) => (
+                <option key={status.value} value={status.value}>
+                  {statusLabel(status.value)}
+                </option>
+              ))}
+            </select>
           </div>
 
           {filteredModules.length === 0 ? (
-            <div className="rounded-2xl border border-white/10 bg-slate-900/70 p-5 text-sm text-slate-300">
-              Belum ada modul sesuai filter.
+            <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 p-5 text-base text-slate-600">
+              Belum ada modul yang sesuai.
             </div>
           ) : (
-            <div className="grid gap-4">
+            <div className="mt-4 grid gap-4">
               {filteredModules.map((module) => (
                 <ModuleCard
                   key={module.id}
@@ -649,7 +651,7 @@ export default function LecturerModulesClient({
           )}
         </div>
       </section>
-    </main>
+    </div>
   );
 }
 
@@ -665,71 +667,72 @@ function ModuleCard({
   onDelete: () => void;
 }) {
   return (
-    <div className="rounded-[24px] border border-white/10 bg-slate-900/70 p-5">
+    <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
       <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap gap-2">
-            <StatusBadge status={module.status} />
-            <LockBadge isLocked={module.isLocked} />
-            <span className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-xs text-slate-300">
-              Urutan {module.order}
+            <span
+              className={`rounded-full px-3 py-1 text-xs font-semibold ${statusBadgeClass(
+                module.status,
+              )}`}
+            >
+              {statusLabel(module.status)}
             </span>
-            <span className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-xs text-slate-300">
-              Mastery {module.masteryThreshold}%
+            {module.isLocked ? (
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-orange-100 px-3 py-1 text-xs font-semibold text-orange-700">
+                <Lock size={12} aria-hidden="true" />
+                Terkunci
+              </span>
+            ) : null}
+            <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-600">
+              Urutan {module.order}
             </span>
           </div>
 
-          <h3 className="mt-4 break-words text-xl font-semibold text-white">
+          <h3 className="mt-3 text-lg font-bold text-slate-900">
             {module.title}
           </h3>
 
-          <div className="mt-1 text-xs text-slate-500">/{module.slug}</div>
-
-          <p className="mt-3 break-words text-sm leading-7 text-slate-300">
+          <p className="mt-1.5 text-base leading-7 text-slate-600">
             {module.description ?? "Belum ada deskripsi modul."}
           </p>
 
-          <div className="mt-4 grid gap-3 sm:grid-cols-3">
-            <MiniInfo label="Micro-unit" value={`${module._count.units}`} />
-            <MiniInfo
-              label="Progress rows"
-              value={`${module._count.progresses}`}
-            />
-            <MiniInfo
-              label="Estimasi"
-              value={
-                module.estimatedMinutes
-                  ? `${module.estimatedMinutes} menit`
-                  : "Belum diatur"
-              }
-            />
+          <div className="mt-3 flex flex-wrap gap-2 text-sm text-slate-600">
+            <span className="rounded-full bg-slate-100 px-3 py-1">
+              {module._count.units} bagian
+            </span>
+            <span className="rounded-full bg-slate-100 px-3 py-1">
+              {module.estimatedMinutes
+                ? `${module.estimatedMinutes} menit`
+                : "Waktu belum diatur"}
+            </span>
           </div>
         </div>
 
         <div className="flex shrink-0 flex-wrap gap-2">
           <Link
             href={`/lecturer/courses/${courseSlug}/modules/${module.id}/units`}
-            className="inline-flex items-center gap-2 rounded-2xl border border-teal-400/20 bg-teal-400/10 px-4 py-2 text-sm text-teal-200 transition hover:bg-teal-400/15"
+            className="inline-flex items-center gap-2 rounded-2xl bg-teal-600 px-4 py-2.5 text-base font-semibold text-white transition hover:bg-teal-700"
           >
-            <Layers3 size={15} />
-            Unit
+            <Layers3 size={16} aria-hidden="true" />
+            Bagian
           </Link>
 
           <button
             type="button"
             onClick={onEdit}
-            className="inline-flex items-center gap-2 rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-2 text-sm text-slate-300 transition hover:bg-white/[0.08] hover:text-white"
+            className="inline-flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-base font-medium text-slate-700 transition hover:bg-slate-100"
           >
-            <Pencil size={15} />
-            Edit
+            <Pencil size={16} aria-hidden="true" />
+            Ubah
           </button>
 
           <button
             type="button"
             onClick={onDelete}
-            className="inline-flex items-center gap-2 rounded-2xl border border-red-400/20 bg-red-400/10 px-4 py-2 text-sm text-red-300 transition hover:bg-red-400/15"
+            className="inline-flex items-center gap-2 rounded-2xl border border-rose-200 bg-white px-4 py-2.5 text-base font-medium text-rose-600 transition hover:bg-rose-50"
           >
-            <Trash2 size={15} />
+            <Trash2 size={16} aria-hidden="true" />
             Hapus
           </button>
         </div>
@@ -743,91 +746,23 @@ function SummaryCard({
   label,
   value,
 }: {
-  icon: React.ComponentType<{ size?: number; className?: string }>;
+  icon?: React.ComponentType<{ size?: number; "aria-hidden"?: boolean }>;
   label: string;
   value: number;
 }) {
   return (
-    <div className="rounded-[26px] border border-white/10 bg-white/[0.04] p-5 backdrop-blur-xl">
-      <div className="flex items-start justify-between gap-3">
+    <div className="rounded-3xl border border-slate-200 bg-white p-5">
+      <div className="flex items-center gap-3">
+        {Icon ? (
+          <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-teal-100 text-teal-700">
+            <Icon size={22} aria-hidden={true} />
+          </div>
+        ) : null}
         <div>
-          <div className="text-sm text-slate-400">{label}</div>
-          <div className="mt-2 text-3xl font-semibold text-white">{value}</div>
-        </div>
-
-        <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-teal-400/10 text-teal-300">
-          <Icon size={20} />
+          <div className="text-2xl font-bold text-slate-900">{value}</div>
+          <div className="text-sm text-slate-500">{label}</div>
         </div>
       </div>
     </div>
-  );
-}
-
-function FormField({
-  label,
-  value,
-  onChange,
-  placeholder,
-  type = "text",
-}: {
-  label: string;
-  value: string;
-  onChange: (value: string) => void;
-  placeholder?: string;
-  type?: string;
-}) {
-  return (
-    <div>
-      <label className="text-sm font-medium text-slate-300">{label}</label>
-      <input
-        type={type}
-        value={value}
-        onChange={(event) => onChange(event.target.value)}
-        placeholder={placeholder}
-        className="mt-2 w-full rounded-2xl border border-white/10 bg-slate-950 px-4 py-3 text-sm text-white outline-none transition placeholder:text-slate-500 focus:border-cyan-400/50"
-      />
-    </div>
-  );
-}
-
-function MiniInfo({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
-      <div className="text-[11px] uppercase tracking-wide text-slate-500">
-        {label}
-      </div>
-      <div className="mt-2 text-sm font-semibold text-white">{value}</div>
-    </div>
-  );
-}
-
-function StatusBadge({ status }: { status: ModuleStatus }) {
-  const className =
-    status === "PUBLISHED"
-      ? "border-emerald-400/20 bg-emerald-400/10 text-emerald-300"
-      : status === "ARCHIVED"
-        ? "border-red-400/20 bg-red-400/10 text-red-300"
-        : "border-amber-400/20 bg-amber-400/10 text-amber-300";
-
-  return (
-    <span
-      className={`inline-flex rounded-full border px-3 py-1 text-xs font-medium ${className}`}
-    >
-      {status}
-    </span>
-  );
-}
-
-function LockBadge({ isLocked }: { isLocked: boolean }) {
-  return isLocked ? (
-    <span className="inline-flex items-center gap-1.5 rounded-full border border-red-400/20 bg-red-400/10 px-3 py-1 text-xs font-medium text-red-300">
-      <Lock size={13} />
-      Locked
-    </span>
-  ) : (
-    <span className="inline-flex items-center gap-1.5 rounded-full border border-cyan-400/20 bg-cyan-400/10 px-3 py-1 text-xs font-medium text-cyan-300">
-      <Unlock size={13} />
-      Open
-    </span>
   );
 }

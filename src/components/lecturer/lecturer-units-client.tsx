@@ -130,6 +130,17 @@ const unitTypeOptions: UnitType[] = [
   "REMEDIAL",
 ];
 
+const unitTypeLabels: Record<UnitType, string> = {
+  LESSON: "Materi",
+  VIDEO: "Video",
+  QUIZ: "Kuis",
+  DISCUSSION: "Diskusi",
+  REFLECTION: "Refleksi",
+  ASSIGNMENT: "Tugas",
+  PROJECT_STEP: "Langkah Proyek",
+  REMEDIAL: "Perbaikan",
+};
+
 function slugify(value: string) {
   return value
     .toLowerCase()
@@ -207,14 +218,14 @@ export default function LecturerUnitsClient({
       const json = (await res.json()) as ApiResponse;
 
       if (!res.ok || !json.success) {
-        throw new Error(json.message || "Gagal mengambil micro-unit");
+        throw new Error(json.message || "Gagal mengambil bagian");
       }
 
       setCourse(json.data.course);
       setModuleMeta(json.data.module);
       setUnits(json.data.units);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Unknown error");
+      setError(err instanceof Error ? err.message : "Terjadi kesalahan");
     } finally {
       setLoading(false);
     }
@@ -301,19 +312,17 @@ export default function LecturerUnitsClient({
       const json = await res.json();
 
       if (!res.ok || !json.success) {
-        throw new Error(json.message || "Gagal menyimpan micro-unit");
+        throw new Error(json.message || "Gagal menyimpan bagian");
       }
 
       setMessage(
-        isEditing
-          ? "Micro-unit berhasil diperbarui."
-          : "Micro-unit berhasil dibuat.",
+        isEditing ? "Bagian berhasil diperbarui." : "Bagian berhasil dibuat.",
       );
 
       resetForm();
       await fetchUnits();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Unknown error");
+      setError(err instanceof Error ? err.message : "Terjadi kesalahan");
     } finally {
       setSubmitting(false);
     }
@@ -321,7 +330,7 @@ export default function LecturerUnitsClient({
 
   async function handleDelete(unit: UnitItem) {
     const confirmed = window.confirm(
-      `Hapus micro-unit "${unit.title}"? Progress mahasiswa pada unit ini dapat ikut terhapus.`,
+      `Hapus bagian "${unit.title}"? Progres mahasiswa pada bagian ini dapat ikut terhapus.`,
     );
 
     if (!confirmed) return;
@@ -341,13 +350,13 @@ export default function LecturerUnitsClient({
       const json = await res.json();
 
       if (!res.ok || !json.success) {
-        throw new Error(json.message || "Gagal menghapus micro-unit");
+        throw new Error(json.message || "Gagal menghapus bagian");
       }
 
-      setMessage("Micro-unit berhasil dihapus.");
+      setMessage("Bagian berhasil dihapus.");
       await fetchUnits();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Unknown error");
+      setError(err instanceof Error ? err.message : "Terjadi kesalahan");
     } finally {
       setSubmitting(false);
     }
@@ -355,137 +364,131 @@ export default function LecturerUnitsClient({
 
   if (loading) {
     return (
-      <main className="space-y-6 p-6">
-        <section className="rounded-[28px] border border-white/10 bg-white/5 p-6 text-slate-300">
-          Memuat micro-unit...
+      <div className="space-y-6">
+        <section className="rounded-3xl border border-slate-200 bg-white p-6 text-base text-slate-600">
+          Memuat bagian...
         </section>
-      </main>
+      </div>
     );
   }
 
   if (error) {
     return (
-      <main className="space-y-6 p-6">
-        <section className="rounded-[28px] border border-red-400/20 bg-red-500/5 p-6 text-red-300">
-          Error: {error}
+      <div className="space-y-6">
+        <section className="rounded-3xl border border-rose-200 bg-rose-50 p-6 text-base text-rose-700">
+          Terjadi kesalahan: {error}
         </section>
-      </main>
+      </div>
     );
   }
 
   return (
-    <main className="space-y-6 p-6">
-      <section className="rounded-[30px] border border-white/10 bg-white/5 p-6 shadow-[0_20px_60px_rgba(0,0,0,0.18)] backdrop-blur-xl">
+    <div className="space-y-6">
+      <section className="rounded-3xl bg-teal-600 p-6 text-white sm:p-8">
         <div className="flex flex-col gap-5 xl:flex-row xl:items-center xl:justify-between">
           <div className="min-w-0">
             <Link
               href={`/lecturer/courses/${courseSlug}/modules`}
-              className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-4 py-2 text-sm text-slate-300 transition hover:bg-white/[0.08] hover:text-white"
+              className="inline-flex items-center gap-2 rounded-full bg-white/15 px-3 py-1.5 text-sm font-medium text-white transition hover:bg-white/25"
             >
-              <ArrowLeft size={16} />
+              <ArrowLeft size={16} aria-hidden />
               Kembali ke Modul
             </Link>
 
-            <div className="mt-5 inline-flex items-center gap-2 rounded-full border border-cyan-400/20 bg-cyan-400/10 px-4 py-2 text-sm text-cyan-200">
-              <Layers3 size={16} />
-              Lecturer MicroUnit Management
+            <div className="mt-5 inline-flex items-center gap-2 rounded-full bg-white/15 px-3 py-1.5 text-sm text-white">
+              <Layers3 size={16} aria-hidden />
+              Pengelolaan Bagian Modul
             </div>
 
-            <h1 className="mt-5 break-words text-3xl font-semibold text-white sm:text-4xl">
-              Kelola Micro-Unit
+            <h1 className="mt-5 break-words text-3xl font-bold sm:text-4xl">
+              Kelola Bagian
             </h1>
 
-            <p className="mt-3 max-w-3xl text-sm leading-7 text-slate-300 sm:text-base">
-              Dosen mengelola unit kecil di dalam modul. Unit dapat berupa
-              lesson, video, quiz, discussion, reflection, assignment, project
-              step, atau remedial.
+            <p className="mt-3 max-w-3xl text-base leading-7 text-teal-50">
+              Susun materi modul menjadi bagian-bagian kecil yang dikerjakan
+              mahasiswa secara bertahap. Setiap bagian bisa berupa materi,
+              video, kuis, diskusi, refleksi, tugas, langkah proyek, atau
+              perbaikan.
             </p>
           </div>
 
-          <div className="rounded-[28px] border border-white/10 bg-slate-900/70 p-4">
-            <div className="text-sm text-slate-400">Course</div>
+          <div className="rounded-2xl bg-white/10 p-5">
+            <div className="text-sm text-teal-50">Mata Kuliah</div>
             <div className="mt-1 font-semibold text-white">
-              {course?.title ?? "Course"}
+              {course?.title ?? "Mata Kuliah"}
             </div>
 
-            <div className="mt-3 text-sm text-slate-400">Module</div>
+            <div className="mt-3 text-sm text-teal-50">Modul</div>
             <div className="mt-1 font-semibold text-white">
-              {moduleMeta?.title ?? "Module"}
+              {moduleMeta?.title ?? "Modul"}
             </div>
           </div>
         </div>
       </section>
 
       <section className="grid gap-4 sm:grid-cols-2 2xl:grid-cols-6">
-        <SummaryCard icon={Layers3} label="Total Unit" value={summary.total} />
-        <SummaryCard icon={BookOpen} label="Lesson" value={summary.lesson} />
+        <SummaryCard
+          icon={Layers3}
+          label="Total Bagian"
+          value={summary.total}
+        />
+        <SummaryCard icon={BookOpen} label="Materi" value={summary.lesson} />
         <SummaryCard icon={Video} label="Video" value={summary.video} />
-        <SummaryCard icon={ClipboardCheck} label="Quiz" value={summary.quiz} />
-        <SummaryCard icon={Lock} label="Locked" value={summary.locked} />
+        <SummaryCard icon={ClipboardCheck} label="Kuis" value={summary.quiz} />
+        <SummaryCard icon={Lock} label="Terkunci" value={summary.locked} />
         <SummaryCard
           icon={CheckCircle2}
-          label="Required"
+          label="Wajib"
           value={summary.required}
         />
       </section>
 
       <section className="grid gap-6 xl:grid-cols-[0.85fr_1.5fr]">
-        <div className="rounded-[30px] border border-white/10 bg-white/5 p-6 backdrop-blur-xl">
+        <div className="rounded-3xl border border-slate-200 bg-white p-6">
           <div className="mb-5">
-            <h2 className="text-lg font-semibold text-white">
-              {editingUnit ? "Edit Micro-Unit" : "Tambah Micro-Unit Baru"}
+            <h2 className="text-lg font-bold text-slate-900">
+              {editingUnit ? "Ubah Bagian" : "Tambah Bagian Baru"}
             </h2>
-            <p className="mt-1 text-sm text-slate-400">
-              Micro-unit adalah materi kecil yang diselesaikan mahasiswa secara
+            <p className="mt-1 text-base text-slate-600">
+              Bagian adalah materi kecil yang diselesaikan mahasiswa secara
               bertahap.
             </p>
           </div>
 
           {message ? (
-            <div className="mb-4 rounded-2xl border border-emerald-400/20 bg-emerald-400/10 px-4 py-3 text-sm text-emerald-200">
+            <div className="mb-4 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-base text-emerald-700">
               {message}
             </div>
           ) : null}
 
           {error ? (
-            <div className="mb-4 rounded-2xl border border-red-400/20 bg-red-400/10 px-4 py-3 text-sm text-red-200">
+            <div className="mb-4 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-base text-rose-700">
               {error}
             </div>
           ) : null}
 
           <form onSubmit={handleSubmit} className="grid gap-4">
             <FormField
-              label="Judul Micro-Unit"
+              label="Judul Bagian"
               value={form.title}
               onChange={updateTitle}
               placeholder="Contoh: Menelaah Paradigma Baru PPKn"
             />
 
-            <div className="grid gap-4 sm:grid-cols-2">
-              <FormField
-                label="Slug"
-                value={form.slug}
-                onChange={(value) =>
-                  setForm((prev) => ({ ...prev, slug: slugify(value) }))
-                }
-                placeholder="menelaah-paradigma-baru-ppkn"
-              />
-
-              <FormField
-                label="Urutan"
-                type="number"
-                value={form.order}
-                onChange={(value) =>
-                  setForm((prev) => ({ ...prev, order: value }))
-                }
-                placeholder="Auto jika kosong"
-              />
-            </div>
+            <FormField
+              label="Urutan"
+              type="number"
+              value={form.order}
+              onChange={(value) =>
+                setForm((prev) => ({ ...prev, order: value }))
+              }
+              placeholder="Otomatis jika kosong"
+            />
 
             <div className="grid gap-4 sm:grid-cols-2">
               <div>
-                <label className="text-sm font-medium text-slate-300">
-                  Tipe Unit
+                <label className="text-sm font-medium text-slate-700">
+                  Tipe Bagian
                 </label>
 
                 <select
@@ -496,18 +499,18 @@ export default function LecturerUnitsClient({
                       unitType: event.target.value as UnitType,
                     }))
                   }
-                  className="mt-2 w-full rounded-2xl border border-white/10 bg-slate-950 px-4 py-3 text-sm text-white outline-none transition focus:border-cyan-400/50"
+                  className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-base text-slate-900 outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-100"
                 >
                   {unitTypeOptions.map((type) => (
                     <option key={type} value={type}>
-                      {type}
+                      {unitTypeLabels[type]}
                     </option>
                   ))}
                 </select>
               </div>
 
               <FormField
-                label="Estimasi Menit"
+                label="Perkiraan Waktu (menit)"
                 type="number"
                 value={form.estimatedMinutes}
                 onChange={(value) =>
@@ -518,7 +521,7 @@ export default function LecturerUnitsClient({
             </div>
 
             <FormField
-              label="Mastery Threshold"
+              label="Nilai minimal lulus (%)"
               type="number"
               value={form.masteryThreshold}
               onChange={(value) =>
@@ -528,7 +531,7 @@ export default function LecturerUnitsClient({
             />
 
             <div>
-              <label className="text-sm font-medium text-slate-300">
+              <label className="text-sm font-medium text-slate-700">
                 Deskripsi Singkat
               </label>
 
@@ -541,14 +544,14 @@ export default function LecturerUnitsClient({
                   }))
                 }
                 rows={4}
-                placeholder="Tuliskan deskripsi singkat unit..."
-                className="mt-2 w-full resize-none rounded-2xl border border-white/10 bg-slate-950 px-4 py-3 text-sm leading-6 text-white outline-none transition placeholder:text-slate-500 focus:border-cyan-400/50"
+                placeholder="Tuliskan deskripsi singkat bagian..."
+                className="mt-2 w-full resize-none rounded-2xl border border-slate-200 bg-white px-4 py-3 text-base leading-6 text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-teal-500 focus:ring-2 focus:ring-teal-100"
               />
             </div>
 
             <div>
-              <label className="text-sm font-medium text-slate-300">
-                Konten Unit
+              <label className="text-sm font-medium text-slate-700">
+                Isi Bagian
               </label>
 
               <textarea
@@ -561,11 +564,11 @@ export default function LecturerUnitsClient({
                 }
                 rows={8}
                 placeholder="Isi materi, instruksi, pertanyaan refleksi, atau arahan aktivitas..."
-                className="mt-2 w-full resize-none rounded-2xl border border-white/10 bg-slate-950 px-4 py-3 text-sm leading-6 text-white outline-none transition placeholder:text-slate-500 focus:border-cyan-400/50"
+                className="mt-2 w-full resize-none rounded-2xl border border-slate-200 bg-white px-4 py-3 text-base leading-6 text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-teal-500 focus:ring-2 focus:ring-teal-100"
               />
             </div>
 
-            <label className="flex items-start gap-3 rounded-2xl border border-white/10 bg-slate-950 p-4">
+            <label className="flex items-start gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-4">
               <input
                 type="checkbox"
                 checked={form.isRequired}
@@ -575,21 +578,21 @@ export default function LecturerUnitsClient({
                     isRequired: event.target.checked,
                   }))
                 }
-                className="mt-1 h-4 w-4 accent-cyan-400"
+                className="mt-1 h-5 w-5 accent-teal-600"
               />
 
               <span>
-                <span className="block text-sm font-medium text-white">
-                  Unit wajib
+                <span className="block text-base font-medium text-slate-900">
+                  Bagian wajib
                 </span>
-                <span className="mt-1 block text-sm leading-6 text-slate-400">
-                  Jika aktif, unit ini dihitung sebagai bagian wajib dari
-                  progress modul.
+                <span className="mt-1 block text-base leading-6 text-slate-600">
+                  Jika aktif, bagian ini dihitung sebagai bagian wajib dari
+                  progres modul.
                 </span>
               </span>
             </label>
 
-            <label className="flex items-start gap-3 rounded-2xl border border-white/10 bg-slate-950 p-4">
+            <label className="flex items-start gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-4">
               <input
                 type="checkbox"
                 checked={form.isLocked}
@@ -599,16 +602,16 @@ export default function LecturerUnitsClient({
                     isLocked: event.target.checked,
                   }))
                 }
-                className="mt-1 h-4 w-4 accent-cyan-400"
+                className="mt-1 h-5 w-5 accent-teal-600"
               />
 
               <span>
-                <span className="block text-sm font-medium text-white">
-                  Kunci unit
+                <span className="block text-base font-medium text-slate-900">
+                  Kunci bagian
                 </span>
-                <span className="mt-1 block text-sm leading-6 text-slate-400">
-                  Jika aktif, unit ditandai terkunci sampai syarat pembelajaran
-                  terpenuhi.
+                <span className="mt-1 block text-base leading-6 text-slate-600">
+                  Jika aktif, bagian ditandai terkunci sampai syarat
+                  pembelajaran terpenuhi.
                 </span>
               </span>
             </label>
@@ -617,48 +620,48 @@ export default function LecturerUnitsClient({
               <button
                 type="submit"
                 disabled={submitting}
-                className="inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-teal-400 via-cyan-400 to-sky-400 px-5 py-3 text-sm font-semibold text-slate-950 transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
+                className="inline-flex items-center gap-2 rounded-2xl bg-teal-600 px-5 py-3 text-base font-semibold text-white transition hover:bg-teal-700 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {submitting ? (
-                  <Loader2 size={16} className="animate-spin" />
+                  <Loader2 size={18} className="animate-spin" aria-hidden />
                 ) : (
-                  <Plus size={16} />
+                  <Plus size={18} aria-hidden />
                 )}
-                {editingUnit ? "Simpan Unit" : "Tambah Unit"}
+                {editingUnit ? "Simpan Bagian" : "Tambah Bagian"}
               </button>
 
               {editingUnit ? (
                 <button
                   type="button"
                   onClick={resetForm}
-                  className="rounded-2xl border border-white/10 bg-white/[0.04] px-5 py-3 text-sm text-slate-300 transition hover:bg-white/[0.08] hover:text-white"
+                  className="rounded-2xl border border-slate-200 px-4 py-2.5 text-base font-medium text-slate-700 transition hover:bg-slate-50"
                 >
-                  Batal Edit
+                  Batal Ubah
                 </button>
               ) : null}
             </div>
           </form>
         </div>
 
-        <div className="rounded-[30px] border border-white/10 bg-white/5 p-6 backdrop-blur-xl">
+        <div className="rounded-3xl border border-slate-200 bg-white p-6">
           <div className="mb-5 flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
             <div>
-              <h2 className="text-lg font-semibold text-white">
-                Daftar Micro-Unit
+              <h2 className="text-lg font-bold text-slate-900">
+                Daftar Bagian
               </h2>
-              <p className="mt-1 text-sm text-slate-400">
-                Cari, filter, edit, dan hapus unit dalam modul.
+              <p className="mt-1 text-base text-slate-600">
+                Cari, saring, ubah, dan hapus bagian dalam modul.
               </p>
             </div>
 
             <div className="flex flex-col gap-3 sm:flex-row">
-              <div className="flex items-center gap-2 rounded-2xl border border-white/10 bg-slate-950 px-4 py-3">
-                <Search size={16} className="text-slate-500" />
+              <div className="flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-3">
+                <Search size={18} className="text-slate-400" aria-hidden />
                 <input
                   value={q}
                   onChange={(event) => setQ(event.target.value)}
-                  placeholder="Cari unit..."
-                  className="w-full bg-transparent text-sm text-white outline-none placeholder:text-slate-500"
+                  placeholder="Cari bagian..."
+                  className="w-full bg-transparent text-base text-slate-900 outline-none placeholder:text-slate-400"
                 />
               </div>
 
@@ -667,12 +670,12 @@ export default function LecturerUnitsClient({
                 onChange={(event) =>
                   setTypeFilter(event.target.value as "ALL" | UnitType)
                 }
-                className="rounded-2xl border border-white/10 bg-slate-950 px-4 py-3 text-sm text-white outline-none"
+                className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-base text-slate-900 outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-100"
               >
                 <option value="ALL">Semua Tipe</option>
                 {unitTypeOptions.map((type) => (
                   <option key={type} value={type}>
-                    {type}
+                    {unitTypeLabels[type]}
                   </option>
                 ))}
               </select>
@@ -680,17 +683,17 @@ export default function LecturerUnitsClient({
               <button
                 type="button"
                 onClick={fetchUnits}
-                className="inline-flex items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-slate-300 transition hover:bg-white/[0.08] hover:text-white"
+                className="inline-flex items-center justify-center gap-2 rounded-2xl border border-slate-200 px-4 py-2.5 text-base font-medium text-slate-700 transition hover:bg-slate-50"
               >
-                <RefreshCcw size={16} />
-                Refresh
+                <RefreshCcw size={18} aria-hidden />
+                Muat ulang
               </button>
             </div>
           </div>
 
           {filteredUnits.length === 0 ? (
-            <div className="rounded-2xl border border-white/10 bg-slate-900/70 p-5 text-sm text-slate-300">
-              Belum ada micro-unit sesuai filter.
+            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5 text-base text-slate-600">
+              Belum ada bagian sesuai filter.
             </div>
           ) : (
             <div className="grid gap-4">
@@ -706,7 +709,7 @@ export default function LecturerUnitsClient({
           )}
         </div>
       </section>
-    </main>
+    </div>
   );
 }
 
@@ -720,7 +723,7 @@ function UnitCard({
   onDelete: () => void;
 }) {
   return (
-    <div className="rounded-[24px] border border-white/10 bg-slate-900/70 p-5">
+    <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
       <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap gap-2">
@@ -728,43 +731,41 @@ function UnitCard({
             <LockBadge isLocked={unit.isLocked} />
 
             {unit.isRequired ? (
-              <span className="rounded-full border border-emerald-400/20 bg-emerald-400/10 px-3 py-1 text-xs text-emerald-300">
-                Required
+              <span className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-700">
+                Wajib
               </span>
             ) : (
-              <span className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-xs text-slate-300">
-                Optional
+              <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">
+                Pilihan
               </span>
             )}
 
-            <span className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-xs text-slate-300">
+            <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">
               Urutan {unit.order}
             </span>
 
-            <span className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-xs text-slate-300">
-              Mastery {unit.masteryThreshold}%
+            <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">
+              Nilai minimal lulus {unit.masteryThreshold}%
             </span>
           </div>
 
-          <h3 className="mt-4 break-words text-xl font-semibold text-white">
+          <h3 className="mt-4 break-words text-xl font-bold text-slate-900">
             {unit.title}
           </h3>
 
-          <div className="mt-1 text-xs text-slate-500">/{unit.slug}</div>
-
-          <p className="mt-3 break-words text-sm leading-7 text-slate-300">
-            {unit.description ?? "Belum ada deskripsi unit."}
+          <p className="mt-3 break-words text-base leading-7 text-slate-600">
+            {unit.description ?? "Belum ada deskripsi bagian."}
           </p>
 
           {unit.content ? (
-            <div className="mt-4 line-clamp-4 rounded-2xl border border-white/10 bg-slate-950/70 p-4 text-sm leading-7 text-slate-400">
+            <div className="mt-4 line-clamp-4 rounded-2xl border border-slate-200 bg-white p-4 text-base leading-7 text-slate-600">
               {unit.content}
             </div>
           ) : null}
 
           <div className="mt-4 grid gap-3 sm:grid-cols-3">
             <MiniInfo
-              label="Estimasi"
+              label="Perkiraan waktu"
               value={
                 unit.estimatedMinutes
                   ? `${unit.estimatedMinutes} menit`
@@ -772,10 +773,10 @@ function UnitCard({
               }
             />
             <MiniInfo
-              label="Progress rows"
+              label="Mahasiswa mengerjakan"
               value={`${unit._count.progresses}`}
             />
-            <MiniInfo label="Tipe" value={unit.unitType} />
+            <MiniInfo label="Tipe" value={unitTypeLabels[unit.unitType]} />
           </div>
         </div>
 
@@ -783,18 +784,18 @@ function UnitCard({
           <button
             type="button"
             onClick={onEdit}
-            className="inline-flex items-center gap-2 rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-2 text-sm text-slate-300 transition hover:bg-white/[0.08] hover:text-white"
+            className="inline-flex items-center gap-2 rounded-2xl border border-slate-200 px-4 py-2.5 text-base font-medium text-slate-700 transition hover:bg-white"
           >
-            <Pencil size={15} />
-            Edit
+            <Pencil size={16} aria-hidden />
+            Ubah
           </button>
 
           <button
             type="button"
             onClick={onDelete}
-            className="inline-flex items-center gap-2 rounded-2xl border border-red-400/20 bg-red-400/10 px-4 py-2 text-sm text-red-300 transition hover:bg-red-400/15"
+            className="inline-flex items-center gap-2 rounded-2xl border border-rose-200 px-4 py-2.5 text-base font-medium text-rose-600 transition hover:bg-rose-50"
           >
-            <Trash2 size={15} />
+            <Trash2 size={16} aria-hidden />
             Hapus
           </button>
         </div>
@@ -813,14 +814,14 @@ function SummaryCard({
   value: number;
 }) {
   return (
-    <div className="rounded-[26px] border border-white/10 bg-white/[0.04] p-5 backdrop-blur-xl">
+    <div className="rounded-3xl border border-slate-200 bg-white p-5">
       <div className="flex items-start justify-between gap-3">
         <div>
-          <div className="text-sm text-slate-400">{label}</div>
-          <div className="mt-2 text-3xl font-semibold text-white">{value}</div>
+          <div className="text-sm text-slate-600">{label}</div>
+          <div className="mt-2 text-3xl font-bold text-slate-900">{value}</div>
         </div>
 
-        <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-cyan-400/10 text-cyan-300">
+        <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-teal-50 text-teal-600">
           <Icon size={20} />
         </div>
       </div>
@@ -843,13 +844,13 @@ function FormField({
 }) {
   return (
     <div>
-      <label className="text-sm font-medium text-slate-300">{label}</label>
+      <label className="text-sm font-medium text-slate-700">{label}</label>
       <input
         type={type}
         value={value}
         onChange={(event) => onChange(event.target.value)}
         placeholder={placeholder}
-        className="mt-2 w-full rounded-2xl border border-white/10 bg-slate-950 px-4 py-3 text-sm text-white outline-none transition placeholder:text-slate-500 focus:border-cyan-400/50"
+        className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-base text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-teal-500 focus:ring-2 focus:ring-teal-100"
       />
     </div>
   );
@@ -857,11 +858,11 @@ function FormField({
 
 function MiniInfo({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
+    <div className="rounded-2xl border border-slate-200 bg-white p-4">
       <div className="text-[11px] uppercase tracking-wide text-slate-500">
         {label}
       </div>
-      <div className="mt-2 text-sm font-semibold text-white">{value}</div>
+      <div className="mt-2 text-base font-semibold text-slate-900">{value}</div>
     </div>
   );
 }
@@ -869,20 +870,20 @@ function MiniInfo({ label, value }: { label: string; value: string }) {
 function TypeBadge({ type }: { type: UnitType }) {
   const className =
     type === "LESSON"
-      ? "border-cyan-400/20 bg-cyan-400/10 text-cyan-300"
+      ? "bg-teal-100 text-teal-700"
       : type === "VIDEO"
-        ? "border-violet-400/20 bg-violet-400/10 text-violet-300"
+        ? "bg-violet-100 text-violet-700"
         : type === "QUIZ"
-          ? "border-amber-400/20 bg-amber-400/10 text-amber-300"
+          ? "bg-amber-100 text-amber-700"
           : type === "DISCUSSION"
-            ? "border-sky-400/20 bg-sky-400/10 text-sky-300"
+            ? "bg-sky-100 text-sky-700"
             : type === "REFLECTION"
-              ? "border-emerald-400/20 bg-emerald-400/10 text-emerald-300"
+              ? "bg-emerald-100 text-emerald-700"
               : type === "ASSIGNMENT"
-                ? "border-pink-400/20 bg-pink-400/10 text-pink-300"
+                ? "bg-pink-100 text-pink-700"
                 : type === "PROJECT_STEP"
-                  ? "border-indigo-400/20 bg-indigo-400/10 text-indigo-300"
-                  : "border-red-400/20 bg-red-400/10 text-red-300";
+                  ? "bg-indigo-100 text-indigo-700"
+                  : "bg-orange-100 text-orange-700";
 
   const Icon =
     type === "LESSON"
@@ -903,24 +904,24 @@ function TypeBadge({ type }: { type: UnitType }) {
 
   return (
     <span
-      className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium ${className}`}
+      className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold ${className}`}
     >
-      <Icon size={13} />
-      {type}
+      <Icon size={13} aria-hidden />
+      {unitTypeLabels[type]}
     </span>
   );
 }
 
 function LockBadge({ isLocked }: { isLocked: boolean }) {
   return isLocked ? (
-    <span className="inline-flex items-center gap-1.5 rounded-full border border-red-400/20 bg-red-400/10 px-3 py-1 text-xs font-medium text-red-300">
-      <Lock size={13} />
-      Locked
+    <span className="inline-flex items-center gap-1.5 rounded-full bg-orange-100 px-3 py-1 text-xs font-semibold text-orange-700">
+      <Lock size={13} aria-hidden />
+      Terkunci
     </span>
   ) : (
-    <span className="inline-flex items-center gap-1.5 rounded-full border border-cyan-400/20 bg-cyan-400/10 px-3 py-1 text-xs font-medium text-cyan-300">
-      <Unlock size={13} />
-      Open
+    <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-700">
+      <Unlock size={13} aria-hidden />
+      Terbuka
     </span>
   );
 }

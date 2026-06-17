@@ -1,3 +1,5 @@
+/** @format */
+
 "use client";
 
 /** @format */
@@ -5,7 +7,14 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { BookOpen, FileText, Pencil, Plus, Trash2 } from "lucide-react";
+import {
+  ArrowLeft,
+  FileText,
+  LibraryBig,
+  Pencil,
+  Plus,
+  Trash2,
+} from "lucide-react";
 
 type ModuleItem = {
   id: string;
@@ -36,7 +45,33 @@ type Props = {
   modules: ModuleItem[];
 };
 
-const statusOptions = ["DRAFT", "PUBLISHED", "ARCHIVED"] as const;
+const statusOptions = [
+  { value: "DRAFT", label: "Draf (belum tampil)" },
+  { value: "PUBLISHED", label: "Terbit (tampil ke mahasiswa)" },
+  { value: "ARCHIVED", label: "Arsip" },
+] as const;
+
+function statusLabel(status: string) {
+  switch (status) {
+    case "PUBLISHED":
+      return "Terbit";
+    case "ARCHIVED":
+      return "Arsip";
+    default:
+      return "Draf";
+  }
+}
+
+function statusBadge(status: string) {
+  switch (status) {
+    case "PUBLISHED":
+      return "bg-emerald-100 text-emerald-700";
+    case "ARCHIVED":
+      return "bg-slate-100 text-slate-600";
+    default:
+      return "bg-amber-100 text-amber-700";
+  }
+}
 
 const emptyForm = {
   title: "",
@@ -78,6 +113,9 @@ export default function LecturerModuleManagerClient({
       masteryThreshold: String(courseModule.masteryThreshold),
     });
     setMessage(null);
+    if (typeof window !== "undefined") {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
   }
 
   async function handleSubmit() {
@@ -131,7 +169,7 @@ export default function LecturerModuleManagerClient({
 
   async function handleDelete(moduleId: string) {
     const confirmed = window.confirm(
-      "Yakin ingin menghapus modul ini? Semua unit dan resource di dalamnya juga dapat terhapus.",
+      "Yakin ingin menghapus modul ini? Semua bagian dan bahan belajar di dalamnya juga dapat terhapus.",
     );
 
     if (!confirmed) return;
@@ -156,57 +194,66 @@ export default function LecturerModuleManagerClient({
     }
   }
 
+  const inputClass =
+    "mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-base text-slate-900 outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-100";
+  const labelClass = "text-sm font-medium text-slate-700";
+
   return (
     <div className="space-y-6">
-      <section className="rounded-[30px] border border-white/10 bg-white/5 p-6">
-        <div className="inline-flex items-center gap-2 rounded-full border border-teal-300/20 bg-teal-400/10 px-4 py-2 text-sm text-teal-200">
-          <BookOpen size={16} />
-          Kelola Modul Course
+      <Link
+        href={`/lecturer/courses/${course.slug}`}
+        className="inline-flex items-center gap-2 text-base font-medium text-teal-700 hover:text-teal-800"
+      >
+        <ArrowLeft size={18} aria-hidden="true" />
+        Kembali ke Kelas
+      </Link>
+
+      {/* Header */}
+      <section className="overflow-hidden rounded-3xl bg-teal-600 p-6 text-white sm:p-8">
+        <div className="inline-flex items-center gap-2 rounded-full bg-white/15 px-3 py-1.5 text-sm font-medium">
+          <LibraryBig size={16} aria-hidden="true" />
+          Kelola Modul
         </div>
-
-        <h1 className="mt-5 text-3xl font-semibold text-white">
-          {course.title}
-        </h1>
-
-        <p className="mt-3 text-slate-300">
-          Tambahkan, edit, publish, arsipkan, atau hapus modul pembelajaran pada
-          course ini.
+        <h1 className="mt-4 text-2xl font-bold sm:text-3xl">{course.title}</h1>
+        <p className="mt-3 max-w-2xl text-base leading-7 text-teal-50">
+          Tambah, ubah, terbitkan, atau hapus modul pembelajaran pada kelas ini.
         </p>
       </section>
 
-      <section className="rounded-[28px] border border-white/10 bg-white/5 p-6">
-        <h2 className="text-xl font-semibold text-white">
-          {editingModuleId ? "Edit Modul" : "Tambah Modul Baru"}
+      {/* Form */}
+      <section className="rounded-3xl border border-slate-200 bg-white p-6">
+        <h2 className="text-xl font-bold text-slate-900">
+          {editingModuleId ? "Ubah Modul" : "Tambah Modul Baru"}
         </h2>
 
-        <div className="mt-6 grid gap-4 md:grid-cols-2">
-          <div>
-            <label className="text-sm text-slate-300">Judul Modul</label>
+        <div className="mt-5 grid gap-4 md:grid-cols-2">
+          <div className="md:col-span-2">
+            <label className={labelClass}>Judul Modul</label>
             <input
               value={form.title}
               onChange={(e) =>
                 setForm((prev) => ({ ...prev, title: e.target.value }))
               }
-              className="mt-2 w-full rounded-2xl border border-white/10 bg-slate-900/70 px-4 py-3 text-sm text-white outline-none focus:border-teal-300/50"
-              placeholder="Contoh: Paradigma Baru PKN"
+              className={inputClass}
+              placeholder="Contoh: Pancasila sebagai Dasar Negara"
             />
           </div>
 
           <div>
-            <label className="text-sm text-slate-300">Urutan</label>
+            <label className={labelClass}>Urutan tampil</label>
             <input
               type="number"
               value={form.order}
               onChange={(e) =>
                 setForm((prev) => ({ ...prev, order: e.target.value }))
               }
-              className="mt-2 w-full rounded-2xl border border-white/10 bg-slate-900/70 px-4 py-3 text-sm text-white outline-none focus:border-teal-300/50"
+              className={inputClass}
               placeholder="Otomatis jika dikosongkan"
             />
           </div>
 
           <div>
-            <label className="text-sm text-slate-300">Estimasi Menit</label>
+            <label className={labelClass}>Perkiraan waktu (menit)</label>
             <input
               type="number"
               value={form.estimatedMinutes}
@@ -216,30 +263,30 @@ export default function LecturerModuleManagerClient({
                   estimatedMinutes: e.target.value,
                 }))
               }
-              className="mt-2 w-full rounded-2xl border border-white/10 bg-slate-900/70 px-4 py-3 text-sm text-white outline-none focus:border-teal-300/50"
+              className={inputClass}
               placeholder="Contoh: 45"
             />
           </div>
 
           <div>
-            <label className="text-sm text-slate-300">Status</label>
+            <label className={labelClass}>Status tampil</label>
             <select
               value={form.status}
               onChange={(e) =>
                 setForm((prev) => ({ ...prev, status: e.target.value }))
               }
-              className="mt-2 w-full rounded-2xl border border-white/10 bg-slate-900/70 px-4 py-3 text-sm text-white outline-none focus:border-teal-300/50"
+              className={inputClass}
             >
               {statusOptions.map((status) => (
-                <option key={status} value={status}>
-                  {status}
+                <option key={status.value} value={status.value}>
+                  {status.label}
                 </option>
               ))}
             </select>
           </div>
 
           <div>
-            <label className="text-sm text-slate-300">Mastery Threshold</label>
+            <label className={labelClass}>Nilai minimal lulus (%)</label>
             <input
               type="number"
               value={form.masteryThreshold}
@@ -249,13 +296,13 @@ export default function LecturerModuleManagerClient({
                   masteryThreshold: e.target.value,
                 }))
               }
-              className="mt-2 w-full rounded-2xl border border-white/10 bg-slate-900/70 px-4 py-3 text-sm text-white outline-none focus:border-teal-300/50"
+              className={inputClass}
               placeholder="75"
             />
           </div>
 
-          <div className="flex items-end">
-            <label className="flex items-center gap-3 rounded-2xl border border-white/10 bg-slate-900/70 px-4 py-3 text-sm text-slate-300">
+          <div className="md:col-span-2">
+            <label className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-base text-slate-700">
               <input
                 type="checkbox"
                 checked={form.isLocked}
@@ -265,27 +312,28 @@ export default function LecturerModuleManagerClient({
                     isLocked: e.target.checked,
                   }))
                 }
+                className="h-5 w-5 accent-teal-600"
               />
-              Modul dikunci
+              Kunci modul (mahasiswa belum bisa membuka)
             </label>
           </div>
 
           <div className="md:col-span-2">
-            <label className="text-sm text-slate-300">Deskripsi</label>
+            <label className={labelClass}>Deskripsi singkat</label>
             <textarea
               value={form.description}
               onChange={(e) =>
                 setForm((prev) => ({ ...prev, description: e.target.value }))
               }
               rows={4}
-              className="mt-2 w-full rounded-2xl border border-white/10 bg-slate-900/70 px-4 py-3 text-sm text-white outline-none focus:border-teal-300/50"
-              placeholder="Tuliskan deskripsi singkat modul..."
+              className={inputClass}
+              placeholder="Tuliskan gambaran singkat isi modul..."
             />
           </div>
         </div>
 
         {message ? (
-          <div className="mt-5 rounded-2xl border border-white/10 bg-white/5 p-4 text-sm text-slate-300">
+          <div className="mt-5 rounded-2xl border border-teal-200 bg-teal-50 p-4 text-base text-teal-800">
             {message}
           </div>
         ) : null}
@@ -295,9 +343,9 @@ export default function LecturerModuleManagerClient({
             type="button"
             onClick={handleSubmit}
             disabled={submitting}
-            className="inline-flex items-center gap-2 rounded-2xl bg-teal-400 px-5 py-3 text-sm font-semibold text-slate-950 transition hover:bg-teal-300 disabled:opacity-60"
+            className="inline-flex items-center gap-2 rounded-2xl bg-teal-600 px-5 py-3 text-base font-semibold text-white transition hover:bg-teal-700 disabled:opacity-60"
           >
-            <Plus size={16} />
+            <Plus size={18} aria-hidden="true" />
             {submitting
               ? "Menyimpan..."
               : editingModuleId
@@ -309,57 +357,63 @@ export default function LecturerModuleManagerClient({
             <button
               type="button"
               onClick={resetForm}
-              className="rounded-2xl border border-white/10 bg-white/5 px-5 py-3 text-sm text-white transition hover:bg-white/10"
+              className="rounded-2xl border border-slate-200 px-5 py-3 text-base font-medium text-slate-700 transition hover:bg-slate-50"
             >
-              Batal Edit
+              Batal
             </button>
           ) : null}
         </div>
       </section>
 
+      {/* Daftar modul */}
       <section className="grid gap-4">
+        <h2 className="text-xl font-bold text-slate-900">Daftar Modul</h2>
         {modules.length === 0 ? (
-          <div className="rounded-3xl border border-white/10 bg-white/5 p-6 text-slate-400">
-            Belum ada modul pada course ini.
+          <div className="rounded-3xl border border-slate-200 bg-white p-6 text-base text-slate-600">
+            Belum ada modul pada kelas ini.
           </div>
         ) : (
           modules.map((courseModule) => (
             <div
               key={courseModule.id}
-              className="rounded-3xl border border-white/10 bg-white/5 p-6"
+              className="rounded-3xl border border-slate-200 bg-white p-6"
             >
               <div className="flex flex-wrap items-start justify-between gap-4">
-                <div>
+                <div className="min-w-0">
                   <div className="flex flex-wrap items-center gap-2">
-                    <span className="rounded-full bg-white/5 px-3 py-1 text-xs text-slate-300">
+                    <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-600">
                       Urutan {courseModule.order}
                     </span>
-                    <span className="rounded-full bg-teal-400/10 px-3 py-1 text-xs text-teal-300">
-                      {courseModule.status}
+                    <span
+                      className={`rounded-full px-3 py-1 text-xs font-semibold ${statusBadge(
+                        courseModule.status,
+                      )}`}
+                    >
+                      {statusLabel(courseModule.status)}
                     </span>
                     {courseModule.isLocked ? (
-                      <span className="rounded-full bg-amber-400/10 px-3 py-1 text-xs text-amber-300">
-                        Locked
+                      <span className="rounded-full bg-orange-100 px-3 py-1 text-xs font-semibold text-orange-700">
+                        Terkunci
                       </span>
                     ) : null}
                   </div>
 
-                  <h3 className="mt-3 text-xl font-semibold text-white">
+                  <h3 className="mt-3 text-lg font-bold text-slate-900">
                     {courseModule.title}
                   </h3>
 
-                  <p className="mt-2 max-w-3xl text-sm leading-7 text-slate-300">
+                  <p className="mt-1.5 max-w-2xl text-base leading-7 text-slate-600">
                     {courseModule.description ?? "Belum ada deskripsi modul."}
                   </p>
 
-                  <div className="mt-4 flex flex-wrap gap-2 text-xs text-slate-400">
-                    <span className="rounded-full bg-white/5 px-3 py-1">
-                      {courseModule._count?.units ?? 0} unit
+                  <div className="mt-4 flex flex-wrap gap-2 text-sm text-slate-600">
+                    <span className="rounded-full bg-slate-100 px-3 py-1">
+                      {courseModule._count?.units ?? 0} bagian
                     </span>
-                    <span className="rounded-full bg-white/5 px-3 py-1">
-                      {courseModule._count?.resources ?? 0} resource
+                    <span className="rounded-full bg-slate-100 px-3 py-1">
+                      {courseModule._count?.resources ?? 0} bahan
                     </span>
-                    <span className="rounded-full bg-white/5 px-3 py-1">
+                    <span className="rounded-full bg-slate-100 px-3 py-1">
                       {courseModule.estimatedMinutes ?? "-"} menit
                     </span>
                   </div>
@@ -368,27 +422,27 @@ export default function LecturerModuleManagerClient({
                 <div className="flex flex-wrap gap-2">
                   <Link
                     href={`/lecturer/courses/${course.slug}/modules/${courseModule.id}/resources`}
-                    className="inline-flex items-center gap-2 rounded-2xl border border-cyan-300/20 bg-cyan-400/10 px-4 py-2.5 text-sm text-cyan-200 transition hover:bg-cyan-400/20"
+                    className="inline-flex items-center gap-2 rounded-2xl border border-slate-200 px-4 py-2.5 text-base font-medium text-teal-700 transition hover:bg-teal-50"
                   >
-                    <FileText size={15} />
-                    Resource
+                    <FileText size={16} aria-hidden="true" />
+                    Bahan
                   </Link>
 
                   <button
                     type="button"
                     onClick={() => startEdit(courseModule)}
-                    className="inline-flex items-center gap-2 rounded-2xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white transition hover:bg-white/10"
+                    className="inline-flex items-center gap-2 rounded-2xl border border-slate-200 px-4 py-2.5 text-base font-medium text-slate-700 transition hover:bg-slate-50"
                   >
-                    <Pencil size={15} />
-                    Edit
+                    <Pencil size={16} aria-hidden="true" />
+                    Ubah
                   </button>
 
                   <button
                     type="button"
                     onClick={() => handleDelete(courseModule.id)}
-                    className="inline-flex items-center gap-2 rounded-2xl border border-red-400/20 bg-red-500/10 px-4 py-2.5 text-sm text-red-300 transition hover:bg-red-500/20"
+                    className="inline-flex items-center gap-2 rounded-2xl border border-rose-200 px-4 py-2.5 text-base font-medium text-rose-600 transition hover:bg-rose-50"
                   >
-                    <Trash2 size={15} />
+                    <Trash2 size={16} aria-hidden="true" />
                     Hapus
                   </button>
                 </div>

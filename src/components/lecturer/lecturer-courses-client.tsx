@@ -5,15 +5,12 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import {
-  ArrowLeft,
   ArrowRight,
   BookOpen,
-  CheckCircle2,
-  Eye,
-  EyeOff,
+  ClipboardCheck,
   FileText,
   GraduationCap,
-  Layers3,
+  LibraryBig,
   MessageSquareMore,
   RefreshCcw,
   Search,
@@ -129,7 +126,7 @@ export default function LecturerCoursesClient({
       const json = (await res.json()) as LecturerCoursesResponse;
 
       if (!res.ok || !json.success) {
-        throw new Error(json.message || "Gagal mengambil course dosen");
+        throw new Error(json.message || "Gagal mengambil mata kuliah");
       }
 
       setData(json.data);
@@ -169,367 +166,242 @@ export default function LecturerCoursesClient({
 
   if (loading) {
     return (
-      <main className="space-y-6 p-6">
-        <section className="rounded-[28px] border border-white/10 bg-white/5 p-6">
-          <p className="text-slate-300">Memuat course dosen...</p>
-        </section>
-      </main>
+      <div className="rounded-3xl border border-slate-200 bg-white p-6">
+        <p className="text-base text-slate-600">Memuat mata kuliah...</p>
+      </div>
     );
   }
 
   if (error) {
     return (
-      <main className="space-y-6 p-6">
-        <section className="rounded-[28px] border border-red-400/20 bg-red-500/5 p-6">
-          <p className="text-red-300">Error: {error}</p>
-        </section>
-      </main>
+      <div className="rounded-3xl border border-rose-200 bg-rose-50 p-6">
+        <p className="text-base text-rose-700">Terjadi kesalahan: {error}</p>
+      </div>
     );
   }
 
   if (!data) {
     return (
-      <main className="space-y-6 p-6">
-        <section className="rounded-[28px] border border-white/10 bg-white/5 p-6">
-          <p className="text-slate-300">Data course belum tersedia.</p>
-        </section>
-      </main>
+      <div className="rounded-3xl border border-slate-200 bg-white p-6">
+        <p className="text-base text-slate-600">Data belum tersedia.</p>
+      </div>
     );
   }
 
   return (
-    <main className="space-y-6 p-6">
-      <section className="rounded-[30px] border border-white/10 bg-white/5 p-6 shadow-[0_20px_60px_rgba(0,0,0,0.18)] backdrop-blur-xl">
-        <div className="grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
-          <div className="min-w-0">
-            <Link
-              href="/lecturer/dashboard"
-              className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-4 py-2 text-sm text-slate-300 transition hover:bg-white/[0.08] hover:text-white"
-            >
-              <ArrowLeft size={16} />
-              Kembali ke Dashboard
-            </Link>
-
-            <div className="mt-5 inline-flex items-center gap-2 rounded-full border border-cyan-400/20 bg-cyan-400/10 px-4 py-2 text-sm text-cyan-200">
-              <GraduationCap size={16} />
-              Lecturer Course Workspace
-            </div>
-
-            <h1 className="mt-5 break-words text-3xl font-semibold text-white sm:text-4xl">
-              Course yang Diampu
-            </h1>
-
-            <p className="mt-4 max-w-3xl break-words text-slate-300">
-              Halaman ini menjadi pusat kerja dosen untuk melihat course,
-              mahasiswa, modul, resource, forum, project, dan progres umum.
-              Pembuatan modul dan micro-unit akan dilanjutkan pada Tahap 4B.
-            </p>
-          </div>
-
-          <div className="rounded-[28px] border border-white/10 bg-slate-900/70 p-5">
-            <div className="text-sm font-semibold text-white">Dosen aktif</div>
-            <div className="mt-3 text-lg font-semibold text-white">
-              {data.lecturer.name}
-            </div>
-            <div className="mt-1 text-sm text-slate-400">
-              {data.lecturer.email}
-            </div>
-
-            <div className="mt-5 rounded-2xl border border-cyan-400/20 bg-cyan-400/10 p-4">
-              <div className="text-sm text-cyan-200">
-                Total course yang diampu
-              </div>
-              <div className="mt-2 text-3xl font-semibold text-white">
-                {data.summary.totalCourses}
-              </div>
-            </div>
-          </div>
+    <div className="space-y-6">
+      {/* Header */}
+      <section className="overflow-hidden rounded-3xl bg-teal-600 p-6 text-white sm:p-8">
+        <div className="inline-flex items-center gap-2 rounded-full bg-white/15 px-3 py-1.5 text-sm font-medium">
+          <GraduationCap size={16} aria-hidden="true" />
+          Ruang Dosen
         </div>
+        <h1 className="mt-4 text-2xl font-bold sm:text-3xl">
+          Mata Kuliah yang Diampu
+        </h1>
+        <p className="mt-3 max-w-2xl text-base leading-7 text-teal-50">
+          Pilih mata kuliah untuk mengelola modul, bahan belajar, tugas, forum,
+          dan memantau perkembangan mahasiswa.
+        </p>
       </section>
 
-      <section className="grid gap-4 sm:grid-cols-2 2xl:grid-cols-5">
+      {/* Ringkasan angka */}
+      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard
           icon={BookOpen}
-          label="Total Course"
+          label="Mata Kuliah"
           value={data.summary.totalCourses}
-          subtitle="Course yang diampu"
         />
         <StatCard
           icon={Users}
           label="Mahasiswa Aktif"
           value={data.summary.totalStudents}
-          subtitle="Terdaftar aktif"
         />
         <StatCard
-          icon={Layers3}
-          label="Total Modul"
+          icon={LibraryBig}
+          label="Modul"
           value={data.summary.totalModules}
-          subtitle="Modul tersedia"
-        />
-        <StatCard
-          icon={CheckCircle2}
-          label="Total Unit"
-          value={data.summary.totalUnits}
-          subtitle="Micro-unit"
         />
         <StatCard
           icon={GraduationCap}
-          label="Avg Progress"
+          label="Rata-rata Progres"
           value={data.summary.averageProgress}
-          subtitle="Rata-rata course"
           suffix="%"
         />
       </section>
 
-      <section className="rounded-[28px] border border-white/10 bg-white/5 p-6 shadow-[0_12px_40px_rgba(0,0,0,0.14)] backdrop-blur-xl">
-        <div className="mb-5 flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
-          <div>
-            <h2 className="text-lg font-semibold text-white">Daftar Course</h2>
-            <p className="mt-1 text-sm text-slate-400">
-              Pilih course untuk melihat detail dan melanjutkan pengelolaan
-              akademik.
-            </p>
+      {/* Pencarian + filter */}
+      <section className="rounded-3xl border border-slate-200 bg-white p-5">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+          <div className="flex flex-1 items-center gap-2 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
+            <Search size={18} className="text-slate-400" aria-hidden="true" />
+            <input
+              value={q}
+              onChange={(event) => setQ(event.target.value)}
+              placeholder="Cari mata kuliah..."
+              aria-label="Cari mata kuliah"
+              className="w-full bg-transparent text-base text-slate-900 outline-none placeholder:text-slate-400"
+            />
           </div>
 
-          <div className="flex flex-col gap-3 sm:flex-row">
-            <div className="flex items-center gap-2 rounded-2xl border border-white/10 bg-slate-950 px-4 py-3">
-              <Search size={16} className="text-slate-500" />
-              <input
-                value={q}
-                onChange={(event) => setQ(event.target.value)}
-                placeholder="Cari course..."
-                className="w-full bg-transparent text-sm text-white outline-none placeholder:text-slate-500"
-              />
-            </div>
+          <select
+            value={statusFilter}
+            onChange={(event) =>
+              setStatusFilter(
+                event.target.value as "ALL" | "PUBLISHED" | "DRAFT",
+              )
+            }
+            aria-label="Saring status"
+            className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-base text-slate-700 outline-none"
+          >
+            <option value="ALL">Semua Status</option>
+            <option value="PUBLISHED">Terbit</option>
+            <option value="DRAFT">Draf</option>
+          </select>
 
-            <select
-              value={statusFilter}
-              onChange={(event) =>
-                setStatusFilter(
-                  event.target.value as "ALL" | "PUBLISHED" | "DRAFT",
-                )
-              }
-              className="rounded-2xl border border-white/10 bg-slate-950 px-4 py-3 text-sm text-white outline-none"
-            >
-              <option value="ALL">Semua Status</option>
-              <option value="PUBLISHED">Published</option>
-              <option value="DRAFT">Draft</option>
-            </select>
-
-            <button
-              type="button"
-              onClick={fetchCourses}
-              className="inline-flex items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-slate-300 transition hover:bg-white/[0.08] hover:text-white"
-            >
-              <RefreshCcw size={16} />
-              Refresh
-            </button>
-          </div>
+          <button
+            type="button"
+            onClick={fetchCourses}
+            className="inline-flex items-center justify-center gap-2 rounded-2xl border border-slate-200 px-4 py-3 text-base font-medium text-slate-700 transition hover:bg-slate-50"
+          >
+            <RefreshCcw size={18} aria-hidden="true" />
+            Muat ulang
+          </button>
         </div>
-
-        {filteredCourses.length === 0 ? (
-          <div className="rounded-2xl border border-white/10 bg-slate-900/70 p-5 text-sm text-slate-300">
-            Belum ada course yang sesuai filter. Pastikan admin sudah membuat
-            course dan memilih dosen pengampu.
-          </div>
-        ) : (
-          <div className="grid gap-5">
-            {filteredCourses.map((course) => (
-              <CourseCard key={course.id} course={course} />
-            ))}
-          </div>
-        )}
       </section>
-    </main>
+
+      {/* Daftar */}
+      {filteredCourses.length === 0 ? (
+        <div className="rounded-3xl border border-slate-200 bg-white p-6 text-base text-slate-600">
+          Belum ada mata kuliah yang sesuai. Pastikan admin sudah membuat mata
+          kuliah dan menugaskan Anda sebagai dosen pengampu.
+        </div>
+      ) : (
+        <div className="grid gap-5">
+          {filteredCourses.map((course) => (
+            <CourseCard key={course.id} course={course} />
+          ))}
+        </div>
+      )}
+    </div>
   );
 }
 
 function CourseCard({ course }: { course: CourseItem }) {
   return (
-    <div className="overflow-hidden rounded-[28px] border border-white/10 bg-slate-900/70 p-5">
+    <div className="rounded-3xl border border-slate-200 bg-white p-6">
       <div className="flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap gap-2">
-            <StatusBadge isPublished={course.isPublished} />
-
-            <span className="inline-flex rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-xs text-slate-300">
-              {course.code ?? "Tanpa kode"}
+            <span
+              className={`rounded-full px-3 py-1 text-xs font-semibold ${
+                course.isPublished
+                  ? "bg-emerald-100 text-emerald-700"
+                  : "bg-amber-100 text-amber-700"
+              }`}
+            >
+              {course.isPublished ? "Terbit" : "Draf"}
             </span>
-
-            <span className="inline-flex rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-xs text-slate-300">
-              /{course.slug}
-            </span>
+            {course.code ? (
+              <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-600">
+                {course.code}
+              </span>
+            ) : null}
           </div>
 
-          <h3 className="mt-4 break-words text-2xl font-semibold text-white">
+          <h3 className="mt-3 text-xl font-bold text-slate-900">
             {course.title}
           </h3>
 
-          <p className="mt-2 max-w-4xl break-words text-sm leading-7 text-slate-300">
-            {course.description ?? "Belum ada deskripsi course."}
+          <p className="mt-1.5 max-w-3xl text-base leading-7 text-slate-600">
+            {course.description ?? "Belum ada deskripsi mata kuliah."}
           </p>
         </div>
 
-        <div className="w-full shrink-0 rounded-2xl border border-white/10 bg-slate-950/60 p-4 xl:w-80">
-          <div className="mb-2 flex items-center justify-between text-xs text-slate-400">
+        <div className="w-full shrink-0 rounded-2xl border border-slate-200 bg-slate-50 p-4 xl:w-72">
+          <div className="mb-2 flex items-center justify-between text-sm text-slate-600">
             <span>Rata-rata progres</span>
-            <span>{course.summary.averageProgress}%</span>
+            <span className="font-semibold text-slate-900">
+              {course.summary.averageProgress}%
+            </span>
           </div>
-
-          <div className="h-2 w-full rounded-full bg-slate-800">
+          <div className="h-2.5 w-full rounded-full bg-slate-200">
             <div
-              className="h-2 rounded-full bg-gradient-to-r from-teal-400 via-cyan-400 to-sky-400"
+              className="h-2.5 rounded-full bg-teal-600"
               style={{ width: `${course.summary.averageProgress}%` }}
             />
-          </div>
-
-          <div className="mt-3 text-xs text-slate-400">
-            Mastery rata-rata:{" "}
-            <span className="text-slate-200">
-              {course.summary.averageMastery ?? "Belum tersedia"}
-            </span>
           </div>
         </div>
       </div>
 
-      <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-6">
+      <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-6">
         <MiniInfo
           label="Mahasiswa"
           value={`${course.summary.activeStudents}`}
         />
         <MiniInfo label="Modul" value={`${course.summary.totalModules}`} />
-        <MiniInfo label="Unit" value={`${course.summary.totalUnits}`} />
-        <MiniInfo label="Resource" value={`${course.summary.totalResources}`} />
+        <MiniInfo label="Bagian" value={`${course.summary.totalUnits}`} />
+        <MiniInfo label="Bahan" value={`${course.summary.totalResources}`} />
         <MiniInfo label="Forum" value={`${course.summary.totalThreads}`} />
         <MiniInfo label="Project" value={`${course.summary.totalProjects}`} />
       </div>
 
-      <div className="mt-5 grid gap-5 xl:grid-cols-[1fr_0.9fr]">
-        <div className="rounded-2xl border border-white/10 bg-white/[0.035] p-4">
-          <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-white">
-            <Layers3 size={16} className="text-teal-300" />
-            Ringkasan Modul
-          </div>
-
-          {course.modules.length === 0 ? (
-            <div className="rounded-2xl border border-white/10 bg-slate-950/50 p-4 text-sm text-slate-400">
-              Belum ada modul. Gunakan menu Modules untuk membuat modul dan mengelola micro-unit.
-            </div>
-          ) : (
-            <div className="grid gap-3">
-              {course.modules.slice(0, 4).map((module) => (
-                <div
-                  key={module.id}
-                  className="rounded-2xl border border-white/10 bg-slate-950/50 p-4"
-                >
-                  <div className="flex flex-wrap items-start justify-between gap-3">
-                    <div className="min-w-0">
-                      <div className="text-sm font-semibold text-white">
-                        {module.order}. {module.title}
-                      </div>
-                      <div className="mt-1 text-xs text-slate-400">
-                        {module.totalUnits} unit · {module.status}
-                      </div>
-                    </div>
-
-                    <div className="rounded-full bg-teal-400/10 px-3 py-1 text-xs text-teal-300">
-                      {module.averageProgress}%
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-
-        <div className="rounded-2xl border border-white/10 bg-white/[0.035] p-4">
-          <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-white">
-            <Users size={16} className="text-cyan-300" />
-            Mahasiswa Terbaru
-          </div>
-
-          {course.studentsPreview.length === 0 ? (
-            <div className="rounded-2xl border border-white/10 bg-slate-950/50 p-4 text-sm text-slate-400">
-              Belum ada mahasiswa aktif pada course ini.
-            </div>
-          ) : (
-            <div className="grid gap-3">
-              {course.studentsPreview.map((student) => (
-                <div
-                  key={student.id}
-                  className="rounded-2xl border border-white/10 bg-slate-950/50 p-4"
-                >
-                  <div className="flex flex-wrap items-start justify-between gap-3">
-                    <div className="min-w-0">
-                      <div className="text-sm font-semibold text-white">
-                        {student.name}
-                      </div>
-                      <div className="mt-1 text-xs text-slate-400">
-                        {student.email}
-                      </div>
-                    </div>
-
-                    <div className="rounded-full bg-cyan-400/10 px-3 py-1 text-xs text-cyan-300">
-                      {student.averageProgress}%
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
-
-      <div className="mt-5 flex flex-wrap gap-3">
+      <div className="mt-5 flex flex-wrap gap-2.5">
         <Link
           href={`/lecturer/courses/${course.slug}`}
-          className="inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-teal-400 via-cyan-400 to-sky-400 px-5 py-3 text-sm font-semibold text-slate-950 transition hover:brightness-110"
+          className="inline-flex items-center gap-2 rounded-2xl bg-teal-600 px-5 py-3 text-base font-semibold text-white transition hover:bg-teal-700"
         >
-          Buka Detail Course
-          <ArrowRight size={16} />
+          Buka Kelas
+          <ArrowRight size={16} aria-hidden="true" />
         </Link>
 
-        <Link
-          href={`/lecturer/courses/${course.slug}/cer`}
-          className="inline-flex items-center gap-2 rounded-2xl border border-white/10 bg-white/[0.04] px-5 py-3 text-sm text-white transition hover:bg-white/[0.08]"
-        >
-          <Target size={16} />
-          CER
-        </Link>
-
-        <Link
+        <SecondaryLink
           href={`/lecturer/courses/${course.slug}/modules`}
-          className="inline-flex items-center gap-2 rounded-2xl border border-white/10 bg-white/[0.04] px-5 py-3 text-sm text-white transition hover:bg-white/[0.08]"
-        >
-          <Layers3 size={16} />
-          Modul
-        </Link>
-
-        <Link
+          label="Modul"
+          icon={LibraryBig}
+        />
+        <SecondaryLink
           href={`/lecturer/courses/${course.slug}/resources`}
-          className="inline-flex items-center gap-2 rounded-2xl border border-white/10 bg-white/[0.04] px-5 py-3 text-sm text-white transition hover:bg-white/[0.08]"
-        >
-          <FileText size={16} />
-          Resource
-        </Link>
-
-        <Link
+          label="Bahan Belajar"
+          icon={FileText}
+        />
+        <SecondaryLink
+          href={`/lecturer/courses/${course.slug}/cer`}
+          label="Tugas Argumentasi"
+          icon={ClipboardCheck}
+        />
+        <SecondaryLink
           href={`/lecturer/courses/${course.slug}/forums`}
-          className="inline-flex items-center gap-2 rounded-2xl border border-white/10 bg-white/[0.04] px-5 py-3 text-sm text-white transition hover:bg-white/[0.08]"
-        >
-          <MessageSquareMore size={16} />
-          Forum
-        </Link>
-
-        <Link
+          label="Forum Diskusi"
+          icon={MessageSquareMore}
+        />
+        <SecondaryLink
           href={`/lecturer/courses/${course.slug}/projects`}
-          className="inline-flex items-center gap-2 rounded-2xl border border-white/10 bg-white/[0.04] px-5 py-3 text-sm text-white transition hover:bg-white/[0.08]"
-        >
-          <Target size={16} />
-          Project
-        </Link>
+          label="Project Aksi"
+          icon={Target}
+        />
       </div>
     </div>
+  );
+}
+
+function SecondaryLink({
+  href,
+  label,
+  icon: Icon,
+}: {
+  href: string;
+  label: string;
+  icon: React.ComponentType<{ size?: number; "aria-hidden"?: boolean }>;
+}) {
+  return (
+    <Link
+      href={href}
+      className="inline-flex items-center gap-2 rounded-2xl border border-slate-200 px-4 py-3 text-base font-medium text-slate-700 transition hover:bg-slate-50"
+    >
+      <Icon size={16} aria-hidden={true} />
+      {label}
+    </Link>
   );
 }
 
@@ -537,29 +409,25 @@ function StatCard({
   icon: Icon,
   label,
   value,
-  subtitle,
   suffix = "",
 }: {
-  icon: React.ComponentType<{ size?: number; className?: string }>;
+  icon: React.ComponentType<{ size?: number; "aria-hidden"?: boolean }>;
   label: string;
   value: number;
-  subtitle: string;
   suffix?: string;
 }) {
   return (
-    <div className="rounded-[28px] border border-white/10 bg-white/[0.04] p-5 backdrop-blur-xl">
-      <div className="flex items-start justify-between gap-3">
+    <div className="rounded-3xl border border-slate-200 bg-white p-5">
+      <div className="flex items-center gap-3">
+        <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-teal-100 text-teal-700">
+          <Icon size={22} aria-hidden={true} />
+        </div>
         <div>
-          <div className="text-sm text-slate-400">{label}</div>
-          <div className="mt-2 text-3xl font-semibold text-white">
+          <div className="text-2xl font-bold text-slate-900">
             {value}
             {suffix}
           </div>
-          <div className="mt-2 text-xs text-slate-500">{subtitle}</div>
-        </div>
-
-        <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-cyan-400/10 text-cyan-300">
-          <Icon size={20} />
+          <div className="text-sm text-slate-500">{label}</div>
         </div>
       </div>
     </div>
@@ -568,25 +436,9 @@ function StatCard({
 
 function MiniInfo({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4 text-center">
-      <div className="text-[11px] uppercase tracking-wide text-slate-400">
-        {label}
-      </div>
-      <div className="mt-2 text-sm font-semibold text-white">{value}</div>
+    <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3 text-center">
+      <div className="text-lg font-bold text-slate-900">{value}</div>
+      <div className="mt-0.5 text-xs text-slate-500">{label}</div>
     </div>
-  );
-}
-
-function StatusBadge({ isPublished }: { isPublished: boolean }) {
-  return isPublished ? (
-    <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-400/20 bg-emerald-400/10 px-3 py-1 text-xs font-medium text-emerald-300">
-      <Eye size={13} />
-      Published
-    </span>
-  ) : (
-    <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-400/20 bg-amber-400/10 px-3 py-1 text-xs font-medium text-amber-300">
-      <EyeOff size={13} />
-      Draft
-    </span>
   );
 }

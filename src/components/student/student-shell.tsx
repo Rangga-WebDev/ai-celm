@@ -2,9 +2,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import clsx from "clsx";
 import StudentSidebar from "@/components/student/student-sidebar";
 import StudentTopbar from "@/components/student/student-topbar";
+import StudentHelpPanel from "@/components/student/student-help-panel";
 
 type StudentShellProps = {
   children: React.ReactNode;
@@ -17,53 +17,85 @@ type StudentShellProps = {
   };
 };
 
-export default function StudentShell({ children, user }: StudentShellProps) {
-  const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [isMobile, setIsMobile] = useState(false);
+const FONT_SCALE_KEY = "aicelm:font-scale";
+const FONT_MIN = 90;
+const FONT_MAX = 130;
+const FONT_STEP = 10;
 
+export default function StudentShell({ children, user }: StudentShellProps) {
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+  const [helpOpen, setHelpOpen] = useState(false);
+  const [fontScale, setFontScale] = useState(100);
+
+  // Tentukan apakah layar tergolong kecil (mobile/tablet).
   useEffect(() => {
     const checkViewport = () => {
       const mobile = window.innerWidth < 1024;
       setIsMobile(mobile);
-      setSidebarOpen(!mobile);
+      if (!mobile) setSidebarOpen(false);
     };
 
     checkViewport();
     window.addEventListener("resize", checkViewport);
-
     return () => window.removeEventListener("resize", checkViewport);
   }, []);
 
+  // Muat preferensi ukuran huruf dari penyimpanan lokal.
+  useEffect(() => {
+    const saved = Number(window.localStorage.getItem(FONT_SCALE_KEY));
+    if (saved >= FONT_MIN && saved <= FONT_MAX) {
+      setFontScale(saved);
+    }
+  }, []);
+
+  // Terapkan ukuran huruf ke seluruh halaman.
+  useEffect(() => {
+    document.documentElement.style.setProperty(
+      "--app-font-scale",
+      `${fontScale}%`,
+    );
+    window.localStorage.setItem(FONT_SCALE_KEY, String(fontScale));
+  }, [fontScale]);
+
+  const increaseFont = () =>
+    setFontScale((prev) => Math.min(FONT_MAX, prev + FONT_STEP));
+  const decreaseFont = () =>
+    setFontScale((prev) => Math.max(FONT_MIN, prev - FONT_STEP));
+
   return (
-    <div className="relative min-h-screen overflow-x-hidden bg-slate-950 text-white">
-      <div className="pointer-events-none fixed inset-0 bg-[radial-gradient(circle_at_top_left,rgba(45,212,191,0.08),transparent_24%),radial-gradient(circle_at_top_right,rgba(59,130,246,0.08),transparent_28%),radial-gradient(circle_at_bottom_right,rgba(168,85,247,0.06),transparent_22%)]" />
-      <div className="pointer-events-none fixed inset-0 opacity-[0.04] [background-image:linear-gradient(rgba(255,255,255,0.08)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.08)_1px,transparent_1px)] [background-size:88px_88px]" />
+    <div className="min-h-screen bg-slate-50 text-slate-900">
+      <a href="#konten-utama" className="skip-to-content">
+        Lompat ke konten utama
+      </a>
 
       <StudentSidebar
         user={user}
-        open={sidebarOpen}
         isMobile={isMobile}
-        onToggle={() => setSidebarOpen((prev) => !prev)}
-        onClose={() => {
-          if (isMobile) setSidebarOpen(false);
+        open={sidebarOpen}
+        onClose={() => setSidebarOpen(false)}
+        onOpenHelp={() => {
+          setHelpOpen(true);
+          setSidebarOpen(false);
         }}
       />
 
-      <div
-        className={clsx(
-          "relative min-w-0 transition-all duration-300",
-          isMobile ? "pl-0" : sidebarOpen ? "lg:pl-[284px]" : "lg:pl-[96px]",
-        )}
-      >
+      <div className="min-w-0 lg:pl-70">
         <StudentTopbar
           user={user}
           onOpenSidebar={() => setSidebarOpen((prev) => !prev)}
+          onOpenHelp={() => setHelpOpen(true)}
+          fontScale={fontScale}
+          onIncreaseFont={increaseFont}
+          onDecreaseFont={decreaseFont}
         />
 
-        <main className="min-w-0 px-4 pb-8 pt-5 sm:px-6 lg:px-8">
-          <div className="mx-auto w-full max-w-[92rem] min-w-0">{children}</div>
+        <main id="konten-utama" className="px-4 pb-12 pt-6 sm:px-6 lg:px-8">
+          <div className="mx-auto w-full max-w-6xl">{children}</div>
         </main>
       </div>
+
+      <StudentHelpPanel open={helpOpen} onClose={() => setHelpOpen(false)} />
     </div>
   );
 }

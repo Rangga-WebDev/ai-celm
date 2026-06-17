@@ -6,6 +6,7 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import {
   ArrowLeft,
+  Activity,
   BookOpen,
   CheckCircle2,
   Loader2,
@@ -158,6 +159,27 @@ const fallbackStatuses: DiscussionThreadStatus[] = [
   "ARCHIVED",
 ];
 
+const statusLabels: Record<DiscussionThreadStatus, string> = {
+  DRAFT: "Draf",
+  OPEN: "Terbuka",
+  CLOSED: "Ditutup",
+  ARCHIVED: "Diarsipkan",
+};
+
+function statusLabel(status: DiscussionThreadStatus) {
+  return statusLabels[status] ?? status;
+}
+
+const targetLabels: Record<TargetType, string> = {
+  COURSE: "Mata Kuliah",
+  MODULE: "Modul",
+  UNIT: "Unit",
+};
+
+function targetLabel(target: TargetType) {
+  return targetLabels[target] ?? target;
+}
+
 function slugify(value: string) {
   return value
     .toLowerCase()
@@ -259,7 +281,7 @@ export default function LecturerForumsClient({
       const json = (await res.json()) as ApiResponse;
 
       if (!res.ok || !json.success) {
-        throw new Error(json.message || "Gagal mengambil forum deliberasi");
+        throw new Error(json.message || "Gagal mengambil forum diskusi");
       }
 
       setCourse(json.data.course);
@@ -267,7 +289,7 @@ export default function LecturerForumsClient({
       setThreads(json.data.threads);
       setStatuses(json.data.statuses);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Unknown error");
+      setError(err instanceof Error ? err.message : "Terjadi kesalahan");
     } finally {
       setLoading(false);
     }
@@ -373,17 +395,17 @@ export default function LecturerForumsClient({
       const json = await res.json();
 
       if (!res.ok || !json.success) {
-        throw new Error(json.message || "Gagal menyimpan forum");
+        throw new Error(json.message || "Gagal menyimpan diskusi");
       }
 
       setMessage(
-        isEditing ? "Forum berhasil diperbarui." : "Forum berhasil dibuat.",
+        isEditing ? "Diskusi berhasil diperbarui." : "Diskusi berhasil dibuat.",
       );
 
       resetForm();
       await fetchForums();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Unknown error");
+      setError(err instanceof Error ? err.message : "Terjadi kesalahan");
     } finally {
       setSubmitting(false);
     }
@@ -391,7 +413,7 @@ export default function LecturerForumsClient({
 
   async function handleDelete(thread: DiscussionThread) {
     const confirmed = window.confirm(
-      `Hapus forum "${thread.title}"? Semua post pada forum ini dapat ikut terhapus.`,
+      `Hapus diskusi "${thread.title}"? Semua balasan pada diskusi ini dapat ikut terhapus.`,
     );
 
     if (!confirmed) return;
@@ -411,13 +433,13 @@ export default function LecturerForumsClient({
       const json = await res.json();
 
       if (!res.ok || !json.success) {
-        throw new Error(json.message || "Gagal menghapus forum");
+        throw new Error(json.message || "Gagal menghapus diskusi");
       }
 
-      setMessage("Forum berhasil dihapus.");
+      setMessage("Diskusi berhasil dihapus.");
       await fetchForums();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Unknown error");
+      setError(err instanceof Error ? err.message : "Terjadi kesalahan");
     } finally {
       setSubmitting(false);
     }
@@ -425,59 +447,59 @@ export default function LecturerForumsClient({
 
   if (loading) {
     return (
-      <main className="space-y-6 p-6">
-        <section className="rounded-[28px] border border-white/10 bg-white/5 p-6 text-slate-300">
-          Memuat forum deliberasi...
+      <div className="space-y-6">
+        <section className="rounded-3xl border border-slate-200 bg-white p-6 text-slate-600">
+          Memuat Forum Diskusi...
         </section>
-      </main>
+      </div>
     );
   }
 
   if (error) {
     return (
-      <main className="space-y-6 p-6">
-        <section className="rounded-[28px] border border-red-400/20 bg-red-500/5 p-6 text-red-300">
-          Error: {error}
+      <div className="space-y-6">
+        <section className="rounded-3xl border border-rose-200 bg-rose-50 p-6 text-rose-700">
+          Terjadi kesalahan: {error}
         </section>
-      </main>
+      </div>
     );
   }
 
   return (
-    <main className="space-y-6 p-6">
-      <section className="rounded-[30px] border border-white/10 bg-white/5 p-6 shadow-[0_20px_60px_rgba(0,0,0,0.18)] backdrop-blur-xl">
+    <div className="space-y-6">
+      <section className="rounded-3xl bg-teal-600 p-6 text-white sm:p-8">
         <div className="flex flex-col gap-5 xl:flex-row xl:items-center xl:justify-between">
           <div className="min-w-0">
             <Link
               href={`/lecturer/courses/${courseSlug}`}
-              className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-4 py-2 text-sm text-slate-300 transition hover:bg-white/[0.08] hover:text-white"
+              className="inline-flex items-center gap-2 rounded-2xl bg-white/15 px-4 py-2 text-base font-medium text-white transition hover:bg-white/25"
             >
-              <ArrowLeft size={16} />
-              Kembali ke Detail Course
+              <ArrowLeft size={18} aria-hidden />
+              Kembali ke Detail Mata Kuliah
             </Link>
 
-            <div className="mt-5 inline-flex items-center gap-2 rounded-full border border-cyan-400/20 bg-cyan-400/10 px-4 py-2 text-sm text-cyan-200">
-              <MessageSquareMore size={16} />
-              Lecturer Forum Deliberasi
+            <div className="mt-5 inline-flex items-center gap-2 rounded-full bg-white/15 px-3 py-1.5 text-sm">
+              <MessageSquareMore size={16} aria-hidden />
+              Forum Diskusi Dosen
             </div>
 
-            <h1 className="mt-5 break-words text-3xl font-semibold text-white sm:text-4xl">
-              Kelola Forum Deliberasi
+            <h1 className="mt-5 break-words text-3xl font-bold sm:text-4xl">
+              Kelola Forum Diskusi
             </h1>
 
-            <p className="mt-3 max-w-3xl text-sm leading-7 text-slate-300 sm:text-base">
-              Dosen membuat forum diskusi terarah untuk melatih argumentasi,
-              deliberasi, dan etika komunikasi mahasiswa dalam isu kewargaan.
+            <p className="mt-3 max-w-3xl text-base leading-7 text-teal-50">
+              Buat topik diskusi terarah untuk melatih argumentasi, deliberasi,
+              dan etika komunikasi mahasiswa dalam isu kewargaan.
             </p>
           </div>
 
-          <div className="rounded-[28px] border border-white/10 bg-slate-900/70 p-4">
-            <div className="text-sm text-slate-400">Course</div>
-            <div className="mt-1 font-semibold text-white">
-              {course?.title ?? "Course"}
+          <div className="rounded-2xl bg-white/15 p-5">
+            <div className="text-sm text-teal-50">Mata Kuliah</div>
+            <div className="mt-1 text-lg font-semibold text-white">
+              {course?.title ?? "Mata Kuliah"}
             </div>
-            <div className="mt-1 text-sm text-slate-400">
-              {course?.code ?? "Tanpa kode"} · /{course?.slug}
+            <div className="mt-1 text-sm text-teal-50">
+              {course?.code ?? "Tanpa kode"}
             </div>
           </div>
         </div>
@@ -489,56 +511,47 @@ export default function LecturerForumsClient({
           label="Total"
           value={summary.total}
         />
-        <SummaryCard icon={CheckCircle2} label="Open" value={summary.open} />
-        <SummaryCard icon={BookOpen} label="Draft" value={summary.draft} />
-        <SummaryCard icon={Lock} label="Locked" value={summary.locked} />
-        <SummaryCard icon={Pin} label="Pinned" value={summary.pinned} />
-        <SummaryCard icon={Users} label="Posts" value={summary.posts} />
+        <SummaryCard icon={CheckCircle2} label="Terbuka" value={summary.open} />
+        <SummaryCard icon={BookOpen} label="Draf" value={summary.draft} />
+        <SummaryCard icon={Lock} label="Terkunci" value={summary.locked} />
+        <SummaryCard icon={Pin} label="Disematkan" value={summary.pinned} />
+        <SummaryCard icon={Users} label="Balasan" value={summary.posts} />
       </section>
 
       <section className="grid gap-6 xl:grid-cols-[0.85fr_1.5fr]">
-        <div className="rounded-[30px] border border-white/10 bg-white/5 p-6 backdrop-blur-xl">
+        <div className="rounded-3xl border border-slate-200 bg-white p-6">
           <div className="mb-5">
-            <h2 className="text-lg font-semibold text-white">
-              {editingThread ? "Edit Forum" : "Tambah Forum Baru"}
+            <h2 className="text-lg font-bold text-slate-900">
+              {editingThread ? "Ubah Diskusi" : "Tambah Diskusi Baru"}
             </h2>
-            <p className="mt-1 text-sm text-slate-400">
-              Forum dapat ditempel pada course, module, atau micro-unit.
+            <p className="mt-1 text-base text-slate-600">
+              Diskusi dapat ditempatkan pada mata kuliah, modul, atau unit.
             </p>
           </div>
 
           {message ? (
-            <div className="mb-4 rounded-2xl border border-emerald-400/20 bg-emerald-400/10 px-4 py-3 text-sm text-emerald-200">
+            <div className="mb-4 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-base text-emerald-700">
               {message}
             </div>
           ) : null}
 
           {error ? (
-            <div className="mb-4 rounded-2xl border border-red-400/20 bg-red-400/10 px-4 py-3 text-sm text-red-200">
+            <div className="mb-4 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-base text-rose-700">
               {error}
             </div>
           ) : null}
 
           <form onSubmit={handleSubmit} className="grid gap-4">
             <FormField
-              label="Judul Forum"
+              label="Judul Diskusi"
               value={form.title}
               onChange={updateTitle}
               placeholder="Contoh: Diskusi Isu Kewargaan Digital"
             />
 
-            <FormField
-              label="Slug"
-              value={form.slug}
-              onChange={(value) =>
-                setForm((prev) => ({ ...prev, slug: slugify(value) }))
-              }
-              placeholder="diskusi-isu-kewargaan-digital"
-            />
-
             <div>
-              <label className="text-sm font-medium text-slate-300">
-                Status Forum
+              <label className="text-sm font-medium text-slate-700">
+                Status Diskusi
               </label>
               <select
                 value={form.status}
@@ -548,42 +561,42 @@ export default function LecturerForumsClient({
                     status: event.target.value as DiscussionThreadStatus,
                   }))
                 }
-                className="mt-2 w-full rounded-2xl border border-white/10 bg-slate-950 px-4 py-3 text-sm text-white outline-none"
+                className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-base text-slate-900 outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-100"
               >
                 {statuses.map((status) => (
                   <option key={status} value={status}>
-                    {status}
+                    {statusLabel(status)}
                   </option>
                 ))}
               </select>
             </div>
 
             <div>
-              <label className="text-sm font-medium text-slate-300">
-                Target Forum
+              <label className="text-sm font-medium text-slate-700">
+                Target Diskusi
               </label>
               <select
                 value={form.targetType}
                 onChange={(event) =>
                   updateTargetType(event.target.value as TargetType)
                 }
-                className="mt-2 w-full rounded-2xl border border-white/10 bg-slate-950 px-4 py-3 text-sm text-white outline-none"
+                className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-base text-slate-900 outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-100"
               >
-                <option value="COURSE">Course Level</option>
-                <option value="MODULE">Module Level</option>
-                <option value="UNIT">Micro-Unit Level</option>
+                <option value="COURSE">Tingkat Mata Kuliah</option>
+                <option value="MODULE">Tingkat Modul</option>
+                <option value="UNIT">Tingkat Unit</option>
               </select>
             </div>
 
             {(form.targetType === "MODULE" || form.targetType === "UNIT") && (
               <div>
-                <label className="text-sm font-medium text-slate-300">
+                <label className="text-sm font-medium text-slate-700">
                   Pilih Modul
                 </label>
                 <select
                   value={form.moduleId}
                   onChange={(event) => updateModuleId(event.target.value)}
-                  className="mt-2 w-full rounded-2xl border border-white/10 bg-slate-950 px-4 py-3 text-sm text-white outline-none"
+                  className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-base text-slate-900 outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-100"
                 >
                   <option value="">Pilih modul</option>
                   {modules.map((courseModule) => (
@@ -597,8 +610,8 @@ export default function LecturerForumsClient({
 
             {form.targetType === "UNIT" && (
               <div>
-                <label className="text-sm font-medium text-slate-300">
-                  Pilih Micro-Unit
+                <label className="text-sm font-medium text-slate-700">
+                  Pilih Unit
                 </label>
                 <select
                   value={form.microUnitId}
@@ -608,9 +621,9 @@ export default function LecturerForumsClient({
                       microUnitId: event.target.value,
                     }))
                   }
-                  className="mt-2 w-full rounded-2xl border border-white/10 bg-slate-950 px-4 py-3 text-sm text-white outline-none"
+                  className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-base text-slate-900 outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-100"
                 >
-                  <option value="">Pilih micro-unit</option>
+                  <option value="">Pilih unit</option>
                   {selectedModuleUnits.map((unit) => (
                     <option key={unit.id} value={unit.id}>
                       {unit.order}. {unit.title} — {unit.unitType}
@@ -621,17 +634,17 @@ export default function LecturerForumsClient({
             )}
 
             <TextareaField
-              label="Deskripsi Forum"
+              label="Deskripsi Diskusi"
               value={form.description}
               onChange={(value) =>
                 setForm((prev) => ({ ...prev, description: value }))
               }
               rows={3}
-              placeholder="Tuliskan deskripsi singkat forum..."
+              placeholder="Tuliskan deskripsi singkat diskusi..."
             />
 
             <TextareaField
-              label="Prompt Diskusi"
+              label="Pertanyaan Pemantik Diskusi"
               value={form.prompt}
               onChange={(value) =>
                 setForm((prev) => ({ ...prev, prompt: value }))
@@ -640,7 +653,7 @@ export default function LecturerForumsClient({
               placeholder="Berikan pertanyaan pemantik diskusi..."
             />
 
-            <label className="flex items-start gap-3 rounded-2xl border border-white/10 bg-slate-950 p-4">
+            <label className="flex items-start gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-4">
               <input
                 type="checkbox"
                 checked={form.isPinned}
@@ -650,19 +663,19 @@ export default function LecturerForumsClient({
                     isPinned: event.target.checked,
                   }))
                 }
-                className="mt-1 h-4 w-4 accent-cyan-400"
+                className="mt-0.5 h-5 w-5 accent-teal-600"
               />
               <span>
-                <span className="block text-sm font-medium text-white">
-                  Pin forum
+                <span className="block text-base font-medium text-slate-900">
+                  Sematkan diskusi
                 </span>
-                <span className="mt-1 block text-sm leading-6 text-slate-400">
-                  Forum akan diprioritaskan di daftar forum.
+                <span className="mt-1 block text-sm leading-6 text-slate-600">
+                  Diskusi akan diprioritaskan di bagian atas daftar.
                 </span>
               </span>
             </label>
 
-            <label className="flex items-start gap-3 rounded-2xl border border-white/10 bg-slate-950 p-4">
+            <label className="flex items-start gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-4">
               <input
                 type="checkbox"
                 checked={form.isLocked}
@@ -672,14 +685,14 @@ export default function LecturerForumsClient({
                     isLocked: event.target.checked,
                   }))
                 }
-                className="mt-1 h-4 w-4 accent-cyan-400"
+                className="mt-0.5 h-5 w-5 accent-teal-600"
               />
               <span>
-                <span className="block text-sm font-medium text-white">
-                  Lock forum
+                <span className="block text-base font-medium text-slate-900">
+                  Kunci diskusi
                 </span>
-                <span className="mt-1 block text-sm leading-6 text-slate-400">
-                  Jika aktif, mahasiswa tidak dapat menambah post baru.
+                <span className="mt-1 block text-sm leading-6 text-slate-600">
+                  Jika aktif, mahasiswa tidak dapat menambah balasan baru.
                 </span>
               </span>
             </label>
@@ -688,46 +701,48 @@ export default function LecturerForumsClient({
               <button
                 type="submit"
                 disabled={submitting}
-                className="inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-teal-400 via-cyan-400 to-sky-400 px-5 py-3 text-sm font-semibold text-slate-950 transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
+                className="inline-flex items-center gap-2 rounded-2xl bg-teal-600 px-5 py-3 text-base font-semibold text-white transition hover:bg-teal-700 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {submitting ? (
-                  <Loader2 size={16} className="animate-spin" />
+                  <Loader2 size={18} className="animate-spin" aria-hidden />
                 ) : (
-                  <Plus size={16} />
+                  <Plus size={18} aria-hidden />
                 )}
-                {editingThread ? "Simpan Forum" : "Tambah Forum"}
+                {editingThread ? "Simpan Diskusi" : "Tambah Diskusi"}
               </button>
 
               {editingThread ? (
                 <button
                   type="button"
                   onClick={resetForm}
-                  className="rounded-2xl border border-white/10 bg-white/[0.04] px-5 py-3 text-sm text-slate-300 transition hover:bg-white/[0.08] hover:text-white"
+                  className="rounded-2xl border border-slate-200 px-4 py-2.5 text-base font-medium text-slate-700 transition hover:bg-slate-50"
                 >
-                  Batal Edit
+                  Batal Ubah
                 </button>
               ) : null}
             </div>
           </form>
         </div>
 
-        <div className="rounded-[30px] border border-white/10 bg-white/5 p-6 backdrop-blur-xl">
+        <div className="rounded-3xl border border-slate-200 bg-white p-6">
           <div className="mb-5 flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
             <div>
-              <h2 className="text-lg font-semibold text-white">Daftar Forum</h2>
-              <p className="mt-1 text-sm text-slate-400">
-                Cari, filter, edit, lock, pin, dan hapus forum.
+              <h2 className="text-lg font-bold text-slate-900">
+                Daftar Diskusi
+              </h2>
+              <p className="mt-1 text-base text-slate-600">
+                Cari, saring, ubah, kunci, sematkan, dan hapus diskusi.
               </p>
             </div>
 
             <div className="flex flex-col gap-3 sm:flex-row">
-              <div className="flex items-center gap-2 rounded-2xl border border-white/10 bg-slate-950 px-4 py-3">
-                <Search size={16} className="text-slate-500" />
+              <div className="flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-3 focus-within:border-teal-500 focus-within:ring-2 focus-within:ring-teal-100">
+                <Search size={18} className="text-slate-400" aria-hidden />
                 <input
                   value={q}
                   onChange={(event) => setQ(event.target.value)}
-                  placeholder="Cari forum..."
-                  className="w-full bg-transparent text-sm text-white outline-none placeholder:text-slate-500"
+                  placeholder="Cari diskusi..."
+                  className="w-full bg-transparent text-base text-slate-900 outline-none placeholder:text-slate-400"
                 />
               </div>
 
@@ -738,12 +753,12 @@ export default function LecturerForumsClient({
                     event.target.value as "ALL" | DiscussionThreadStatus,
                   )
                 }
-                className="rounded-2xl border border-white/10 bg-slate-950 px-4 py-3 text-sm text-white outline-none"
+                className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-base text-slate-900 outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-100"
               >
                 <option value="ALL">Semua Status</option>
                 {statuses.map((status) => (
                   <option key={status} value={status}>
-                    {status}
+                    {statusLabel(status)}
                   </option>
                 ))}
               </select>
@@ -753,28 +768,28 @@ export default function LecturerForumsClient({
                 onChange={(event) =>
                   setTargetFilter(event.target.value as "ALL" | TargetType)
                 }
-                className="rounded-2xl border border-white/10 bg-slate-950 px-4 py-3 text-sm text-white outline-none"
+                className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-base text-slate-900 outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-100"
               >
                 <option value="ALL">Semua Target</option>
-                <option value="COURSE">Course</option>
-                <option value="MODULE">Module</option>
+                <option value="COURSE">Mata Kuliah</option>
+                <option value="MODULE">Modul</option>
                 <option value="UNIT">Unit</option>
               </select>
 
               <button
                 type="button"
                 onClick={fetchForums}
-                className="inline-flex items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-slate-300 transition hover:bg-white/[0.08] hover:text-white"
+                className="inline-flex items-center justify-center gap-2 rounded-2xl border border-slate-200 px-4 py-2.5 text-base font-medium text-slate-700 transition hover:bg-slate-50"
               >
-                <RefreshCcw size={16} />
-                Refresh
+                <RefreshCcw size={18} aria-hidden />
+                Muat ulang
               </button>
             </div>
           </div>
 
           {filteredThreads.length === 0 ? (
-            <div className="rounded-2xl border border-white/10 bg-slate-900/70 p-5 text-sm text-slate-300">
-              Belum ada forum sesuai filter.
+            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5 text-base text-slate-600">
+              Belum ada diskusi sesuai saringan.
             </div>
           ) : (
             <div className="grid gap-4">
@@ -782,6 +797,7 @@ export default function LecturerForumsClient({
                 <ThreadCard
                   key={thread.id}
                   thread={thread}
+                  courseSlug={courseSlug}
                   onEdit={() => startEdit(thread)}
                   onDelete={() => handleDelete(thread)}
                 />
@@ -790,100 +806,100 @@ export default function LecturerForumsClient({
           )}
         </div>
       </section>
-    </main>
+    </div>
   );
 }
 
 function ThreadCard({
   thread,
+  courseSlug,
   onEdit,
   onDelete,
 }: {
   thread: DiscussionThread;
+  courseSlug: string;
   onEdit: () => void;
   onDelete: () => void;
 }) {
   const targetType = getTargetType(thread);
 
   return (
-    <div className="rounded-[24px] border border-white/10 bg-slate-900/70 p-5">
+    <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
       <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap gap-2">
             <StatusBadge status={thread.status} />
 
-            <span className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-xs text-slate-300">
-              {targetType}
+            <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">
+              {targetLabel(targetType)}
             </span>
 
             {thread.isPinned ? (
-              <span className="inline-flex items-center gap-1 rounded-full border border-amber-400/20 bg-amber-400/10 px-3 py-1 text-xs text-amber-300">
-                <Pin size={12} />
-                Pinned
+              <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-700">
+                <Pin size={12} aria-hidden />
+                Disematkan
               </span>
             ) : null}
 
             {thread.isLocked ? (
-              <span className="inline-flex items-center gap-1 rounded-full border border-red-400/20 bg-red-400/10 px-3 py-1 text-xs text-red-300">
-                <Lock size={12} />
-                Locked
+              <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">
+                <Lock size={12} aria-hidden />
+                Terkunci
               </span>
             ) : (
-              <span className="inline-flex items-center gap-1 rounded-full border border-cyan-400/20 bg-cyan-400/10 px-3 py-1 text-xs text-cyan-300">
-                <Unlock size={12} />
-                Open Reply
+              <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-700">
+                <Unlock size={12} aria-hidden />
+                Balasan Terbuka
               </span>
             )}
 
-            <span className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-xs text-slate-300">
-              Post {thread._count.posts}
+            <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">
+              Balasan {thread._count.posts}
             </span>
           </div>
 
-          <h3 className="mt-4 break-words text-xl font-semibold text-white">
+          <h3 className="mt-4 break-words text-xl font-bold text-slate-900">
             {thread.title}
           </h3>
 
-          <div className="mt-1 text-xs text-slate-500">/{thread.slug}</div>
-
-          <p className="mt-3 break-words text-sm leading-7 text-slate-300">
-            {thread.description ?? "Belum ada deskripsi forum."}
+          <p className="mt-3 break-words text-base leading-7 text-slate-600">
+            {thread.description ?? "Belum ada deskripsi diskusi."}
           </p>
 
           {thread.prompt ? (
-            <div className="mt-4 rounded-2xl border border-white/10 bg-slate-950/70 p-4 text-sm leading-7 text-slate-400">
+            <div className="mt-4 rounded-2xl border border-slate-200 bg-white p-4 text-base leading-7 text-slate-700">
               {thread.prompt}
             </div>
           ) : null}
 
           <div className="mt-4 grid gap-3 sm:grid-cols-2">
             <MiniInfo
-              label="Module"
-              value={thread.module?.title ?? "Course level"}
+              label="Modul"
+              value={thread.module?.title ?? "Tingkat mata kuliah"}
             />
             <MiniInfo
-              label="Micro-Unit"
+              label="Unit"
               value={thread.microUnit?.title ?? "Tidak spesifik"}
             />
           </div>
 
           {thread.posts.length > 0 ? (
-            <div className="mt-4 rounded-2xl border border-white/10 bg-white/[0.03] p-4">
-              <div className="mb-3 text-xs uppercase tracking-wide text-slate-500">
-                Post terbaru
+            <div className="mt-4 rounded-2xl border border-slate-200 bg-white p-4">
+              <div className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                Balasan terbaru
               </div>
 
               <div className="grid gap-3">
                 {thread.posts.map((post) => (
                   <div
                     key={post.id}
-                    className="rounded-2xl border border-white/10 bg-slate-950/70 p-3"
+                    className="rounded-2xl border border-slate-200 bg-slate-50 p-3"
                   >
                     <div className="text-xs text-slate-500">
                       {post.author.firstName} {post.author.lastName} ·{" "}
                       {post.author.role}
                     </div>
-                    <div className="mt-2 line-clamp-2 text-sm leading-6 text-slate-300">
+                    <div className="mt-2 line-clamp-2 text-base leading-6 text-slate-700">
                       {post.content}
                     </div>
                   </div>
@@ -894,21 +910,29 @@ function ThreadCard({
         </div>
 
         <div className="flex shrink-0 flex-wrap gap-2">
+          <Link
+            href={`/lecturer/courses/${courseSlug}/forums/${thread.id}/monitor`}
+            className="inline-flex items-center gap-2 rounded-2xl bg-teal-600 px-4 py-2.5 text-base font-semibold text-white transition hover:bg-teal-700"
+          >
+            <Activity size={17} aria-hidden />
+            Pantau
+          </Link>
+
           <button
             type="button"
             onClick={onEdit}
-            className="inline-flex items-center gap-2 rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-2 text-sm text-slate-300 transition hover:bg-white/[0.08] hover:text-white"
+            className="inline-flex items-center gap-2 rounded-2xl border border-slate-200 px-4 py-2.5 text-base font-medium text-slate-700 transition hover:bg-slate-50"
           >
-            <Pencil size={15} />
-            Edit
+            <Pencil size={17} aria-hidden />
+            Ubah
           </button>
 
           <button
             type="button"
             onClick={onDelete}
-            className="inline-flex items-center gap-2 rounded-2xl border border-red-400/20 bg-red-400/10 px-4 py-2 text-sm text-red-300 transition hover:bg-red-400/15"
+            className="inline-flex items-center gap-2 rounded-2xl border border-rose-200 px-4 py-2.5 text-base font-medium text-rose-600 transition hover:bg-rose-50"
           >
-            <Trash2 size={15} />
+            <Trash2 size={17} aria-hidden />
             Hapus
           </button>
         </div>
@@ -927,14 +951,14 @@ function SummaryCard({
   value: number;
 }) {
   return (
-    <div className="rounded-[26px] border border-white/10 bg-white/[0.04] p-5 backdrop-blur-xl">
+    <div className="rounded-3xl border border-slate-200 bg-white p-5">
       <div className="flex items-start justify-between gap-3">
         <div>
-          <div className="text-sm text-slate-400">{label}</div>
-          <div className="mt-2 text-3xl font-semibold text-white">{value}</div>
+          <div className="text-sm text-slate-500">{label}</div>
+          <div className="mt-2 text-2xl font-bold text-slate-900">{value}</div>
         </div>
 
-        <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-cyan-400/10 text-cyan-300">
+        <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-teal-100 text-teal-700">
           <Icon size={20} />
         </div>
       </div>
@@ -957,14 +981,14 @@ function FormField({
 }) {
   return (
     <div>
-      <label className="text-sm font-medium text-slate-300">{label}</label>
+      <label className="text-sm font-medium text-slate-700">{label}</label>
 
       <input
         type={type}
         value={value}
         onChange={(event) => onChange(event.target.value)}
         placeholder={placeholder}
-        className="mt-2 w-full rounded-2xl border border-white/10 bg-slate-950 px-4 py-3 text-sm text-white outline-none transition placeholder:text-slate-500 focus:border-cyan-400/50"
+        className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-base text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-teal-500 focus:ring-2 focus:ring-teal-100"
       />
     </div>
   );
@@ -985,14 +1009,14 @@ function TextareaField({
 }) {
   return (
     <div>
-      <label className="text-sm font-medium text-slate-300">{label}</label>
+      <label className="text-sm font-medium text-slate-700">{label}</label>
 
       <textarea
         value={value}
         rows={rows}
         onChange={(event) => onChange(event.target.value)}
         placeholder={placeholder}
-        className="mt-2 w-full resize-none rounded-2xl border border-white/10 bg-slate-950 px-4 py-3 text-sm leading-6 text-white outline-none transition placeholder:text-slate-500 focus:border-cyan-400/50"
+        className="mt-2 w-full resize-none rounded-2xl border border-slate-200 bg-white px-4 py-3 text-base leading-6 text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-teal-500 focus:ring-2 focus:ring-teal-100"
       />
     </div>
   );
@@ -1000,11 +1024,11 @@ function TextareaField({
 
 function MiniInfo({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
-      <div className="text-[11px] uppercase tracking-wide text-slate-500">
+    <div className="rounded-2xl border border-slate-200 bg-white p-4">
+      <div className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
         {label}
       </div>
-      <div className="mt-2 text-sm font-semibold text-white">{value}</div>
+      <div className="mt-2 text-base font-semibold text-slate-900">{value}</div>
     </div>
   );
 }
@@ -1012,18 +1036,16 @@ function MiniInfo({ label, value }: { label: string; value: string }) {
 function StatusBadge({ status }: { status: DiscussionThreadStatus }) {
   const className =
     status === "OPEN"
-      ? "border-emerald-400/20 bg-emerald-400/10 text-emerald-300"
+      ? "bg-emerald-100 text-emerald-700"
       : status === "DRAFT"
-        ? "border-amber-400/20 bg-amber-400/10 text-amber-300"
-        : status === "CLOSED"
-          ? "border-cyan-400/20 bg-cyan-400/10 text-cyan-300"
-          : "border-red-400/20 bg-red-400/10 text-red-300";
+        ? "bg-amber-100 text-amber-700"
+        : "bg-slate-100 text-slate-600";
 
   return (
     <span
-      className={`inline-flex rounded-full border px-3 py-1 text-xs font-medium ${className}`}
+      className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${className}`}
     >
-      {status}
+      {statusLabel(status)}
     </span>
   );
 }

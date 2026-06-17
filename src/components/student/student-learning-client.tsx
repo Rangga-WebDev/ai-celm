@@ -146,12 +146,25 @@ function getRemainingLearningSeconds(startedAt: string | null, now: number) {
   if (!startedAt) return MIN_LEARNING_SECONDS;
 
   const startedTime = new Date(startedAt).getTime();
-
   if (Number.isNaN(startedTime)) return MIN_LEARNING_SECONDS;
 
   const elapsedSeconds = Math.floor((now - startedTime) / 1000);
-
   return Math.max(MIN_LEARNING_SECONDS - elapsedSeconds, 0);
+}
+
+function readableStatus(status?: ProgressStatus | string) {
+  switch (status) {
+    case "COMPLETED":
+      return "Selesai";
+    case "IN_PROGRESS":
+      return "Sedang dipelajari";
+    case "REMEDIAL":
+      return "Perlu diulang";
+    case "LOCKED":
+      return "Terkunci";
+    default:
+      return "Belum mulai";
+  }
 }
 
 export default function StudentLearningClient({
@@ -170,7 +183,6 @@ export default function StudentLearningClient({
 
   const activeUnit = useMemo(() => {
     if (!data || !activeUnitId) return null;
-
     return (
       data.modules
         .flatMap((learningModule) => learningModule.units)
@@ -180,7 +192,6 @@ export default function StudentLearningClient({
 
   const activeModule = useMemo(() => {
     if (!data || !activeUnitId) return null;
-
     return (
       data.modules.find((learningModule) =>
         learningModule.units.some((unit) => unit.id === activeUnitId),
@@ -205,15 +216,13 @@ export default function StudentLearningClient({
 
       const res = await fetch(
         `/api/students/${user.id}/courses/${courseSlug}/learning`,
-        {
-          cache: "no-store",
-        },
+        { cache: "no-store" },
       );
 
       const json = (await res.json()) as ApiResponse;
 
       if (!res.ok || !json.success) {
-        throw new Error(json.message || "Gagal mengambil learning flow");
+        throw new Error(json.message || "Gagal memuat materi belajar");
       }
 
       setData(json.data);
@@ -225,7 +234,7 @@ export default function StudentLearningClient({
 
       setActiveUnitId((current) => current ?? firstAvailableUnit?.id ?? null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Unknown error");
+      setError(err instanceof Error ? err.message : "Terjadi kesalahan");
     } finally {
       setLoading(false);
     }
@@ -243,9 +252,7 @@ export default function StudentLearningClient({
         `/api/students/${user.id}/courses/${courseSlug}/units/${unitId}/progress`,
         {
           method: "PATCH",
-          headers: {
-            "Content-Type": "application/json",
-          },
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ status }),
         },
       );
@@ -253,12 +260,12 @@ export default function StudentLearningClient({
       const json = await res.json();
 
       if (!res.ok || !json.success) {
-        throw new Error(json.message || "Gagal memperbarui progress");
+        throw new Error(json.message || "Gagal menyimpan progres");
       }
 
       await fetchLearningData();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Unknown error");
+      setError(err instanceof Error ? err.message : "Terjadi kesalahan");
     } finally {
       setUpdatingUnitId(null);
     }
@@ -273,165 +280,148 @@ export default function StudentLearningClient({
     const interval = window.setInterval(() => {
       setNowTick(Date.now());
     }, 1000);
-
     return () => window.clearInterval(interval);
   }, []);
 
   if (loading) {
     return (
-      <main className="space-y-6 p-6">
-        <section className="rounded-[28px] border border-white/10 bg-white/5 p-6 text-slate-300">
-          Memuat learning flow mahasiswa...
-        </section>
-      </main>
+      <div className="space-y-6">
+        <div className="h-32 animate-pulse rounded-3xl bg-slate-200" />
+        <div className="grid gap-6 xl:grid-cols-[0.85fr_1.5fr]">
+          <div className="h-96 animate-pulse rounded-3xl bg-slate-200" />
+          <div className="h-96 animate-pulse rounded-3xl bg-slate-200" />
+        </div>
+      </div>
     );
   }
 
   if (error && !data) {
     return (
-      <main className="space-y-6 p-6">
-        <section className="rounded-[28px] border border-red-400/20 bg-red-500/5 p-6 text-red-300">
-          Error: {error}
-        </section>
-      </main>
+      <div className="rounded-3xl border border-rose-200 bg-rose-50 p-6">
+        <h2 className="text-lg font-bold text-rose-800">
+          Maaf, materi belum bisa ditampilkan
+        </h2>
+        <p className="mt-2 text-base text-rose-700">{error}</p>
+        <Link
+          href="/student/courses"
+          className="mt-4 inline-flex rounded-2xl bg-rose-600 px-5 py-3 text-base font-semibold text-white transition hover:bg-rose-700"
+        >
+          Kembali ke Daftar Mata Kuliah
+        </Link>
+      </div>
     );
   }
 
-  if (!data) {
-    return (
-      <main className="space-y-6 p-6">
-        <section className="rounded-[28px] border border-white/10 bg-white/5 p-6 text-slate-300">
-          Data learning belum tersedia.
-        </section>
-      </main>
-    );
-  }
+  if (!data) return null;
 
   return (
-    <main className="space-y-6 p-6">
-      <section className="rounded-[30px] border border-white/10 bg-white/5 p-6 shadow-[0_20px_60px_rgba(0,0,0,0.18)] backdrop-blur-xl">
-        <div className="flex flex-col gap-5 xl:flex-row xl:items-center xl:justify-between">
-          <div className="min-w-0">
-            <Link
-              href="/student/dashboard"
-              className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-4 py-2 text-sm text-slate-300 transition hover:bg-white/[0.08] hover:text-white"
-            >
-              <ArrowLeft size={16} />
-              Kembali ke Dashboard
-            </Link>
+    <div className="space-y-6">
+      {/* Kepala */}
+      <section className="rounded-3xl bg-teal-600 px-6 py-7 text-white sm:px-8">
+        <Link
+          href={`/student/courses/${courseSlug}`}
+          className="inline-flex items-center gap-2 rounded-full bg-white/15 px-4 py-2 text-base font-medium transition hover:bg-white/25"
+        >
+          <ArrowLeft size={18} aria-hidden="true" />
+          Kembali ke Kelas
+        </Link>
 
-            <div className="mt-5 inline-flex items-center gap-2 rounded-full border border-cyan-400/20 bg-cyan-400/10 px-4 py-2 text-sm text-cyan-200">
-              <BookOpen size={16} />
-              Student Learning Flow
-            </div>
+        <h1 className="mt-5 text-2xl font-bold sm:text-3xl">
+          {data.course.title}
+        </h1>
+        <p className="mt-2 max-w-3xl text-lg leading-relaxed text-teal-50">
+          {data.course.description ??
+            "Ikuti materi langkah demi langkah hingga selesai."}
+        </p>
 
-            <h1 className="mt-5 break-words text-3xl font-semibold text-white sm:text-4xl">
-              {data.course.title}
-            </h1>
-
-            <p className="mt-3 max-w-3xl text-sm leading-7 text-slate-300 sm:text-base">
-              {data.course.description ??
-                "Ikuti module dan micro-unit secara bertahap untuk menyelesaikan pembelajaran."}
-            </p>
-
-            <div className="mt-5 h-3 max-w-2xl rounded-full bg-slate-800">
-              <div
-                className="h-3 rounded-full bg-gradient-to-r from-teal-400 via-cyan-400 to-sky-400"
-                style={{ width: `${data.summary.overallProgress}%` }}
-              />
-            </div>
-
-            <div className="mt-2 text-sm text-slate-400">
-              Progress keseluruhan:{" "}
-              <span className="font-semibold text-white">
-                {data.summary.overallProgress}%
-              </span>{" "}
-              ({data.summary.completedRequiredUnits}/
-              {data.summary.totalRequiredUnits} unit wajib selesai)
-            </div>
+        <div className="mt-5 max-w-2xl">
+          <div className="mb-1.5 flex items-center justify-between text-base text-teal-50">
+            <span>
+              {data.summary.completedRequiredUnits} dari{" "}
+              {data.summary.totalRequiredUnits} bagian wajib selesai
+            </span>
+            <span className="font-semibold text-white">
+              {data.summary.overallProgress}%
+            </span>
           </div>
-
-          <div className="grid gap-3 sm:grid-cols-3 xl:w-[520px]">
-            <SummaryBox
-              label="Modules"
-              value={data.summary.totalModules}
-              icon={Layers3}
-            />
-            <SummaryBox
-              label="Units"
-              value={data.summary.totalUnits}
-              icon={BookOpen}
-            />
-            <SummaryBox
-              label="Progress"
-              value={`${data.summary.overallProgress}%`}
-              icon={Target}
+          <div className="h-3 w-full overflow-hidden rounded-full bg-white/25">
+            <div
+              className="h-full rounded-full bg-white transition-all"
+              style={{ width: `${data.summary.overallProgress}%` }}
             />
           </div>
         </div>
       </section>
 
       {error ? (
-        <section className="rounded-[22px] border border-red-400/20 bg-red-500/5 p-4 text-sm text-red-300">
+        <div className="rounded-2xl border border-rose-200 bg-rose-50 p-4 text-base text-rose-700">
           {error}
-        </section>
+        </div>
       ) : null}
 
-      <section className="grid gap-6 xl:grid-cols-[0.85fr_1.5fr]">
-        <aside className="rounded-[30px] border border-white/10 bg-white/5 p-5 backdrop-blur-xl">
+      <div className="grid gap-6 xl:grid-cols-[0.85fr_1.5fr]">
+        {/* Daftar materi */}
+        <aside className="rounded-3xl border border-slate-200 bg-white p-5">
           <div className="mb-4 flex items-center justify-between gap-3">
             <div>
-              <h2 className="text-lg font-semibold text-white">
-                Learning Path
+              <h2 className="text-lg font-bold text-slate-900">
+                Daftar Materi
               </h2>
-              <p className="mt-1 text-sm text-slate-400">
-                Pilih unit untuk mulai belajar.
+              <p className="mt-0.5 text-base text-slate-600">
+                Pilih bagian untuk mulai belajar.
               </p>
             </div>
-
             <button
               type="button"
               onClick={fetchLearningData}
-              className="rounded-2xl border border-white/10 bg-white/[0.04] p-3 text-slate-300 transition hover:bg-white/[0.08] hover:text-white"
+              aria-label="Muat ulang"
+              className="flex h-11 w-11 items-center justify-center rounded-xl border border-slate-200 text-slate-600 transition hover:bg-slate-50"
             >
-              <RefreshCcw size={16} />
+              <RefreshCcw size={18} aria-hidden="true" />
             </button>
           </div>
 
-          <div className="grid gap-4">
+          <div className="space-y-4">
             {data.modules.map((learningModule) => (
               <div
                 key={learningModule.id}
-                className="rounded-[24px] border border-white/10 bg-slate-950/50 p-4"
+                className="rounded-2xl border border-slate-200 p-4"
               >
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
-                    <div className="text-sm font-semibold text-white">
+                    <div className="text-base font-bold text-slate-900">
                       {learningModule.order}. {learningModule.title}
                     </div>
-                    <div className="mt-1 text-xs text-slate-500">
-                      {learningModule.units.length} unit ·{" "}
+                    <div className="mt-0.5 text-sm text-slate-500">
+                      {learningModule.units.length} bagian ·{" "}
                       {learningModule.progress?.progressPercent ?? 0}%
                     </div>
                   </div>
-
                   {learningModule.progress?.status === "COMPLETED" ? (
-                    <CheckCircle2 size={18} className="text-emerald-300" />
+                    <CheckCircle2
+                      size={20}
+                      className="text-emerald-600"
+                      aria-hidden="true"
+                    />
                   ) : (
-                    <Layers3 size={18} className="text-cyan-300" />
+                    <Layers3
+                      size={20}
+                      className="text-teal-600"
+                      aria-hidden="true"
+                    />
                   )}
                 </div>
 
-                <div className="mt-3 h-2 rounded-full bg-slate-800">
+                <div className="mt-3 h-2 overflow-hidden rounded-full bg-slate-200">
                   <div
-                    className="h-2 rounded-full bg-gradient-to-r from-teal-400 to-cyan-400"
+                    className="h-full rounded-full bg-teal-600"
                     style={{
                       width: `${learningModule.progress?.progressPercent ?? 0}%`,
                     }}
                   />
                 </div>
 
-                <div className="mt-4 grid gap-2">
+                <div className="mt-4 space-y-2">
                   {learningModule.units.map((unit) => {
                     const isActive = activeUnitId === unit.id;
                     const isCompleted = unit.progress?.status === "COMPLETED";
@@ -442,42 +432,54 @@ export default function StudentLearningClient({
                         type="button"
                         disabled={unit.isLocked}
                         onClick={() => setActiveUnitId(unit.id)}
-                        className={`flex items-start gap-3 rounded-2xl border p-3 text-left transition ${
+                        aria-current={isActive ? "true" : undefined}
+                        className={`flex w-full items-start gap-3 rounded-2xl border p-3 text-left transition ${
                           isActive
-                            ? "border-cyan-400/40 bg-cyan-400/10"
-                            : "border-white/10 bg-white/[0.03] hover:bg-white/[0.06]"
+                            ? "border-teal-300 bg-teal-50"
+                            : "border-slate-200 hover:bg-slate-50"
                         } ${
                           unit.isLocked
-                            ? "cursor-not-allowed opacity-60"
+                            ? "cursor-not-allowed opacity-50"
                             : "cursor-pointer"
                         }`}
                       >
-                        <div className="mt-0.5">
+                        <span className="mt-0.5 shrink-0">
                           {unit.isLocked ? (
-                            <Lock size={16} className="text-red-300" />
+                            <Lock
+                              size={18}
+                              className="text-slate-400"
+                              aria-hidden="true"
+                            />
                           ) : isCompleted ? (
                             <CheckCircle2
-                              size={16}
-                              className="text-emerald-300"
+                              size={18}
+                              className="text-emerald-600"
+                              aria-hidden="true"
                             />
                           ) : unit.progress?.status === "IN_PROGRESS" ? (
-                            <Clock3 size={16} className="text-cyan-300" />
+                            <Clock3
+                              size={18}
+                              className="text-amber-600"
+                              aria-hidden="true"
+                            />
                           ) : (
-                            <PlayCircle size={16} className="text-cyan-300" />
+                            <PlayCircle
+                              size={18}
+                              className="text-teal-600"
+                              aria-hidden="true"
+                            />
                           )}
-                        </div>
-
-                        <div className="min-w-0">
-                          <div className="text-sm font-medium text-white">
+                        </span>
+                        <span className="min-w-0">
+                          <span className="block text-base font-medium text-slate-800">
                             {unit.order}. {unit.title}
-                          </div>
-                          <div className="mt-1 text-xs text-slate-500">
-                            {unit.unitType} ·{" "}
+                          </span>
+                          <span className="block text-sm text-slate-500">
                             {unit.estimatedMinutes
                               ? `${unit.estimatedMinutes} menit`
-                              : "estimasi belum ada"}
-                          </div>
-                        </div>
+                              : "Materi belajar"}
+                          </span>
+                        </span>
                       </button>
                     );
                   })}
@@ -487,57 +489,52 @@ export default function StudentLearningClient({
           </div>
         </aside>
 
-        <section className="rounded-[30px] border border-white/10 bg-white/5 p-6 backdrop-blur-xl">
+        {/* Konten materi */}
+        <section className="rounded-3xl border border-slate-200 bg-white p-6">
           {!activeUnit || !activeModule ? (
-            <div className="rounded-2xl border border-white/10 bg-slate-950/60 p-5 text-sm text-slate-300">
-              Pilih salah satu unit untuk mulai belajar.
+            <div className="rounded-2xl bg-slate-50 p-6 text-base text-slate-600">
+              Pilih salah satu bagian di sebelah kiri untuk mulai belajar.
             </div>
           ) : (
             <div>
               <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
                 <div className="min-w-0">
                   <div className="flex flex-wrap gap-2">
-                    <Badge>{activeUnit.unitType}</Badge>
-                    {activeUnit.isRequired ? (
-                      <Badge>Required</Badge>
-                    ) : (
-                      <Badge>Optional</Badge>
-                    )}
-                    <Badge>{activeUnitStatus}</Badge>
+                    {activeUnit.isRequired && <Badge>Wajib</Badge>}
+                    <Badge>{readableStatus(activeUnitStatus)}</Badge>
                   </div>
-
-                  <h2 className="mt-4 break-words text-2xl font-semibold text-white">
+                  <h2 className="mt-3 text-2xl font-bold text-slate-900">
                     {activeUnit.title}
                   </h2>
-
-                  <p className="mt-2 text-sm text-slate-400">
-                    Module: {activeModule.title}
+                  <p className="mt-1 text-base text-slate-600">
+                    Bagian dari modul: {activeModule.title}
                   </p>
                 </div>
 
                 <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
                   <button
                     type="button"
-                    disabled={updatingUnitId === activeUnit.id || isUnitCompleted}
+                    disabled={
+                      updatingUnitId === activeUnit.id || isUnitCompleted
+                    }
                     onClick={() => updateProgress(activeUnit.id, "IN_PROGRESS")}
-                    className={`inline-flex items-center justify-center gap-2 rounded-2xl border px-4 py-3 text-sm transition ${
+                    className={`inline-flex items-center justify-center gap-2 rounded-2xl border px-5 py-3 text-base font-semibold transition disabled:opacity-70 ${
                       isUnitCompleted
-                        ? "cursor-not-allowed border-emerald-400/20 bg-emerald-400/10 text-emerald-300"
+                        ? "cursor-not-allowed border-emerald-200 bg-emerald-50 text-emerald-700"
                         : isUnitInProgress
-                          ? "border-cyan-400/20 bg-cyan-400/10 text-cyan-200"
-                          : "border-white/10 bg-white/[0.04] text-slate-300 hover:bg-white/[0.08] hover:text-white"
-                    } disabled:opacity-70`}
+                          ? "border-amber-200 bg-amber-50 text-amber-700"
+                          : "border-slate-200 text-slate-700 hover:bg-slate-50"
+                    }`}
                   >
                     {updatingUnitId === activeUnit.id ? (
-                      <Loader2 size={16} className="animate-spin" />
+                      <Loader2 size={18} className="animate-spin" />
                     ) : isUnitCompleted ? (
-                      <CheckCircle2 size={16} />
+                      <CheckCircle2 size={18} aria-hidden="true" />
                     ) : isUnitInProgress ? (
-                      <Clock3 size={16} />
+                      <Clock3 size={18} aria-hidden="true" />
                     ) : (
-                      <PlayCircle size={16} />
+                      <PlayCircle size={18} aria-hidden="true" />
                     )}
-
                     {isUnitCompleted
                       ? "Sudah Selesai"
                       : isUnitInProgress
@@ -554,110 +551,109 @@ export default function StudentLearningClient({
                       !canCompleteUnit
                     }
                     onClick={() => updateProgress(activeUnit.id, "COMPLETED")}
-                    className="inline-flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-teal-400 via-cyan-400 to-sky-400 px-4 py-3 text-sm font-semibold text-slate-950 transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
+                    className="inline-flex items-center justify-center gap-2 rounded-2xl bg-teal-600 px-5 py-3 text-base font-semibold text-white transition hover:bg-teal-700 disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     {updatingUnitId === activeUnit.id ? (
-                      <Loader2 size={16} className="animate-spin" />
+                      <Loader2 size={18} className="animate-spin" />
                     ) : (
-                      <CheckCircle2 size={16} />
+                      <CheckCircle2 size={18} aria-hidden="true" />
                     )}
-
                     {isUnitCompleted
                       ? "Selesai"
                       : isUnitNotStarted
                         ? "Mulai Dulu"
                         : canCompleteUnit
                           ? "Tandai Selesai"
-                          : `Tunggu ${remainingLearningSeconds}s`}
+                          : `Tunggu ${remainingLearningSeconds} detik`}
                   </button>
                 </div>
               </div>
 
               {isUnitNotStarted ? (
-                <div className="mt-4 rounded-2xl border border-amber-400/20 bg-amber-400/10 p-4 text-sm leading-6 text-amber-100">
-                  Klik <span className="font-semibold">Mulai Belajar</span> untuk
-                  membuka sesi pembelajaran. Unit belum bisa diselesaikan sebelum
-                  sesi dimulai.
+                <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-base leading-relaxed text-amber-800">
+                  Tekan <span className="font-semibold">Mulai Belajar</span>{" "}
+                  untuk membuka sesi. Bagian ini belum bisa diselesaikan sebelum
+                  Anda memulainya.
                 </div>
               ) : null}
 
               {isUnitInProgress ? (
-                <div className="mt-4 rounded-2xl border border-cyan-400/20 bg-cyan-400/10 p-4 text-sm leading-6 text-cyan-100">
-                  Sesi belajar sedang berjalan. Tombol selesai akan aktif setelah
-                  interaksi minimum terpenuhi
+                <div className="mt-4 rounded-2xl border border-teal-200 bg-teal-50 p-4 text-base leading-relaxed text-teal-800">
+                  Sesi belajar sedang berjalan. Tombol selesai akan aktif
                   {remainingLearningSeconds > 0
                     ? ` dalam ${remainingLearningSeconds} detik.`
-                    : "."}
+                    : " sekarang."}
                 </div>
               ) : null}
 
               {isUnitCompleted ? (
-                <div className="mt-4 rounded-2xl border border-emerald-400/20 bg-emerald-400/10 p-4 text-sm leading-6 text-emerald-100">
-                  Unit ini sudah selesai. Progress tersimpan dan akan dihitung ke
-                  progress module.
+                <div className="mt-4 rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-base leading-relaxed text-emerald-800">
+                  Bagian ini sudah selesai. Bagus! Progres Anda tersimpan.
                 </div>
               ) : null}
 
-              <div className="mt-6 grid gap-4 sm:grid-cols-3">
-                <InfoBox
-                  label="Progress Unit"
-                  value={`${activeUnit.progress?.progressPercent ?? 0}%`}
-                />
-                <InfoBox
-                  label="Estimasi"
-                  value={
-                    activeUnit.estimatedMinutes
-                      ? `${activeUnit.estimatedMinutes} menit`
-                      : "Belum diatur"
-                  }
-                />
-                <InfoBox
-                  label="Mastery"
-                  value={
-                    activeUnit.masteryThreshold && activeUnit.masteryThreshold > 0
-                      ? `${activeUnit.masteryThreshold}%`
-                      : "Belum diatur"
-                  }
-                />
-              </div>
-
               {activeUnit.description ? (
-                <div className="mt-6 rounded-2xl border border-white/10 bg-slate-950/50 p-5">
-                  <div className="mb-2 text-xs uppercase tracking-wide text-slate-500">
-                    Deskripsi Unit
+                <div className="mt-6 rounded-2xl bg-slate-50 p-5">
+                  <div className="mb-2 text-base font-semibold text-slate-900">
+                    Ringkasan
                   </div>
-                  <p className="text-sm leading-7 text-slate-300">
+                  <p className="text-base leading-relaxed text-slate-700">
                     {activeUnit.description}
                   </p>
                 </div>
               ) : null}
 
-              <div className="mt-6 rounded-2xl border border-white/10 bg-slate-950/50 p-5">
-                <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-white">
-                  <FileText size={16} className="text-cyan-300" />
-                  Konten Pembelajaran
+              <div className="mt-6 rounded-2xl border border-slate-200 p-5">
+                <div className="mb-3 flex items-center gap-2 text-base font-semibold text-slate-900">
+                  <FileText
+                    size={20}
+                    className="text-teal-600"
+                    aria-hidden="true"
+                  />
+                  Materi
                 </div>
-
-                <div className="whitespace-pre-wrap text-sm leading-8 text-slate-300">
+                <div className="whitespace-pre-wrap text-base leading-8 text-slate-700">
                   {activeUnit.content ??
-                    "Konten unit belum tersedia. Silakan hubungi dosen pengampu."}
+                    "Materi belum tersedia. Silakan hubungi dosen pengampu."}
                 </div>
               </div>
 
-              <ResourceSection title="Resource Course" resources={data.resources} />
               <ResourceSection
-                title="Resource Module"
+                title="Bahan Tambahan Kelas"
+                resources={data.resources}
+              />
+              <ResourceSection
+                title="Bahan Tambahan Modul"
                 resources={activeModule.resources}
               />
               <ResourceSection
-                title="Resource Unit"
+                title="Bahan Tambahan Bagian Ini"
                 resources={activeUnit.resources}
               />
             </div>
           )}
         </section>
+      </div>
+
+      {/* Ringkasan bawah */}
+      <section className="grid gap-4 sm:grid-cols-3">
+        <SummaryBox
+          label="Total Modul"
+          value={data.summary.totalModules}
+          icon={Layers3}
+        />
+        <SummaryBox
+          label="Total Bagian"
+          value={data.summary.totalUnits}
+          icon={BookOpen}
+        />
+        <SummaryBox
+          label="Progres"
+          value={`${data.summary.overallProgress}%`}
+          icon={Target}
+        />
       </section>
-    </main>
+    </div>
   );
 }
 
@@ -671,35 +667,23 @@ function SummaryBox({
   icon: React.ComponentType<{ size?: number; className?: string }>;
 }) {
   return (
-    <div className="rounded-2xl border border-white/10 bg-slate-950/50 p-4">
-      <div className="flex items-center justify-between gap-3">
+    <div className="rounded-3xl border border-slate-200 bg-white p-5">
+      <div className="flex items-center gap-3">
+        <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-teal-100 text-teal-700">
+          <Icon size={24} aria-hidden="true" />
+        </span>
         <div>
-          <div className="text-xs uppercase tracking-wide text-slate-500">
-            {label}
-          </div>
-          <div className="mt-2 text-2xl font-semibold text-white">{value}</div>
+          <div className="text-2xl font-bold text-slate-900">{value}</div>
+          <div className="text-base text-slate-600">{label}</div>
         </div>
-
-        <Icon size={20} className="text-cyan-300" />
       </div>
-    </div>
-  );
-}
-
-function InfoBox({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
-      <div className="text-xs uppercase tracking-wide text-slate-500">
-        {label}
-      </div>
-      <div className="mt-2 text-sm font-semibold text-white">{value}</div>
     </div>
   );
 }
 
 function Badge({ children }: { children: ReactNode }) {
   return (
-    <span className="rounded-full border border-cyan-400/20 bg-cyan-400/10 px-3 py-1 text-xs font-medium text-cyan-200">
+    <span className="rounded-full bg-teal-100 px-3 py-1 text-sm font-semibold text-teal-700">
       {children}
     </span>
   );
@@ -715,33 +699,32 @@ function ResourceSection({
   if (resources.length === 0) return null;
 
   return (
-    <div className="mt-6 rounded-2xl border border-white/10 bg-white/[0.035] p-5">
-      <div className="mb-4 text-sm font-semibold text-white">{title}</div>
-
-      <div className="grid gap-3">
+    <div className="mt-6">
+      <div className="mb-3 text-base font-semibold text-slate-900">{title}</div>
+      <div className="space-y-3">
         {resources.map((resource) => (
           <a
             key={resource.id}
             href={resource.url}
             target="_blank"
             rel="noreferrer"
-            className="flex items-start justify-between gap-4 rounded-2xl border border-white/10 bg-slate-950/60 p-4 transition hover:bg-slate-900"
+            className="flex items-center justify-between gap-4 rounded-2xl border border-slate-200 p-4 transition hover:border-teal-300 hover:bg-teal-50"
           >
             <div className="min-w-0">
-              <div className="text-sm font-semibold text-white">
+              <div className="text-base font-semibold text-slate-900">
                 {resource.title}
               </div>
-              <div className="mt-1 text-xs text-slate-500">
-                {resource.type}
-              </div>
               {resource.description ? (
-                <p className="mt-2 text-sm leading-6 text-slate-400">
+                <p className="mt-1 text-base text-slate-600">
                   {resource.description}
                 </p>
               ) : null}
             </div>
-
-            <ExternalLink size={16} className="shrink-0 text-cyan-300" />
+            <ExternalLink
+              size={20}
+              className="shrink-0 text-teal-600"
+              aria-hidden="true"
+            />
           </a>
         ))}
       </div>

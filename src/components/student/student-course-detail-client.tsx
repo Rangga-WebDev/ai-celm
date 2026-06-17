@@ -2,26 +2,21 @@
 
 "use client";
 
-/** @format */
-
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import {
-  ArrowLeft,
   ArrowRight,
   BookOpen,
   CheckCircle2,
-  ChevronRight,
+  ChevronDown,
   ClipboardCheck,
-  Clock3,
+  FileQuestion,
   FileText,
-  GraduationCap,
-  Layers3,
+  MessagesSquare,
+  PlayCircle,
+  Rocket,
   Target,
-  User2,
 } from "lucide-react";
-import ProgressBarAnimated from "@/components/student/progress-bar-animated";
-import AnimatedCounter from "@/components/student/animated-counter";
 
 type StudentCourseDetailClientProps = {
   user: {
@@ -153,15 +148,15 @@ type CourseProgressResponse = {
 function getStatusBadge(status?: string) {
   switch (status) {
     case "COMPLETED":
-      return "bg-emerald-400/10 text-emerald-300 border-emerald-400/20";
+      return "bg-emerald-100 text-emerald-700";
     case "IN_PROGRESS":
-      return "bg-cyan-400/10 text-cyan-300 border-cyan-400/20";
+      return "bg-amber-100 text-amber-700";
     case "REMEDIAL":
-      return "bg-amber-400/10 text-amber-300 border-amber-400/20";
+      return "bg-orange-100 text-orange-700";
     case "LOCKED":
-      return "bg-slate-400/10 text-slate-300 border-slate-400/20";
+      return "bg-slate-100 text-slate-500";
     default:
-      return "bg-white/5 text-slate-300 border-white/10";
+      return "bg-slate-100 text-slate-600";
   }
 }
 
@@ -172,7 +167,7 @@ function getReadableStatus(status?: string) {
     case "IN_PROGRESS":
       return "Berjalan";
     case "REMEDIAL":
-      return "Remedial";
+      return "Perlu diulang";
     case "LOCKED":
       return "Terkunci";
     default:
@@ -203,30 +198,23 @@ export default function StudentCourseDetailClient({
 
         const [courseRes, progressRes] = await Promise.all([
           fetch(`/api/courses/${slug}`, { cache: "no-store" }),
-          fetch(`/api/courses/${slug}/progress`, {
-            cache: "no-store",
-          }),
+          fetch(`/api/courses/${slug}/progress`, { cache: "no-store" }),
         ]);
 
         const courseJson = await courseRes.json();
         const progressJson = await progressRes.json();
 
         if (!courseRes.ok || !courseJson.success) {
-          throw new Error(
-            courseJson.message || "Gagal mengambil detail course",
-          );
+          throw new Error(courseJson.message || "Gagal memuat detail kelas");
         }
-
         if (!progressRes.ok || !progressJson.success) {
-          throw new Error(
-            progressJson.message || "Gagal mengambil progress course",
-          );
+          throw new Error(progressJson.message || "Gagal memuat progres kelas");
         }
 
         setCourse(courseJson.data);
         setProgress(progressJson.data);
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Unknown error");
+        setError(err instanceof Error ? err.message : "Terjadi kesalahan");
       } finally {
         setLoading(false);
       }
@@ -242,7 +230,6 @@ export default function StudentCourseDetailClient({
       (sum, module) => sum + module.units.length,
       0,
     );
-
     const completedUnits = progress.modules.reduce(
       (sum, module) =>
         sum +
@@ -250,11 +237,6 @@ export default function StudentCourseDetailClient({
           .length,
       0,
     );
-
-    const inProgressModules = progress.modules.filter(
-      (module) => module.progress.status === "IN_PROGRESS",
-    ).length;
-
     const nextModule =
       progress.modules.find(
         (module) => module.progress.status !== "COMPLETED",
@@ -263,477 +245,353 @@ export default function StudentCourseDetailClient({
     return {
       totalUnits,
       completedUnits,
-      inProgressModules,
       nextModule,
       totalResources: course.resources.length,
-      totalCpls: course.cpls.length,
-      totalCpmks: course.cpmks.length,
     };
   }, [course, progress]);
 
   if (loading) {
     return (
-      <div className="grid min-w-0 gap-6 overflow-x-hidden">
-        <section className="rounded-[28px] border border-white/10 bg-white/5 p-6">
-          <p className="text-slate-300">Memuat detail course...</p>
-        </section>
+      <div className="space-y-6">
+        <div className="h-40 animate-pulse rounded-3xl bg-slate-200" />
+        <div className="h-64 animate-pulse rounded-3xl bg-slate-200" />
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="grid min-w-0 gap-6 overflow-x-hidden">
-        <section className="rounded-[28px] border border-red-400/20 bg-red-500/5 p-6">
-          <p className="text-red-300">Error: {error}</p>
-        </section>
+      <div className="rounded-3xl border border-rose-200 bg-rose-50 p-6">
+        <h2 className="text-lg font-bold text-rose-800">
+          Maaf, kelas belum bisa ditampilkan
+        </h2>
+        <p className="mt-2 text-base text-rose-700">{error}</p>
+        <Link
+          href="/student/courses"
+          className="mt-4 inline-flex rounded-2xl bg-rose-600 px-5 py-3 text-base font-semibold text-white transition hover:bg-rose-700"
+        >
+          Kembali ke Daftar Mata Kuliah
+        </Link>
       </div>
     );
   }
 
-  if (!course || !progress || !derived) {
-    return (
-      <div className="grid min-w-0 gap-6 overflow-x-hidden">
-        <section className="rounded-[28px] border border-white/10 bg-white/5 p-6">
-          <p className="text-slate-300">Data course belum tersedia.</p>
-        </section>
-      </div>
-    );
-  }
+  if (!course || !progress || !derived) return null;
+
+  const activities = [
+    {
+      href: `/student/courses/${slug}/learn`,
+      icon: PlayCircle,
+      label: "Belajar",
+      desc: "Materi dan modul",
+    },
+    {
+      href: `/student/courses/${slug}/cer`,
+      icon: ClipboardCheck,
+      label: "Tugas Argumentasi",
+      desc: "Latihan menyusun argumen",
+    },
+    {
+      href: `/student/courses/${slug}/forums`,
+      icon: MessagesSquare,
+      label: "Forum Diskusi",
+      desc: "Berdiskusi dengan teman",
+    },
+    {
+      href: `/student/courses/${slug}/projects`,
+      icon: Rocket,
+      label: "Project Aksi",
+      desc: "Proyek kewargaan nyata",
+    },
+    {
+      href: `/student/courses/${slug}/quizzes`,
+      icon: FileQuestion,
+      label: "Kuis",
+      desc: "Uji pemahaman Anda",
+    },
+  ];
 
   return (
-    <div className="grid min-w-0 gap-6 overflow-x-hidden">
-      <section className="rounded-[30px] border border-white/10 bg-white/5 p-5 shadow-[0_20px_60px_rgba(0,0,0,0.18)] backdrop-blur-xl sm:p-6 xl:p-8">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <Link
-            href="/student/dashboard"
-            className="inline-flex items-center gap-2 rounded-2xl border border-white/10 bg-white/5 px-4 py-2 text-sm text-slate-200 transition hover:bg-white/10"
-          >
-            <ArrowLeft size={16} />
-            Kembali ke Dashboard
-          </Link>
+    <div className="space-y-8">
+      {/* Kepala kelas */}
+      <section className="rounded-3xl bg-teal-600 px-6 py-7 text-white sm:px-8">
+        <span className="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1 text-sm font-medium">
+          <BookOpen size={15} aria-hidden="true" />
+          {course.code ?? "Mata Kuliah"}
+        </span>
+        <h1 className="mt-3 text-2xl font-bold sm:text-3xl">{course.title}</h1>
+        {course.lecturer && (
+          <p className="mt-1 text-lg text-teal-50">
+            Dosen: {course.lecturer.name}
+          </p>
+        )}
+        {course.description && (
+          <p className="mt-3 max-w-3xl text-lg leading-relaxed text-teal-50">
+            {course.description}
+          </p>
+        )}
 
-          <div className="rounded-full bg-teal-400/10 px-4 py-2 text-sm text-teal-200">
-            Course Detail
+        {/* Progres */}
+        <div className="mt-5 max-w-md">
+          <div className="mb-1.5 flex items-center justify-between text-base text-teal-50">
+            <span>Progres belajar Anda</span>
+            <span className="font-semibold text-white">
+              {progress.summary.overallProgress}%
+            </span>
+          </div>
+          <div className="h-3 w-full overflow-hidden rounded-full bg-white/25">
+            <div
+              className="h-full rounded-full bg-white transition-all"
+              style={{ width: `${progress.summary.overallProgress}%` }}
+            />
           </div>
         </div>
+      </section>
 
-        <div className="mt-6 grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
-          <div className="min-w-0">
-            <div className="inline-flex max-w-full items-center gap-2 rounded-full border border-cyan-400/20 bg-cyan-400/10 px-4 py-2 text-sm text-cyan-200">
-              <BookOpen size={16} className="shrink-0" />
-              <span className="truncate">{course.code ?? "Tanpa kode"}</span>
-            </div>
-
-            <h1 className="mt-5 break-words text-3xl font-semibold leading-tight text-white sm:text-4xl">
-              {course.title}
-            </h1>
-
-            <p className="mt-4 max-w-3xl break-words text-slate-300">
-              {course.description ?? "Belum ada deskripsi course."}
-            </p>
-
-            <div className="mt-6 grid gap-3 sm:grid-cols-2">
-              <InfoRow
-                icon={User2}
-                label="Dosen Pengampu"
-                value={course.lecturer?.name ?? "-"}
-              />
-              <InfoRow
-                icon={GraduationCap}
-                label="Semester"
-                value={course.rps?.semesterLabel ?? "-"}
-              />
-              <InfoRow
-                icon={ClipboardCheck}
-                label="Tahun Akademik"
-                value={course.rps?.academicYear ?? "-"}
-              />
-              <InfoRow
-                icon={Clock3}
-                label="Progress Course"
-                value={`${progress.summary.overallProgress}%`}
-              />
-            </div>
-
-            <div className="mt-6">
-              <div className="mb-2 flex items-center justify-between text-sm text-slate-400">
-                <span>Progress keseluruhan</span>
-                <span>{progress.summary.overallProgress}%</span>
-              </div>
-              <ProgressBarAnimated value={progress.summary.overallProgress} />
-            </div>
-
-            <div className="mt-6 flex flex-wrap gap-3">
-              <a
-                href="#modules"
-                className="inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-teal-400 via-cyan-400 to-sky-400 px-5 py-3 text-sm font-semibold text-slate-950 transition hover:brightness-110"
+      {/* Aktivitas kelas — tombol besar & jelas */}
+      <section>
+        <h2 className="mb-4 text-xl font-bold text-slate-900">
+          Aktivitas Kelas
+        </h2>
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {activities.map((activity) => {
+            const Icon = activity.icon;
+            return (
+              <Link
+                key={activity.href}
+                href={activity.href}
+                className="flex items-center gap-4 rounded-3xl border border-slate-200 bg-white p-5 transition hover:border-teal-300 hover:bg-teal-50"
               >
-                Lihat Modul
-                <ArrowRight size={16} />
-              </a>
+                <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-teal-100 text-teal-700">
+                  <Icon size={26} aria-hidden="true" />
+                </span>
+                <span className="min-w-0">
+                  <span className="block text-lg font-bold text-slate-900">
+                    {activity.label}
+                  </span>
+                  <span className="block text-base text-slate-600">
+                    {activity.desc}
+                  </span>
+                </span>
+              </Link>
+            );
+          })}
+        </div>
+      </section>
 
-              {derived.nextModule ? (
-                <a
-                  href={`#module-${derived.nextModule.id}`}
-                  className="inline-flex items-center gap-2 rounded-2xl border border-white/10 bg-white/5 px-5 py-3 text-sm font-medium text-white transition hover:bg-white/10"
+      {/* Ringkasan angka */}
+      <section className="grid gap-4 sm:grid-cols-3">
+        <StatCard
+          icon={CheckCircle2}
+          label="Modul Selesai"
+          value={`${progress.summary.completedModules} / ${progress.summary.totalModules}`}
+        />
+        <StatCard
+          icon={Target}
+          label="Bagian Selesai"
+          value={`${derived.completedUnits} / ${derived.totalUnits}`}
+        />
+        <StatCard
+          icon={FileText}
+          label="Bahan Belajar"
+          value={`${derived.totalResources}`}
+        />
+      </section>
+
+      {/* Daftar modul */}
+      <section>
+        <h2 className="mb-4 text-xl font-bold text-slate-900">Daftar Modul</h2>
+        {progress.modules.length === 0 ? (
+          <div className="rounded-3xl border border-slate-200 bg-white p-6 text-base text-slate-500">
+            Belum ada modul pada kelas ini.
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {progress.modules.map((module) => {
+              const completedUnits = module.units.filter(
+                (unit) => unit.progress.status === "COMPLETED",
+              ).length;
+              const nextUnit =
+                module.units.find(
+                  (unit) => unit.progress.status !== "COMPLETED",
+                ) ?? null;
+
+              return (
+                <article
+                  key={module.id}
+                  className="rounded-3xl border border-slate-200 bg-white p-5 sm:p-6"
                 >
-                  Fokus Modul Berikutnya
-                </a>
-              ) : null}
-            </div>
-          </div>
-
-          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-1">
-            <MiniStatCard
-              icon={Layers3}
-              label="Total Modul"
-              value={progress.summary.totalModules}
-              subtitle={`${derived.inProgressModules} sedang berjalan`}
-            />
-            <MiniStatCard
-              icon={CheckCircle2}
-              label="Modul Selesai"
-              value={progress.summary.completedModules}
-              subtitle="Modul yang telah dituntaskan"
-            />
-            <MiniStatCard
-              icon={Target}
-              label="Unit Selesai"
-              value={derived.completedUnits}
-              subtitle={`${derived.totalUnits} total unit`}
-            />
-            <MiniStatCard
-              icon={FileText}
-              label="Resource"
-              value={derived.totalResources}
-              subtitle={`${derived.totalCpmks} CPMK • ${derived.totalCpls} CPL`}
-            />
-          </div>
-        </div>
-      </section>
-
-      <section className="grid gap-6 2xl:grid-cols-[1.15fr_0.85fr]">
-        <div className="grid gap-6">
-          <SectionCard
-            title="Daftar Modul"
-            subtitle="Pantau progres per modul dan fokuskan pembelajaran berikutnya"
-            id="modules"
-          >
-            <div className="grid gap-4">
-              {progress.modules.length === 0 ? (
-                <div className="rounded-2xl border border-white/10 bg-slate-900/70 p-4 text-sm text-slate-400">
-                  Belum ada modul pada course ini.
-                </div>
-              ) : (
-                progress.modules.map((module) => {
-                  const completedUnits = module.units.filter(
-                    (unit) => unit.progress.status === "COMPLETED",
-                  ).length;
-
-                  const nextUnit =
-                    module.units.find(
-                      (unit) => unit.progress.status !== "COMPLETED",
-                    ) ?? null;
-
-                  return (
-                    <div
-                      key={module.id}
-                      id={`module-${module.id}`}
-                      className="rounded-[26px] border border-white/10 bg-slate-900/70 p-5"
-                    >
-                      <div className="flex flex-wrap items-start justify-between gap-3">
-                        <div className="min-w-0">
-                          <div className="text-xs uppercase tracking-wide text-slate-400">
-                            Modul {module.order}
-                          </div>
-                          <h3 className="mt-1 break-words text-lg font-semibold text-white">
-                            {module.title}
-                          </h3>
-                          <div className="mt-2 flex flex-wrap gap-2 text-xs text-slate-400">
-                            <span className="rounded-full bg-white/5 px-2.5 py-1">
-                              {module.units.length} unit
-                            </span>
-                            <span className="rounded-full bg-white/5 px-2.5 py-1">
-                              {module.estimatedMinutes ?? 0} menit
-                            </span>
-                            <span className="rounded-full bg-white/5 px-2.5 py-1">
-                              Mastery {module.masteryThreshold}%
-                            </span>
-                          </div>
-                        </div>
-
-                        <div
-                          className={`rounded-full border px-3 py-1 text-xs font-medium ${getStatusBadge(
-                            module.progress.status,
-                          )}`}
-                        >
-                          {getReadableStatus(module.progress.status)}
-                        </div>
-                      </div>
-
-                      <div className="mt-4">
-                        <div className="mb-2 flex items-center justify-between text-xs text-slate-400">
-                          <span>Progress modul</span>
-                          <span>{module.progress.progressPercent}%</span>
-                        </div>
-                        <ProgressBarAnimated
-                          value={module.progress.progressPercent}
-                        />
-                      </div>
-
-                      <div className="mt-5 grid gap-3 sm:grid-cols-3">
-                        <SmallInfo
-                          label="Unit tuntas"
-                          value={`${completedUnits}/${module.units.length}`}
-                        />
-                        <SmallInfo
-                          label="Mastery score"
-                          value={
-                            module.progress.masteryScore !== null
-                              ? `${module.progress.masteryScore}%`
-                              : "—"
-                          }
-                        />
-                        <SmallInfo
-                          label="Status"
-                          value={getReadableStatus(module.progress.status)}
-                        />
-                      </div>
-
-                      {nextUnit ? (
-                        <div className="mt-5 rounded-2xl border border-cyan-400/15 bg-cyan-400/5 p-4">
-                          <div className="text-sm font-semibold text-white">
-                            Fokus saat ini
-                          </div>
-                          <p className="mt-2 text-sm leading-7 text-slate-300">
-                            Lanjutkan unit{" "}
-                            <span className="font-medium text-white">
-                              {nextUnit.title}
-                            </span>{" "}
-                            untuk mendorong penyelesaian modul ini.
-                          </p>
-                        </div>
-                      ) : null}
-
-                      <div className="mt-5">
-                        <details className="group rounded-2xl border border-white/10 bg-white/5 p-4">
-                          <summary className="flex cursor-pointer list-none items-center justify-between gap-3">
-                            <span className="text-sm font-medium text-white">
-                              Lihat unit dalam modul
-                            </span>
-                            <ChevronRight
-                              className="transition group-open:rotate-90"
-                              size={16}
-                            />
-                          </summary>
-
-                          <div className="mt-4 grid gap-3">
-                            {module.units.map((unit) => (
-                              <div
-                                key={unit.id}
-                                className="rounded-2xl border border-white/10 bg-slate-950/40 p-4"
-                              >
-                                <div className="flex flex-wrap items-start justify-between gap-3">
-                                  <div className="min-w-0">
-                                    <div className="text-xs uppercase tracking-wide text-slate-400">
-                                      Unit {unit.order}
-                                    </div>
-                                    <div className="mt-1 break-words text-sm font-semibold text-white">
-                                      {unit.title}
-                                    </div>
-                                    <div className="mt-2 flex flex-wrap gap-2 text-xs text-slate-400">
-                                      <span className="rounded-full bg-white/5 px-2 py-1">
-                                        {unit.unitType}
-                                      </span>
-                                      <span className="rounded-full bg-white/5 px-2 py-1">
-                                        {unit.estimatedMinutes ?? 0} menit
-                                      </span>
-                                    </div>
-                                  </div>
-
-                                  <div
-                                    className={`rounded-full border px-3 py-1 text-xs font-medium ${getStatusBadge(
-                                      unit.progress.status,
-                                    )}`}
-                                  >
-                                    {getReadableStatus(unit.progress.status)}
-                                  </div>
-                                </div>
-
-                                <div className="mt-3">
-                                  <div className="mb-2 flex items-center justify-between text-xs text-slate-400">
-                                    <span>Progress unit</span>
-                                    <span>
-                                      {unit.progress.progressPercent}%
-                                    </span>
-                                  </div>
-                                  <ProgressBarAnimated
-                                    value={unit.progress.progressPercent}
-                                  />
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        </details>
-                      </div>
-                    </div>
-                  );
-                })
-              )}
-            </div>
-          </SectionCard>
-        </div>
-
-        <div className="grid gap-6">
-          <SectionCard
-            title="CPL & CPMK"
-            subtitle="Ringkasan outcome pembelajaran pada course ini"
-          >
-            <div className="grid gap-4">
-              <div>
-                <div className="mb-3 text-sm font-semibold text-white">CPL</div>
-                <div className="flex flex-wrap gap-2">
-                  {course.cpls.length > 0 ? (
-                    course.cpls.map((cpl) => (
-                      <span
-                        key={cpl.id}
-                        className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs text-slate-300"
-                      >
-                        {cpl.code}
-                      </span>
-                    ))
-                  ) : (
-                    <span className="text-sm text-slate-400">
-                      Belum ada CPL.
-                    </span>
-                  )}
-                </div>
-              </div>
-
-              <div>
-                <div className="mb-3 text-sm font-semibold text-white">
-                  CPMK
-                </div>
-                <div className="grid gap-3">
-                  {course.cpmks.length > 0 ? (
-                    course.cpmks.map((cpmk) => (
-                      <div
-                        key={cpmk.id}
-                        className="rounded-2xl border border-white/10 bg-slate-900/70 p-4"
-                      >
-                        <div className="text-xs uppercase tracking-wide text-slate-400">
-                          {cpmk.code}
-                        </div>
-                        <div className="mt-1 text-sm leading-7 text-slate-300">
-                          {cpmk.statement}
-                        </div>
-                      </div>
-                    ))
-                  ) : (
-                    <span className="text-sm text-slate-400">
-                      Belum ada CPMK.
-                    </span>
-                  )}
-                </div>
-              </div>
-            </div>
-          </SectionCard>
-
-          <SectionCard
-            title="Resource Course"
-            subtitle="Dokumen dan bahan pendukung pembelajaran"
-          >
-            <div className="grid gap-3">
-              {course.resources.length > 0 ? (
-                course.resources.map((resource) => (
-                  <a
-                    key={resource.id}
-                    href={resource.url}
-                    className="flex items-start gap-3 rounded-2xl border border-white/10 bg-slate-900/70 p-4 transition hover:border-white/15 hover:bg-white/[0.06]"
-                  >
-                    <div className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-white/5 text-cyan-300">
-                      <FileText size={18} />
-                    </div>
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                     <div className="min-w-0">
-                      <div className="break-words text-sm font-semibold text-white">
-                        {resource.title}
+                      <div className="text-sm font-medium text-slate-500">
+                        Modul {module.order}
                       </div>
-                      <div className="mt-1 text-xs uppercase tracking-wide text-slate-400">
-                        {resource.type}
+                      <h3 className="mt-0.5 text-lg font-bold text-slate-900">
+                        {module.title}
+                      </h3>
+                      <div className="mt-2 flex flex-wrap gap-2 text-sm text-slate-600">
+                        <span className="rounded-full bg-slate-100 px-3 py-1">
+                          {module.units.length} bagian
+                        </span>
+                        <span className="rounded-full bg-slate-100 px-3 py-1">
+                          {module.estimatedMinutes ?? 0} menit
+                        </span>
                       </div>
-                      {resource.description ? (
-                        <div className="mt-2 text-sm leading-6 text-slate-300">
-                          {resource.description}
-                        </div>
-                      ) : null}
                     </div>
-                  </a>
-                ))
-              ) : (
-                <div className="rounded-2xl border border-white/10 bg-slate-900/70 p-4 text-sm text-slate-400">
-                  Belum ada resource pada course ini.
-                </div>
-              )}
-            </div>
-          </SectionCard>
+                    <span
+                      className={`inline-flex shrink-0 items-center rounded-full px-3 py-1.5 text-sm font-semibold ${getStatusBadge(
+                        module.progress.status,
+                      )}`}
+                    >
+                      {getReadableStatus(module.progress.status)}
+                    </span>
+                  </div>
 
-          <SectionCard
-            title="Informasi RPS"
-            subtitle="Ringkasan strategi dan kebijakan pembelajaran"
-          >
-            <div className="grid gap-3">
-              <RpsItem
-                label="Deskripsi"
-                value={course.rps?.description ?? "Belum tersedia"}
-              />
-              <RpsItem
-                label="Strategi Pembelajaran"
-                value={course.rps?.learningStrategy ?? "Belum tersedia"}
-              />
-              <RpsItem
-                label="Kebijakan Penilaian"
-                value={course.rps?.assessmentPolicy ?? "Belum tersedia"}
-              />
-              <RpsItem
-                label="Catatan Referensi"
-                value={course.rps?.referencesNote ?? "Belum tersedia"}
-              />
-            </div>
-          </SectionCard>
-        </div>
+                  <div className="mt-4">
+                    <div className="mb-1.5 flex items-center justify-between text-base text-slate-600">
+                      <span>
+                        {completedUnits} dari {module.units.length} bagian
+                        selesai
+                      </span>
+                      <span className="font-semibold text-slate-900">
+                        {module.progress.progressPercent}%
+                      </span>
+                    </div>
+                    <div className="h-3 w-full overflow-hidden rounded-full bg-slate-200">
+                      <div
+                        className="h-full rounded-full bg-teal-600 transition-all"
+                        style={{ width: `${module.progress.progressPercent}%` }}
+                      />
+                    </div>
+                  </div>
+
+                  {nextUnit && (
+                    <div className="mt-4 rounded-2xl bg-teal-50 p-4">
+                      <p className="text-base leading-relaxed text-teal-900">
+                        <span className="font-semibold">Berikutnya:</span>{" "}
+                        {nextUnit.title}
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Daftar bagian (disembunyikan dulu — progressive disclosure) */}
+                  {module.units.length > 0 && (
+                    <details className="group mt-4 rounded-2xl border border-slate-200">
+                      <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3">
+                        <span className="text-base font-semibold text-slate-700">
+                          Lihat semua bagian
+                        </span>
+                        <ChevronDown
+                          size={20}
+                          aria-hidden="true"
+                          className="text-slate-400 transition group-open:rotate-180"
+                        />
+                      </summary>
+                      <div className="space-y-2 px-4 pb-4">
+                        {module.units.map((unit) => (
+                          <div
+                            key={unit.id}
+                            className="flex items-center justify-between gap-3 rounded-xl bg-slate-50 px-4 py-3"
+                          >
+                            <span className="min-w-0 text-base font-medium text-slate-700">
+                              {unit.order}. {unit.title}
+                            </span>
+                            <span
+                              className={`inline-flex shrink-0 items-center rounded-full px-2.5 py-1 text-sm font-semibold ${getStatusBadge(
+                                unit.progress.status,
+                              )}`}
+                            >
+                              {getReadableStatus(unit.progress.status)}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </details>
+                  )}
+
+                  <div className="mt-4">
+                    <Link
+                      href={`/student/courses/${slug}/modules/${module.slug}`}
+                      className="inline-flex items-center gap-2 rounded-2xl bg-teal-600 px-5 py-3 text-base font-semibold text-white transition hover:bg-teal-700"
+                    >
+                      Buka Modul
+                      <ArrowRight size={18} aria-hidden="true" />
+                    </Link>
+                  </div>
+                </article>
+              );
+            })}
+          </div>
+        )}
       </section>
+
+      {/* Capaian pembelajaran — disederhanakan, jargon disembunyikan */}
+      {course.cpmks.length > 0 && (
+        <section>
+          <h2 className="text-xl font-bold text-slate-900">
+            Yang Akan Anda Capai
+          </h2>
+          <p className="mt-1 text-base text-slate-600">
+            Kemampuan yang diharapkan Anda kuasai setelah mengikuti kelas ini.
+          </p>
+          <ul className="mt-4 space-y-3">
+            {course.cpmks.map((cpmk) => (
+              <li
+                key={cpmk.id}
+                className="flex gap-3 rounded-2xl border border-slate-200 bg-white p-4"
+              >
+                <CheckCircle2
+                  size={22}
+                  aria-hidden="true"
+                  className="mt-0.5 shrink-0 text-teal-600"
+                />
+                <span className="text-base leading-relaxed text-slate-700">
+                  {cpmk.statement}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      {/* Bahan belajar */}
+      {course.resources.length > 0 && (
+        <section>
+          <h2 className="mb-4 text-xl font-bold text-slate-900">
+            Bahan Belajar
+          </h2>
+          <div className="space-y-3">
+            {course.resources.map((resource) => (
+              <a
+                key={resource.id}
+                href={resource.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-4 rounded-2xl border border-slate-200 bg-white p-4 transition hover:border-teal-300 hover:bg-teal-50"
+              >
+                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-teal-100 text-teal-700">
+                  <FileText size={22} aria-hidden="true" />
+                </span>
+                <span className="min-w-0">
+                  <span className="block text-base font-semibold text-slate-900">
+                    {resource.title}
+                  </span>
+                  {resource.description && (
+                    <span className="block text-base text-slate-600">
+                      {resource.description}
+                    </span>
+                  )}
+                </span>
+              </a>
+            ))}
+          </div>
+        </section>
+      )}
     </div>
   );
 }
 
-function SectionCard({
-  title,
-  subtitle,
-  children,
-  id,
-}: {
-  title: string;
-  subtitle: string;
-  children: React.ReactNode;
-  id?: string;
-}) {
-  return (
-    <section
-      id={id}
-      className="rounded-[28px] border border-white/10 bg-white/5 p-5 shadow-[0_12px_40px_rgba(0,0,0,0.14)] backdrop-blur-xl sm:p-6"
-    >
-      <div className="mb-5">
-        <h2 className="text-lg font-semibold text-white">{title}</h2>
-        <p className="mt-1 text-sm text-slate-400">{subtitle}</p>
-      </div>
-
-      {children}
-    </section>
-  );
-}
-
-function InfoRow({
+function StatCard({
   icon: Icon,
   label,
   value,
@@ -743,72 +601,16 @@ function InfoRow({
   value: string;
 }) {
   return (
-    <div className="rounded-2xl border border-white/10 bg-slate-900/70 p-4">
-      <div className="flex items-start gap-3">
-        <div className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-white/5 text-cyan-300">
-          <Icon size={18} />
-        </div>
-        <div className="min-w-0">
-          <div className="text-xs uppercase tracking-wide text-slate-400">
-            {label}
-          </div>
-          <div className="mt-1 break-words text-sm font-medium text-white">
-            {value}
-          </div>
+    <div className="rounded-3xl border border-slate-200 bg-white p-5">
+      <div className="flex items-center gap-3">
+        <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-teal-100 text-teal-700">
+          <Icon size={24} aria-hidden="true" />
+        </span>
+        <div>
+          <div className="text-2xl font-bold text-slate-900">{value}</div>
+          <div className="text-base text-slate-600">{label}</div>
         </div>
       </div>
-    </div>
-  );
-}
-
-function MiniStatCard({
-  icon: Icon,
-  label,
-  value,
-  subtitle,
-}: {
-  icon: React.ComponentType<{ size?: number; className?: string }>;
-  label: string;
-  value: number;
-  subtitle: string;
-}) {
-  return (
-    <div className="rounded-2xl border border-white/10 bg-slate-900/70 p-4">
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <div className="text-sm text-slate-400">{label}</div>
-          <div className="mt-2 text-2xl font-semibold text-white">
-            <AnimatedCounter value={value} />
-          </div>
-          <div className="mt-2 text-sm text-slate-300">{subtitle}</div>
-        </div>
-
-        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white/5 text-teal-300">
-          <Icon size={20} />
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function SmallInfo({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-2xl border border-white/10 bg-white/5 px-3 py-4 text-center">
-      <div className="text-[11px] uppercase tracking-wide text-slate-400">
-        {label}
-      </div>
-      <div className="mt-2 text-sm font-semibold text-white">{value}</div>
-    </div>
-  );
-}
-
-function RpsItem({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-2xl border border-white/10 bg-slate-900/70 p-4">
-      <div className="text-xs uppercase tracking-wide text-slate-400">
-        {label}
-      </div>
-      <div className="mt-2 text-sm leading-7 text-slate-300">{value}</div>
     </div>
   );
 }
