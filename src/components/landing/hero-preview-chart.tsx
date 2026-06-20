@@ -26,31 +26,31 @@ export default function HeroPreviewChart() {
       <AreaChart data={data} margin={{ top: 5, right: 5, left: 5, bottom: 0 }}>
         <defs>
           <linearGradient id="engagementFill" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#2dd4bf" stopOpacity={0.45} />
-            <stop offset="100%" stopColor="#2dd4bf" stopOpacity={0.02} />
+            <stop offset="0%" stopColor="#0d9488" stopOpacity={0.35} />
+            <stop offset="100%" stopColor="#0d9488" stopOpacity={0.02} />
           </linearGradient>
         </defs>
 
-        <CartesianGrid stroke="rgba(255,255,255,0.06)" vertical={false} />
+        <CartesianGrid stroke="rgba(15,23,42,0.06)" vertical={false} />
         <XAxis
           dataKey="name"
-          tick={{ fill: "#94a3b8", fontSize: 12 }}
+          tick={{ fill: "#64748b", fontSize: 12 }}
           axisLine={false}
           tickLine={false}
         />
         <Tooltip
-          cursor={{ stroke: "rgba(45,212,191,0.35)", strokeWidth: 1 }}
+          cursor={{ stroke: "rgba(13,148,136,0.35)", strokeWidth: 1 }}
           contentStyle={{
-            background: "rgba(15,23,42,0.95)",
-            border: "1px solid rgba(255,255,255,0.08)",
+            background: "#ffffff",
+            border: "1px solid rgba(15,23,42,0.10)",
             borderRadius: "16px",
-            color: "#fff",
+            color: "#0f172a",
           }}
         />
         <Area
           type="monotone"
           dataKey="engagement"
-          stroke="#2dd4bf"
+          stroke="#0d9488"
           strokeWidth={3}
           fill="url(#engagementFill)"
         />

@@ -1,27 +1,66 @@
 /** @format */
 
+import Link from "next/link";
+import { ArrowLeft, CheckCircle2 } from "lucide-react";
 import RegisterForm from "@/components/auth/register-form";
+
+const benefits = [
+  "Akses semua modul belajar PKn SD",
+  "Latihan argumentasi dengan umpan balik",
+  "Ikut diskusi dan proyek aksi nyata",
+  "Portofolio belajar tersimpan rapi",
+];
 
 export default function RegisterPage() {
   return (
-    <main className="relative min-h-screen overflow-hidden bg-slate-950 text-white">
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(45,212,191,0.14),transparent_28%),radial-gradient(circle_at_top_right,rgba(59,130,246,0.12),transparent_30%)]" />
+    <main className="min-h-screen bg-slate-50">
+      <div className="mx-auto flex min-h-screen w-full max-w-7xl flex-col px-6 py-8 lg:px-8">
+        <Link
+          href="/"
+          className="inline-flex w-fit items-center gap-2 text-base font-medium text-teal-700 transition hover:text-teal-800"
+        >
+          <ArrowLeft size={18} aria-hidden="true" />
+          Kembali ke Beranda
+        </Link>
 
-      <div className="relative mx-auto flex min-h-screen w-full max-w-7xl items-center px-6 py-16 lg:px-8">
-        <div className="grid w-full gap-10 lg:grid-cols-[1fr_520px] lg:items-center">
-          <div className="max-w-2xl">
-            <div className="text-sm font-semibold uppercase tracking-[0.3em] text-teal-300">
-              AI-C<span>☰</span>LM
+        <div className="flex flex-1 items-center justify-center py-10">
+          <div className="grid w-full gap-12 lg:grid-cols-[1fr_520px] lg:items-center">
+            {/* Sisi info */}
+            <div className="hidden lg:block">
+              <div className="flex items-center gap-3">
+                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-teal-600 text-lg font-bold text-white">
+                  AC
+                </div>
+                <div className="text-xl font-bold text-slate-900">AI-CELM</div>
+              </div>
+
+              <h1 className="mt-7 text-4xl font-bold leading-tight text-slate-900">
+                Buat akun dan mulai belajar
+              </h1>
+              <p className="mt-4 max-w-md text-lg leading-8 text-slate-600">
+                Daftar sebagai mahasiswa untuk mengakses materi, tugas, diskusi,
+                dan pengalaman belajar yang terintegrasi.
+              </p>
+
+              <ul className="mt-8 space-y-3">
+                {benefits.map((benefit) => (
+                  <li
+                    key={benefit}
+                    className="flex items-center gap-3 text-base text-slate-700"
+                  >
+                    <CheckCircle2
+                      size={20}
+                      aria-hidden="true"
+                      className="shrink-0 text-teal-600"
+                    />
+                    {benefit}
+                  </li>
+                ))}
+              </ul>
             </div>
-            <h1 className="mt-4 text-4xl font-semibold leading-tight text-white sm:text-5xl">
-              Buat akun dan mulai pengalaman belajar yang lebih terstruktur.
-            </h1>
-            <p className="mt-5 text-lg leading-8 text-slate-300">
-              Daftar sebagai mahasiswa untuk mengakses modul, tugas, diskusi,
-              portofolio, dan pengalaman belajar yang terintegrasi di AI-CELM.
-            </p>
+
+            <RegisterForm />
           </div>
-          <RegisterForm />
         </div>
       </div>
     </main>

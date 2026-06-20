@@ -4,6 +4,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ChevronRight, LifeBuoy, Menu, Minus, Plus } from "lucide-react";
+import NotificationBell from "@/components/layout/notification-bell";
 import StudentUserMenu from "@/components/student/student-user-menu";
 
 /** Ubah potongan URL menjadi label berbahasa Indonesia yang mudah dipahami. */
@@ -165,6 +166,8 @@ export default function StudentTopbar({
               Bantuan
             </span>
           </button>
+
+          <NotificationBell />
 
           <StudentUserMenu user={user} />
         </div>

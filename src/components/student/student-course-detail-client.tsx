@@ -12,9 +12,11 @@ import {
   ClipboardCheck,
   FileQuestion,
   FileText,
+  GraduationCap,
   MessagesSquare,
   PlayCircle,
   Rocket,
+  Sparkles,
   Target,
 } from "lucide-react";
 
@@ -284,6 +286,18 @@ export default function StudentCourseDetailClient({
       icon: PlayCircle,
       label: "Belajar",
       desc: "Materi dan modul",
+    },
+    {
+      href: `/student/courses/${slug}/study`,
+      icon: GraduationCap,
+      label: "Bahan Belajar",
+      desc: "Ringkasan, kartu hafalan & latihan",
+    },
+    {
+      href: `/student/courses/${slug}/chat`,
+      icon: Sparkles,
+      label: "Tanya Materi",
+      desc: "Asisten belajar dari materi dosen",
     },
     {
       href: `/student/courses/${slug}/cer`,

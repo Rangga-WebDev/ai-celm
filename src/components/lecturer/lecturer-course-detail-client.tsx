@@ -13,8 +13,10 @@ import {
   FileText,
   LibraryBig,
   MessageSquareMore,
+  ShieldAlert,
   Target,
   Users,
+  Wrench,
 } from "lucide-react";
 
 type LecturerCourseDetailClientProps = {
@@ -477,6 +479,12 @@ export default function LecturerCourseDetailClient({
 function CourseFeatureAccess({ slug }: { slug: string }) {
   const actions = [
     {
+      label: "Course Builder",
+      href: `/lecturer/courses/${slug}/builder`,
+      icon: Wrench,
+      description: "Unggah materi PDF/Word sebagai sumber fitur AI.",
+    },
+    {
       label: "Modul",
       href: `/lecturer/courses/${slug}/modules`,
       icon: LibraryBig,
@@ -511,6 +519,12 @@ function CourseFeatureAccess({ slug }: { slug: string }) {
       href: `/lecturer/courses/${slug}/quizzes`,
       icon: FileQuestion,
       description: "Susun kuis dengan penilaian otomatis.",
+    },
+    {
+      label: "Mahasiswa Berisiko",
+      href: `/lecturer/courses/${slug}/at-risk`,
+      icon: ShieldAlert,
+      description: "Pantau mahasiswa yang perlu perhatian.",
     },
   ];
 

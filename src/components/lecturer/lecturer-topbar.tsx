@@ -2,6 +2,7 @@
 "use client";
 
 import { Menu } from "lucide-react";
+import NotificationBell from "@/components/layout/notification-bell";
 import LecturerUserMenu from "@/components/lecturer/lecturer-user-menu";
 
 type User = {
@@ -40,7 +41,10 @@ export default function LecturerTopbar({
           </div>
         </div>
 
-        <LecturerUserMenu user={user} />
+        <div className="flex shrink-0 items-center gap-2">
+          <NotificationBell />
+          <LecturerUserMenu user={user} />
+        </div>
       </div>
     </header>
   );

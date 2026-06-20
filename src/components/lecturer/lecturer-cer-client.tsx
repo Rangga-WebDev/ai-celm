@@ -15,6 +15,7 @@ import {
   Plus,
   RefreshCcw,
   Search,
+  Sparkles,
   Target,
   Trash2,
 } from "lucide-react";
@@ -224,6 +225,12 @@ export default function LecturerCerClient({
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  const [aiTopic, setAiTopic] = useState("");
+  const [aiNotes, setAiNotes] = useState("");
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiError, setAiError] = useState<string | null>(null);
+  const [aiMessage, setAiMessage] = useState<string | null>(null);
+
   const selectedModuleUnits = useMemo(() => {
     if (!form.moduleId) return [];
     return modules.find((item) => item.id === form.moduleId)?.units ?? [];
@@ -359,6 +366,72 @@ export default function LecturerCerClient({
       top: 0,
       behavior: "smooth",
     });
+  }
+
+  async function generateAiDraft() {
+    const topic = aiTopic.trim();
+
+    if (topic.length < 4) {
+      setAiError("Tuliskan topik/isu minimal 4 karakter.");
+      return;
+    }
+
+    try {
+      setAiLoading(true);
+      setAiError(null);
+      setAiMessage(null);
+
+      const res = await fetch(
+        `/api/lecturers/${user.id}/courses/${courseSlug}/cer/ai-assist`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            topic,
+            notes: aiNotes.trim(),
+          }),
+        },
+      );
+
+      const json = await res.json();
+
+      if (!res.ok || !json.success) {
+        throw new Error(json.message || "AI gagal menyusun draf tugas.");
+      }
+
+      const draft = json.data.draft as {
+        judul: string;
+        deskripsi: string;
+        pertanyaanUtama: string;
+        pertanyaanKlaim: string;
+        pertanyaanBukti: string;
+        pertanyaanPenalaran: string;
+        rubrik: string;
+      };
+
+      setForm((prev) => ({
+        ...prev,
+        title: draft.judul || prev.title,
+        slug:
+          editingAssignment || prev.slug
+            ? prev.slug
+            : slugify(draft.judul || ""),
+        description: draft.deskripsi || prev.description,
+        prompt: draft.pertanyaanUtama || prev.prompt,
+        claimQuestion: draft.pertanyaanKlaim || prev.claimQuestion,
+        evidenceQuestion: draft.pertanyaanBukti || prev.evidenceQuestion,
+        reasoningQuestion: draft.pertanyaanPenalaran || prev.reasoningQuestion,
+        rubricText: draft.rubrik || prev.rubricText,
+      }));
+
+      setAiMessage(
+        "Draf AI sudah diterapkan ke formulir. Silakan tinjau dan ubah sebelum menyimpan.",
+      );
+    } catch (err) {
+      setAiError(err instanceof Error ? err.message : "Terjadi kesalahan");
+    } finally {
+      setAiLoading(false);
+    }
   }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -550,6 +623,59 @@ export default function LecturerCerClient({
               {error}
             </div>
           ) : null}
+
+          <div className="mb-5 rounded-2xl border border-violet-200 bg-violet-50 p-4">
+            <div className="flex items-center gap-2 text-violet-900">
+              <Sparkles size={18} aria-hidden />
+              <h3 className="text-base font-semibold">Bantu Susun dengan AI</h3>
+            </div>
+            <p className="mt-1 text-sm text-violet-800">
+              Tuliskan topik/isu, lalu AI menyusun draf judul, kasus, pertanyaan
+              CER, dan rubrik. Anda tetap meninjau dan mengubahnya sebelum
+              menyimpan.
+            </p>
+
+            <div className="mt-3 grid gap-3">
+              <input
+                value={aiTopic}
+                onChange={(event) => setAiTopic(event.target.value)}
+                placeholder="Topik/isu, mis. Hak dan kewajiban siswa di sekolah"
+                className="w-full rounded-2xl border border-violet-200 bg-white px-4 py-3 text-base text-slate-900 outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-100"
+              />
+              <input
+                value={aiNotes}
+                onChange={(event) => setAiNotes(event.target.value)}
+                placeholder="Catatan tambahan (opsional), mis. fokus untuk kelas 4 SD"
+                className="w-full rounded-2xl border border-violet-200 bg-white px-4 py-3 text-base text-slate-900 outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-100"
+              />
+            </div>
+
+            {aiMessage ? (
+              <div className="mt-3 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-sm text-emerald-700">
+                {aiMessage}
+              </div>
+            ) : null}
+
+            {aiError ? (
+              <div className="mt-3 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-2.5 text-sm text-rose-700">
+                {aiError}
+              </div>
+            ) : null}
+
+            <button
+              type="button"
+              onClick={generateAiDraft}
+              disabled={aiLoading}
+              className="mt-3 inline-flex items-center gap-2 rounded-2xl bg-violet-600 px-5 py-2.5 text-base font-semibold text-white transition hover:bg-violet-700 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {aiLoading ? (
+                <Loader2 size={18} className="animate-spin" aria-hidden />
+              ) : (
+                <Sparkles size={18} aria-hidden />
+              )}
+              {aiLoading ? "Menyusun draf..." : "Susun Draf dengan AI"}
+            </button>
+          </div>
 
           <form onSubmit={handleSubmit} className="grid gap-4">
             <FormField

@@ -43,7 +43,7 @@ export default function RegisterForm() {
     }
 
     if (form.password !== form.confirmPassword) {
-      setError("Konfirmasi password tidak cocok.");
+      setError("Konfirmasi kata sandi tidak cocok.");
       return;
     }
 
@@ -71,7 +71,7 @@ export default function RegisterForm() {
         return;
       }
 
-      setSuccess("Registrasi berhasil. Mengarahkan ke halaman login...");
+      setSuccess("Registrasi berhasil. Mengarahkan ke halaman masuk...");
 
       setTimeout(() => {
         router.push("/login");
@@ -85,127 +85,132 @@ export default function RegisterForm() {
   };
 
   return (
-    <div className="rounded-[32px] border border-white/10 bg-white/5 p-6 shadow-[0_20px_60px_rgba(0,0,0,0.35)] backdrop-blur-xl">
-      <div className="rounded-[28px] border border-white/10 bg-slate-900/90 p-6">
-        <div>
-          <h2 className="text-2xl font-semibold text-white">
-            Buat Akun Mahasiswa
-          </h2>
-          <p className="mt-2 text-sm text-slate-400">
-            Isi data berikut untuk mulai menggunakan AI-CELM sebagai mahasiswa.
-          </p>
+    <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-xl shadow-slate-200/60 sm:p-8">
+      <div className="lg:hidden">
+        <div className="flex items-center gap-3">
+          <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-teal-600 text-base font-bold text-white">
+            AC
+          </div>
+          <div className="text-lg font-bold text-slate-900">AI-CELM</div>
         </div>
+      </div>
 
-        <form className="mt-8 space-y-5" onSubmit={handleSubmit}>
-          <div className="grid gap-5 sm:grid-cols-2">
-            <div>
-              <label className="mb-2 block text-sm font-medium text-slate-200">
-                Nama Depan
-              </label>
-              <input
-                type="text"
-                value={form.firstName}
-                onChange={(e) => updateField("firstName", e.target.value)}
-                placeholder="Nama depan"
-                className="h-12 w-full rounded-2xl border border-white/10 bg-slate-800 px-4 text-sm text-white outline-none transition placeholder:text-slate-500 focus:border-teal-300/40"
-              />
-            </div>
+      <h2 className="mt-4 text-2xl font-bold text-slate-900 lg:mt-0">
+        Buat Akun Mahasiswa
+      </h2>
+      <p className="mt-2 text-base text-slate-600">
+        Isi data berikut untuk mulai menggunakan AI-CELM.
+      </p>
 
-            <div>
-              <label className="mb-2 block text-sm font-medium text-slate-200">
-                Nama Belakang
-              </label>
-              <input
-                type="text"
-                value={form.lastName}
-                onChange={(e) => updateField("lastName", e.target.value)}
-                placeholder="Nama belakang"
-                className="h-12 w-full rounded-2xl border border-white/10 bg-slate-800 px-4 text-sm text-white outline-none transition placeholder:text-slate-500 focus:border-teal-300/40"
-              />
-            </div>
+      <form className="mt-7 space-y-5" onSubmit={handleSubmit}>
+        <div className="grid gap-5 sm:grid-cols-2">
+          <div>
+            <label className="mb-2 block text-sm font-medium text-slate-700">
+              Nama Depan
+            </label>
+            <input
+              type="text"
+              value={form.firstName}
+              onChange={(e) => updateField("firstName", e.target.value)}
+              placeholder="Nama depan"
+              className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-base text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-teal-500 focus:ring-2 focus:ring-teal-100"
+            />
           </div>
 
           <div>
-            <label className="mb-2 block text-sm font-medium text-slate-200">
-              Email
+            <label className="mb-2 block text-sm font-medium text-slate-700">
+              Nama Belakang
             </label>
             <input
-              type="email"
-              value={form.email}
-              onChange={(e) => updateField("email", e.target.value)}
-              placeholder="nama@email.com"
-              className="h-12 w-full rounded-2xl border border-white/10 bg-slate-800 px-4 text-sm text-white outline-none transition placeholder:text-slate-500 focus:border-teal-300/40"
+              type="text"
+              value={form.lastName}
+              onChange={(e) => updateField("lastName", e.target.value)}
+              placeholder="Nama belakang"
+              className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-base text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-teal-500 focus:ring-2 focus:ring-teal-100"
             />
           </div>
-
-          <div className="grid gap-5 sm:grid-cols-2">
-            <div>
-              <label className="mb-2 block text-sm font-medium text-slate-200">
-                Password
-              </label>
-              <input
-                type="password"
-                value={form.password}
-                onChange={(e) => updateField("password", e.target.value)}
-                placeholder="••••••••"
-                className="h-12 w-full rounded-2xl border border-white/10 bg-slate-800 px-4 text-sm text-white outline-none transition placeholder:text-slate-500 focus:border-teal-300/40"
-              />
-            </div>
-
-            <div>
-              <label className="mb-2 block text-sm font-medium text-slate-200">
-                Konfirmasi Password
-              </label>
-              <input
-                type="password"
-                value={form.confirmPassword}
-                onChange={(e) => updateField("confirmPassword", e.target.value)}
-                placeholder="••••••••"
-                className="h-12 w-full rounded-2xl border border-white/10 bg-slate-800 px-4 text-sm text-white outline-none transition placeholder:text-slate-500 focus:border-teal-300/40"
-              />
-            </div>
-          </div>
-
-          <div className="flex items-start gap-3">
-            <input
-              id="terms"
-              type="checkbox"
-              checked={form.agree}
-              onChange={(e) => updateField("agree", e.target.checked)}
-              className="mt-1 h-4 w-4 rounded border-white/20 bg-slate-800"
-            />
-            <label htmlFor="terms" className="text-sm leading-6 text-slate-300">
-              Saya menyetujui kebijakan platform, panduan etika AI, dan
-              penggunaan data pembelajaran secara bertanggung jawab.
-            </label>
-          </div>
-
-          {error ? (
-            <div className="rounded-2xl border border-red-400/20 bg-red-400/10 px-4 py-3 text-sm text-red-200">
-              {error}
-            </div>
-          ) : null}
-
-          {success ? (
-            <div className="rounded-2xl border border-emerald-400/20 bg-emerald-400/10 px-4 py-3 text-sm text-emerald-200">
-              {success}
-            </div>
-          ) : null}
-
-          <Button variant="primary" size="md" fullWidth disabled={isLoading}>
-            {isLoading ? "Memproses..." : "Buat Akun Mahasiswa"}
-          </Button>
-        </form>
-
-        <div className="mt-6 text-center text-sm text-slate-400">
-          Sudah punya akun?{" "}
-          <Link
-            href="/login"
-            className="font-medium text-teal-300 hover:text-teal-200"
-          >
-            Masuk di sini
-          </Link>
         </div>
+
+        <div>
+          <label className="mb-2 block text-sm font-medium text-slate-700">
+            Email
+          </label>
+          <input
+            type="email"
+            value={form.email}
+            onChange={(e) => updateField("email", e.target.value)}
+            placeholder="nama@email.com"
+            className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-base text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-teal-500 focus:ring-2 focus:ring-teal-100"
+          />
+        </div>
+
+        <div className="grid gap-5 sm:grid-cols-2">
+          <div>
+            <label className="mb-2 block text-sm font-medium text-slate-700">
+              Kata Sandi
+            </label>
+            <input
+              type="password"
+              value={form.password}
+              onChange={(e) => updateField("password", e.target.value)}
+              placeholder="••••••••"
+              className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-base text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-teal-500 focus:ring-2 focus:ring-teal-100"
+            />
+          </div>
+
+          <div>
+            <label className="mb-2 block text-sm font-medium text-slate-700">
+              Konfirmasi Kata Sandi
+            </label>
+            <input
+              type="password"
+              value={form.confirmPassword}
+              onChange={(e) => updateField("confirmPassword", e.target.value)}
+              placeholder="••••••••"
+              className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-base text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-teal-500 focus:ring-2 focus:ring-teal-100"
+            />
+          </div>
+        </div>
+
+        <div className="flex items-start gap-3">
+          <input
+            id="terms"
+            type="checkbox"
+            checked={form.agree}
+            onChange={(e) => updateField("agree", e.target.checked)}
+            className="mt-1 h-5 w-5 shrink-0 accent-teal-600"
+          />
+          <label htmlFor="terms" className="text-sm leading-6 text-slate-600">
+            Saya menyetujui kebijakan platform, panduan etika AI, dan penggunaan
+            data pembelajaran secara bertanggung jawab.
+          </label>
+        </div>
+
+        {error ? (
+          <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-base text-rose-700">
+            {error}
+          </div>
+        ) : null}
+
+        {success ? (
+          <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-base text-emerald-700">
+            {success}
+          </div>
+        ) : null}
+
+        <Button variant="primary" size="md" fullWidth disabled={isLoading}>
+          {isLoading ? "Memproses..." : "Buat Akun"}
+        </Button>
+      </form>
+
+      <div className="mt-6 text-center text-base text-slate-600">
+        Sudah punya akun?{" "}
+        <Link
+          href="/login"
+          className="font-semibold text-teal-700 hover:text-teal-800"
+        >
+          Masuk di sini
+        </Link>
       </div>
     </div>
   );

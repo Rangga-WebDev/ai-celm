@@ -61,62 +61,67 @@ export default function LoginForm() {
   };
 
   return (
-    <div className="rounded-[32px] border border-white/10 bg-white/5 p-6 shadow-[0_20px_60px_rgba(0,0,0,0.35)] backdrop-blur-xl">
-      <div className="rounded-[28px] border border-white/10 bg-slate-900/90 p-6">
+    <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-xl shadow-slate-200/60 sm:p-8">
+      <div className="lg:hidden">
+        <div className="flex items-center gap-3">
+          <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-teal-600 text-base font-bold text-white">
+            AC
+          </div>
+          <div className="text-lg font-bold text-slate-900">AI-CELM</div>
+        </div>
+      </div>
+
+      <h2 className="mt-4 text-2xl font-bold text-slate-900 lg:mt-0">Masuk</h2>
+      <p className="mt-2 text-base text-slate-600">
+        Gunakan akun AI-CELM kamu untuk melanjutkan.
+      </p>
+
+      <form className="mt-7 space-y-5" onSubmit={handleSubmit}>
         <div>
-          <h2 className="text-2xl font-semibold text-white">Masuk</h2>
-          <p className="mt-2 text-sm text-slate-400">
-            Gunakan akun AI-CELM kamu untuk melanjutkan.
-          </p>
+          <label className="mb-2 block text-sm font-medium text-slate-700">
+            Email
+          </label>
+          <input
+            type="email"
+            value={form.email}
+            onChange={(e) => updateField("email", e.target.value)}
+            placeholder="nama@email.com"
+            className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-base text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-teal-500 focus:ring-2 focus:ring-teal-100"
+          />
         </div>
 
-        <form className="mt-8 space-y-5" onSubmit={handleSubmit}>
-          <div>
-            <label className="mb-2 block text-sm font-medium text-slate-200">
-              Email
-            </label>
-            <input
-              type="email"
-              value={form.email}
-              onChange={(e) => updateField("email", e.target.value)}
-              placeholder="nama@email.com"
-              className="h-12 w-full rounded-2xl border border-white/10 bg-slate-800 px-4 text-sm text-white outline-none transition placeholder:text-slate-500 focus:border-teal-300/40"
-            />
-          </div>
-
-          <div>
-            <label className="mb-2 block text-sm font-medium text-slate-200">
-              Password
-            </label>
-            <input
-              type="password"
-              value={form.password}
-              onChange={(e) => updateField("password", e.target.value)}
-              placeholder="••••••••"
-              className="h-12 w-full rounded-2xl border border-white/10 bg-slate-800 px-4 text-sm text-white outline-none transition placeholder:text-slate-500 focus:border-teal-300/40"
-            />
-          </div>
-
-          {error ? (
-            <div className="rounded-2xl border border-red-400/20 bg-red-400/10 px-4 py-3 text-sm text-red-200">
-              {error}
-            </div>
-          ) : null}
-
-          <Button variant="primary" size="md" fullWidth disabled={isLoading}>
-            {isLoading ? "Memproses..." : "Masuk ke Dashboard"}
-          </Button>
-        </form>
-
-        <div className="mt-6 text-center text-sm text-slate-400">
-          Belum punya akun?{" "}
-          <Link
-            href="/register"
-            className="font-medium text-teal-300 hover:text-teal-200"
-          >
-            Daftar sekarang
-          </Link>
+        <div>
+          <label className="mb-2 block text-sm font-medium text-slate-700">
+            Kata Sandi
+          </label>
+          <input
+            type="password"
+            value={form.password}
+            onChange={(e) => updateField("password", e.target.value)}
+            placeholder="••••••••"
+            className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-base text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-teal-500 focus:ring-2 focus:ring-teal-100"
+          />
         </div>
+
+        {error ? (
+          <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-base text-rose-700">
+            {error}
+          </div>
+        ) : null}
+
+        <Button variant="primary" size="md" fullWidth disabled={isLoading}>
+          {isLoading ? "Memproses..." : "Masuk"}
+        </Button>
+      </form>
+
+      <div className="mt-6 text-center text-base text-slate-600">
+        Belum punya akun?{" "}
+        <Link
+          href="/register"
+          className="font-semibold text-teal-700 hover:text-teal-800"
+        >
+          Daftar sekarang
+        </Link>
       </div>
     </div>
   );

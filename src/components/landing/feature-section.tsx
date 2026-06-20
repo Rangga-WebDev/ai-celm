@@ -1,72 +1,102 @@
 /** @format */
 
+import {
+  BookOpenCheck,
+  ClipboardCheck,
+  FolderKanban,
+  LineChart,
+  MessagesSquare,
+  Sparkles,
+} from "lucide-react";
 import Container from "@/components/ui/container";
 
 const features = [
   {
-    title: "Microlearning Modular",
-    desc: "Pembelajaran bertahap berbasis modul kecil, checkpoint, mastery, dan remedial path.",
+    icon: BookOpenCheck,
+    tone: "teal",
+    title: "Materi Bertahap",
+    desc: "Belajar PKn SD lewat modul kecil yang runtut, dengan langkah dan target yang jelas.",
   },
   {
-    title: "AI Feedback CER",
-    desc: "Umpan balik argumentasi berbasis Claim, Evidence, Reasoning agar revisi lebih terarah.",
+    icon: Sparkles,
+    tone: "violet",
+    title: "Umpan Balik AI",
+    desc: "Latihan menyusun argumen (alasan, bukti, kesimpulan) dengan masukan yang membantu revisi.",
   },
   {
-    title: "Forum Deliberasi",
-    desc: "Diskusi publik yang aman, etis, dan terstruktur dengan moderasi dosen.",
+    icon: MessagesSquare,
+    tone: "sky",
+    title: "Forum Diskusi",
+    desc: "Ruang diskusi yang aman dan sopan, dipandu serta dimoderasi langsung oleh dosen.",
   },
   {
-    title: "Civic Action Project",
-    desc: "Aksi kewargaan nyata dengan perencanaan, dokumentasi, refleksi, dan evaluasi.",
+    icon: FolderKanban,
+    tone: "amber",
+    title: "Proyek Aksi",
+    desc: "Kegiatan kewargaan nyata: rencana, dokumentasi, dan refleksi pengalaman belajar.",
   },
   {
-    title: "Portofolio Mahasiswa",
-    desc: "Semua jejak belajar dan proyek terdokumentasi rapi dan terukur.",
+    icon: ClipboardCheck,
+    tone: "emerald",
+    title: "Portofolio",
+    desc: "Semua hasil belajar dan karya tersimpan rapi sehingga progres mudah dilihat.",
   },
   {
-    title: "Learning Analytics",
-    desc: "Dashboard keterlibatan mahasiswa untuk dosen, mahasiswa, dan institusi.",
+    icon: LineChart,
+    tone: "rose",
+    title: "Pantau Kemajuan",
+    desc: "Ringkasan keterlibatan belajar yang mudah dipahami mahasiswa maupun dosen.",
   },
 ];
 
+const toneMap: Record<string, string> = {
+  teal: "bg-teal-100 text-teal-700",
+  violet: "bg-violet-100 text-violet-700",
+  sky: "bg-sky-100 text-sky-700",
+  amber: "bg-amber-100 text-amber-700",
+  emerald: "bg-emerald-100 text-emerald-700",
+  rose: "bg-rose-100 text-rose-700",
+};
+
 export default function FeatureSection() {
   return (
-    <section id="fitur" className="py-20 scroll-mt-28">
+    <section id="fitur" className="scroll-mt-28 bg-slate-50 py-20">
       <Container>
-        <div className="max-w-2xl" data-guide-anchor="fitur-anchor">
-          <div className="mb-4 flex items-center gap-3">
-            <span className="h-2 w-2 rounded-full bg-teal-300 shadow-[0_0_10px_rgba(45,212,191,0.6)]" />
-            <span className="h-px w-12 bg-gradient-to-r from-teal-300/50 to-transparent" />
+        <div className="mx-auto max-w-2xl text-center">
+          <div className="text-sm font-semibold uppercase tracking-[0.2em] text-teal-600">
+            Fitur Utama
           </div>
-
-          <div className="text-sm font-semibold uppercase tracking-[0.25em] text-teal-300">
-            Fitur inti
-          </div>
-          <h2 className="mt-3 text-3xl font-semibold text-white sm:text-4xl">
-            Satu platform untuk seluruh siklus pembelajaran AI-CELM
+          <h2 className="mt-3 text-3xl font-bold text-slate-900 sm:text-4xl">
+            Satu tempat untuk seluruh proses belajar
           </h2>
-          <p className="mt-4 text-slate-300">
-            Dirancang untuk menghubungkan pembelajaran modular, argumentasi,
-            diskusi, aksi kewargaan, dan evaluasi dalam satu pengalaman digital
-            yang utuh.
+          <p className="mt-4 text-lg leading-8 text-slate-600">
+            Dari memahami materi sampai melakukan aksi nyata, semua langkah
+            belajar terhubung dalam satu alur yang sederhana.
           </p>
         </div>
 
         <div className="mt-12 grid gap-6 md:grid-cols-2 xl:grid-cols-3">
-          {features.map((feature) => (
-            <div
-              key={feature.title}
-              className="rounded-[28px] border border-white/10 bg-white/5 p-6 transition duration-300 hover:border-teal-300/20 hover:bg-white/[0.06]"
-            >
-              <div className="mb-4 h-11 w-11 rounded-2xl bg-teal-400/10" />
-              <h3 className="text-xl font-semibold text-white">
-                {feature.title}
-              </h3>
-              <p className="mt-3 text-sm leading-7 text-slate-300">
-                {feature.desc}
-              </p>
-            </div>
-          ))}
+          {features.map((feature) => {
+            const Icon = feature.icon;
+            return (
+              <div
+                key={feature.title}
+                className="rounded-3xl border border-slate-200 bg-white p-6 transition hover:-translate-y-1 hover:shadow-lg hover:shadow-slate-200/70"
+              >
+                <div
+                  className={`mb-5 flex h-12 w-12 items-center justify-center rounded-2xl ${toneMap[feature.tone]}`}
+                >
+                  <Icon size={24} aria-hidden="true" />
+                </div>
+                <h3 className="text-xl font-bold text-slate-900">
+                  {feature.title}
+                </h3>
+                <p className="mt-3 text-base leading-7 text-slate-600">
+                  {feature.desc}
+                </p>
+              </div>
+            );
+          })}
         </div>
       </Container>
     </section>

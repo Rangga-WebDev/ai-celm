@@ -11,6 +11,7 @@ import {
   Loader2,
   RotateCcw,
   Save,
+  Sparkles,
   User2,
 } from "lucide-react";
 
@@ -51,6 +52,13 @@ type Assignment = {
   prompt: string;
   module: { id: string; title: string } | null;
   microUnit: { id: string; title: string } | null;
+};
+
+type AiGradingAssist = {
+  nilaiSaran: number;
+  ringkasan: string;
+  komponen: { nama: string; skor: number; catatan: string }[];
+  masukanUntukMahasiswa: string;
 };
 
 type SubmissionsResponse = {
@@ -234,8 +242,46 @@ function SubmissionCard({
   >(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [errorText, setErrorText] = useState<string | null>(null);
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiError, setAiError] = useState<string | null>(null);
+  const [aiResult, setAiResult] = useState<AiGradingAssist | null>(null);
 
   const isDraft = submission.status === "DRAFT";
+
+  async function requestAiSuggestion() {
+    setAiLoading(true);
+    setAiError(null);
+
+    try {
+      const res = await fetch(`${basePath}/${submission.id}/ai-grade`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+      });
+      const json = await res.json();
+
+      if (!res.ok || !json.success) {
+        throw new Error(json.message || "Gagal menyusun saran penilaian");
+      }
+
+      setAiResult(json.data.assist as AiGradingAssist);
+    } catch (err) {
+      setAiError(err instanceof Error ? err.message : "Terjadi kesalahan");
+    } finally {
+      setAiLoading(false);
+    }
+  }
+
+  function applyAiScore() {
+    if (aiResult) {
+      setScore(String(aiResult.nilaiSaran));
+    }
+  }
+
+  function applyAiFeedback() {
+    if (aiResult) {
+      setFeedback(aiResult.masukanUntukMahasiswa);
+    }
+  }
 
   async function submitGrade(action: "SAVE_REVIEW" | "REQUEST_REVISION") {
     setSaving(action);
@@ -345,6 +391,98 @@ function SubmissionCard({
               placeholder="Tulis masukan untuk mahasiswa..."
               className="w-full resize-y rounded-2xl border border-slate-200 bg-white px-4 py-3 text-base text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-teal-500 focus:ring-2 focus:ring-teal-100"
             />
+          </div>
+
+          <div className="rounded-2xl border border-violet-200 bg-violet-50 p-4">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div className="flex items-center gap-2 text-violet-900">
+                <Sparkles size={18} aria-hidden />
+                <span className="text-base font-semibold">
+                  Bantuan Penilaian AI
+                </span>
+              </div>
+              <button
+                type="button"
+                disabled={aiLoading}
+                onClick={requestAiSuggestion}
+                className="inline-flex items-center gap-2 rounded-2xl bg-violet-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-violet-700 disabled:opacity-60"
+              >
+                {aiLoading ? (
+                  <Loader2 size={16} className="animate-spin" aria-hidden />
+                ) : (
+                  <Sparkles size={16} aria-hidden />
+                )}
+                {aiResult ? "Susun Ulang Saran" : "Minta Saran Nilai"}
+              </button>
+            </div>
+            <p className="mt-2 text-sm text-violet-800">
+              AI hanya memberi saran nilai dan masukan. Keputusan akhir tetap di
+              tangan Anda — tinjau dan sunting sebelum menyimpan.
+            </p>
+
+            {aiError ? (
+              <div className="mt-3 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">
+                {aiError}
+              </div>
+            ) : null}
+
+            {aiResult ? (
+              <div className="mt-3 grid gap-3 rounded-2xl border border-violet-200 bg-white p-4">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="rounded-full bg-violet-100 px-3 py-1 text-sm font-semibold text-violet-700">
+                    Saran nilai: {aiResult.nilaiSaran}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={applyAiScore}
+                    className="rounded-full border border-violet-300 px-3 py-1 text-sm font-medium text-violet-700 transition hover:bg-violet-50"
+                  >
+                    Pakai nilai
+                  </button>
+                  <button
+                    type="button"
+                    onClick={applyAiFeedback}
+                    className="rounded-full border border-violet-300 px-3 py-1 text-sm font-medium text-violet-700 transition hover:bg-violet-50"
+                  >
+                    Pakai masukan
+                  </button>
+                </div>
+
+                <p className="text-base leading-7 text-slate-700">
+                  {aiResult.ringkasan}
+                </p>
+
+                <div className="grid gap-2">
+                  {aiResult.komponen.map((item, index) => (
+                    <div
+                      key={`${item.nama}-${index}`}
+                      className="rounded-xl border border-slate-200 bg-slate-50 p-3"
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-sm font-semibold text-slate-800">
+                          {item.nama}
+                        </span>
+                        <span className="text-sm font-semibold text-violet-700">
+                          {item.skor}/100
+                        </span>
+                      </div>
+                      <p className="mt-1 text-sm leading-6 text-slate-600">
+                        {item.catatan}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+                  <div className="text-xs font-semibold uppercase tracking-wide text-violet-700">
+                    Usulan masukan untuk mahasiswa
+                  </div>
+                  <p className="mt-1 whitespace-pre-wrap text-base leading-7 text-slate-700">
+                    {aiResult.masukanUntukMahasiswa}
+                  </p>
+                </div>
+              </div>
+            ) : null}
           </div>
 
           <div className="flex flex-wrap gap-3">

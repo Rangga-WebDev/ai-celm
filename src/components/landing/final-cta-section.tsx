@@ -1,51 +1,50 @@
 /** @format */
 
 import Link from "next/link";
+import { ArrowRight } from "lucide-react";
 import Container from "@/components/ui/container";
 import Button from "@/components/ui/button";
-import GlowCard from "@/components/ui/glow-card";
 
 export default function FinalCtaSection() {
   return (
     <section className="py-20">
       <Container>
-        <GlowCard
-          className="rounded-[32px] border border-white/10 bg-white/5 p-8 sm:p-10 lg:p-12"
-          glowColor="rgba(45,212,191,0.12)"
-          borderGlowColor="rgba(255,255,255,0.12)"
-          tilt={false}
-        >
-          <div className="mx-auto max-w-3xl text-center">
-            <div className="inline-flex items-center rounded-full border border-teal-300/20 bg-teal-400/10 px-4 py-2 text-sm font-medium text-teal-200">
-              Siap mengeksplorasi AI-CELM?
+        <div className="overflow-hidden rounded-3xl bg-teal-600 px-6 py-12 text-center sm:px-10 sm:py-16">
+          <div className="mx-auto max-w-3xl">
+            <div className="inline-flex items-center rounded-full bg-white/15 px-4 py-2 text-sm font-medium text-white">
+              Siap mencoba AI-CELM?
             </div>
 
-            <h2 className="mt-5 text-3xl font-semibold text-white sm:text-4xl">
-              Bangun pembelajaran yang lebih terstruktur, reflektif, dan
-              berdampak nyata
+            <h2 className="mt-5 text-3xl font-bold text-white sm:text-4xl">
+              Mulai pengalaman belajar PKn SD yang lebih bermakna
             </h2>
 
-            <p className="mt-4 text-slate-300 sm:text-lg">
-              Masuk ke platform untuk mencoba alur pembelajaran, memantau
-              progres, mengelola course, dan mengevaluasi pengalaman belajar
-              dalam satu sistem yang terintegrasi.
+            <p className="mx-auto mt-4 max-w-2xl text-lg leading-8 text-teal-50">
+              Daftar gratis untuk mengikuti alur belajar, memantau kemajuan, dan
+              mengembangkan proyek aksi dalam satu platform yang mudah
+              digunakan.
             </p>
 
             <div className="mt-8 flex flex-col items-center justify-center gap-4 sm:flex-row">
-              <Link href="/login">
-                <Button size="lg" animatedArrow>
-                  Masuk ke Platform
+              <Link href="/register">
+                <Button
+                  size="lg"
+                  variant="secondary"
+                  rightIcon={<ArrowRight size={18} aria-hidden="true" />}
+                >
+                  Daftar Gratis Sekarang
                 </Button>
               </Link>
 
-              <Link href="/register">
-                <Button variant="outline" size="lg">
-                  Daftar Sekarang
-                </Button>
+              <Link
+                href="/login"
+                className="rounded-2xl px-5 py-3 text-base font-semibold text-white underline-offset-4 transition hover:bg-white/10"
+              >
+                Sudah punya akun? Masuk
               </Link>
             </div>
           </div>
-        </GlowCard>
+        </div>
       </Container>
     </section>
   );

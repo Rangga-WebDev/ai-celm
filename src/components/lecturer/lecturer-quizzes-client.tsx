@@ -10,6 +10,7 @@ import {
   HelpCircle,
   Loader2,
   Plus,
+  Sparkles,
   Trash2,
   Users,
 } from "lucide-react";
@@ -54,6 +55,14 @@ type QuizzesResponse = {
   };
 };
 
+type MaterialOption = {
+  id: string;
+  title: string;
+  status: string;
+  charCount: number | null;
+  module: { id: string; title: string } | null;
+};
+
 function statusBadge(status: string) {
   switch (status) {
     case "PUBLISHED":
@@ -91,6 +100,12 @@ export default function LecturerQuizzesClient({
   const [creating, setCreating] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
 
+  const [materials, setMaterials] = useState<MaterialOption[]>([]);
+  const [aiMaterialId, setAiMaterialId] = useState("");
+  const [aiQuestionCount, setAiQuestionCount] = useState(5);
+  const [aiGenerating, setAiGenerating] = useState(false);
+  const [aiError, setAiError] = useState<string | null>(null);
+
   const basePath = `/api/lecturers/${user.id}/courses/${courseSlug}/quizzes`;
 
   useEffect(() => {
@@ -111,6 +126,25 @@ export default function LecturerQuizzesClient({
         setQuizzes(json.data.quizzes);
         if (json.data.modules.length > 0 && moduleId === "") {
           setModuleId(json.data.modules[0].id);
+        }
+
+        // Ambil daftar materi untuk sumber soal AI (opsional, tidak menggagalkan halaman).
+        try {
+          const matRes = await fetch(
+            `/api/lecturers/${user.id}/courses/${courseSlug}/materials`,
+            { cache: "no-store" },
+          );
+          const matJson = await matRes.json();
+          if (matRes.ok && matJson.success) {
+            const list = (matJson.data ?? []) as MaterialOption[];
+            setMaterials(list);
+            const firstReady = list.find((m) => m.status === "READY");
+            if (firstReady) {
+              setAiMaterialId(firstReady.id);
+            }
+          }
+        } catch {
+          // abaikan; panel AI hanya tidak punya pilihan materi
         }
       } catch (err) {
         setError(err instanceof Error ? err.message : "Unknown error");
@@ -153,6 +187,38 @@ export default function LecturerQuizzesClient({
     } catch (err) {
       setFormError(err instanceof Error ? err.message : "Unknown error");
       setCreating(false);
+    }
+  }
+
+  async function handleGenerateWithAi() {
+    if (aiMaterialId === "") {
+      setAiError("Pilih materi sumber soal terlebih dahulu.");
+      return;
+    }
+
+    setAiGenerating(true);
+    setAiError(null);
+
+    try {
+      const res = await fetch(`${basePath}/ai-generate`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          materialId: aiMaterialId,
+          questionCount: aiQuestionCount,
+        }),
+      });
+      const json = await res.json();
+
+      if (!res.ok || !json.success) {
+        throw new Error(json.message || "Gagal membuat kuis dengan AI");
+      }
+
+      const quizId = json.data.quizId as string;
+      window.location.href = `/lecturer/courses/${courseSlug}/quizzes/${quizId}`;
+    } catch (err) {
+      setAiError(err instanceof Error ? err.message : "Unknown error");
+      setAiGenerating(false);
     }
   }
 
@@ -259,6 +325,93 @@ export default function LecturerQuizzesClient({
         {formError ? (
           <div className="mt-3 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
             {formError}
+          </div>
+        ) : null}
+      </section>
+
+      <section className="rounded-3xl border border-violet-200 bg-violet-50 p-6">
+        <div className="flex items-center gap-2 text-violet-900">
+          <Sparkles size={20} aria-hidden="true" />
+          <h2 className="text-lg font-bold">Buat Kuis dengan AI</h2>
+        </div>
+        <p className="mt-1 text-base text-violet-800">
+          Pilih materi yang sudah diunggah, AI akan menyusun draf soal pilihan
+          ganda lengkap dengan kunci jawaban dan pembahasan. Anda tetap meninjau
+          dan menyuntingnya sebelum diterbitkan.
+        </p>
+
+        {materials.length === 0 ? (
+          <div className="mt-4 rounded-2xl border border-violet-200 bg-white px-4 py-3 text-base text-slate-600">
+            Belum ada materi yang siap. Unggah materi lewat menu Course Builder
+            terlebih dahulu.
+          </div>
+        ) : (
+          <div className="mt-5 grid gap-4 rounded-2xl border border-violet-200 bg-white p-4 sm:grid-cols-[2fr_1fr_auto] sm:items-end">
+            <div className="grid gap-2">
+              <label className="text-sm font-medium text-slate-700">
+                Materi Sumber
+              </label>
+              <select
+                value={aiMaterialId}
+                onChange={(event) => setAiMaterialId(event.target.value)}
+                className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-base text-slate-900 outline-none transition focus:border-violet-500 focus:ring-2 focus:ring-violet-100"
+              >
+                {materials.map((material) => (
+                  <option
+                    key={material.id}
+                    value={material.id}
+                    disabled={material.status !== "READY"}
+                  >
+                    {material.title}
+                    {material.status !== "READY" ? " (belum siap)" : ""}
+                    {material.module ? ` — ${material.module.title}` : ""}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="grid gap-2">
+              <label className="text-sm font-medium text-slate-700">
+                Jumlah Soal
+              </label>
+              <select
+                value={aiQuestionCount}
+                onChange={(event) =>
+                  setAiQuestionCount(Number(event.target.value))
+                }
+                className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-base text-slate-900 outline-none transition focus:border-violet-500 focus:ring-2 focus:ring-violet-100"
+              >
+                {[3, 5, 7, 10].map((count) => (
+                  <option key={count} value={count}>
+                    {count} soal
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <button
+              type="button"
+              disabled={aiGenerating || aiMaterialId === ""}
+              onClick={handleGenerateWithAi}
+              className="inline-flex items-center justify-center gap-2 rounded-2xl bg-violet-600 px-5 py-3 text-base font-semibold text-white transition hover:bg-violet-700 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {aiGenerating ? (
+                <Loader2
+                  size={18}
+                  className="animate-spin"
+                  aria-hidden="true"
+                />
+              ) : (
+                <Sparkles size={18} aria-hidden="true" />
+              )}
+              {aiGenerating ? "Menyusun soal..." : "Buat Draf Kuis"}
+            </button>
+          </div>
+        )}
+
+        {aiError ? (
+          <div className="mt-3 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+            {aiError}
           </div>
         ) : null}
       </section>

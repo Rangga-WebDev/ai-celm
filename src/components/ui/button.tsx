@@ -29,22 +29,22 @@ export default function Button({
   ...props
 }: ButtonProps) {
   const baseClasses =
-    "group inline-flex items-center justify-center gap-2 rounded-2xl font-medium transition duration-200 ease-out focus:outline-none focus-visible:ring-2 focus-visible:ring-teal-300/70 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50";
+    "group inline-flex items-center justify-center gap-2 rounded-2xl font-semibold transition duration-200 ease-out focus:outline-none focus-visible:ring-2 focus-visible:ring-teal-500/40 focus-visible:ring-offset-2 focus-visible:ring-offset-white active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50";
 
   const sizeClasses = {
     sm: "h-10 px-4 text-sm",
-    md: "h-12 px-5 text-sm",
-    lg: "h-14 px-6 text-base",
+    md: "h-12 px-5 text-base",
+    lg: "h-14 px-7 text-base",
   };
 
   const variantClasses = {
     primary:
-      "bg-teal-400 text-slate-950 shadow-lg shadow-teal-500/20 hover:-translate-y-0.5 hover:bg-teal-300",
+      "bg-teal-600 text-white shadow-sm shadow-teal-600/20 hover:-translate-y-0.5 hover:bg-teal-700",
     secondary:
-      "border border-white/10 bg-slate-800 text-white hover:-translate-y-0.5 hover:bg-slate-700",
-    ghost: "bg-transparent text-white hover:bg-white/5",
+      "border border-slate-200 bg-white text-slate-700 hover:-translate-y-0.5 hover:bg-slate-50",
+    ghost: "bg-transparent text-slate-700 hover:bg-slate-100",
     outline:
-      "border border-white/15 bg-transparent text-white hover:-translate-y-0.5 hover:border-white/30 hover:bg-white/5",
+      "border border-slate-300 bg-white text-slate-700 hover:-translate-y-0.5 hover:border-teal-400 hover:bg-teal-50 hover:text-teal-700",
   };
 
   const renderRightIcon = () => {

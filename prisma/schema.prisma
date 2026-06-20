@@ -63,6 +63,12 @@ enum ResourceType {
   OTHER
 }
 
+enum MaterialStatus {
+  PROCESSING
+  READY
+  FAILED
+}
+
 enum ThreadType {
   GENERAL
   DELIBERATION
@@ -162,6 +168,8 @@ model User {
   enrollments           Enrollment[]
   taughtCourses         Course[]                 @relation("CourseLecturer")
   uploadedResources     LearningResource[]       @relation("ResourceUploader")
+  uploadedMaterials     CourseMaterial[]         @relation("MaterialUploader")
+  authoredStudyKits     MaterialStudyKit[]       @relation("StudyKitAuthor")
   moduleProgresses      ModuleProgress[]
   unitProgresses        UnitProgress[]
   discussionThreads     DiscussionThread[]
@@ -201,6 +209,8 @@ model Course {
   aiLogs          AIResponseLog[]
   analyticsEvents LearningAnalyticsEvent[]
   cerAssignments  CerAssignment[]
+  materials       CourseMaterial[]
+  studyKits       MaterialStudyKit[]
 
   @@index([lecturerId])
 }
@@ -339,6 +349,7 @@ model Module {
   discussionThreads DiscussionThread[]
   cerAssignments    CerAssignment[]
   projects          CivicActionProject[]
+  materials         CourseMaterial[]
 
   @@unique([courseId, slug])
   @@unique([courseId, order])
@@ -485,6 +496,61 @@ model LearningResource {
   @@index([moduleId])
   @@index([microUnitId])
   @@index([type])
+}
+
+model CourseMaterial {
+  id           String         @id @default(cuid())
+  courseId     String
+  moduleId     String?
+  uploadedById String?
+  title        String
+  description  String?
+  fileName     String
+  mimeType     String
+  fileSize     Int
+  storageKey   String
+  extractedText String?
+  charCount    Int?
+  status       MaterialStatus @default(PROCESSING)
+  errorMessage String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  course     Course  @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  module     Module? @relation(fields: [moduleId], references: [id], onDelete: SetNull)
+  uploadedBy User?   @relation("MaterialUploader", fields: [uploadedById], references: [id], onDelete: SetNull)
+  studyKit   MaterialStudyKit?
+
+  @@index([courseId])
+  @@index([moduleId])
+  @@index([status])
+}
+
+model MaterialStudyKit {
+  id          String  @id @default(cuid())
+  materialId  String  @unique
+  courseId    String
+  createdById String?
+
+  summary    String
+  keyPoints  Json
+  flashcards Json
+  quiz       Json
+
+  isPublished Boolean   @default(false)
+  publishedAt DateTime?
+  modelName   String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  material  CourseMaterial @relation(fields: [materialId], references: [id], onDelete: Cascade)
+  course    Course         @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  createdBy User?          @relation("StudyKitAuthor", fields: [createdById], references: [id], onDelete: SetNull)
+
+  @@index([courseId])
+  @@index([isPublished])
 }
 
 model DiscussionThread {

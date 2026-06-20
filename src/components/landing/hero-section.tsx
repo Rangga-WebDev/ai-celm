@@ -1,247 +1,200 @@
 /** @format */
 
-import { LayoutDashboard } from "lucide-react";
+import Link from "next/link";
+import {
+  ArrowRight,
+  CheckCircle2,
+  MessagesSquare,
+  Sparkles,
+  Target,
+} from "lucide-react";
 import Button from "@/components/ui/button";
 import Container from "@/components/ui/container";
-import GlowCard from "@/components/ui/glow-card";
 import HeroPreviewChart from "@/components/landing/hero-preview-chart";
+
+const highlights = [
+  "Materi PKn SD bertahap & mudah diikuti",
+  "Umpan balik argumentasi dibantu AI",
+  "Dosen tetap memegang kendali penilaian",
+];
 
 export default function HeroSection() {
   return (
     <section
       id="beranda"
-      className="relative overflow-hidden py-20 lg:py-24 scroll-mt-28"
+      className="relative overflow-hidden scroll-mt-28 py-16 sm:py-20 lg:py-24"
     >
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(45,212,191,0.16),transparent_30%),radial-gradient(circle_at_top_right,rgba(59,130,246,0.14),transparent_30%)]" />
+      {/* dekorasi lembut */}
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(13,148,136,0.08),transparent_40%),radial-gradient(circle_at_top_right,rgba(56,189,248,0.08),transparent_40%)]"
+      />
 
-      <Container className="relative grid gap-10 lg:grid-cols-2 lg:items-center">
+      <Container className="relative grid gap-12 lg:grid-cols-2 lg:items-center">
         <div>
-          <div className="inline-flex rounded-full border border-teal-400/20 bg-teal-400/10 px-4 py-2 text-sm text-teal-200">
-            Platform pembelajaran civic engagement berbasis AI
+          <div className="inline-flex items-center gap-2 rounded-full border border-teal-200 bg-teal-50 px-4 py-2 text-sm font-medium text-teal-700">
+            <Sparkles size={16} aria-hidden="true" />
+            Platform belajar PKn SD berbasis AI
           </div>
 
-          <h1 className="mt-6 text-4xl font-semibold leading-tight text-white sm:text-5xl lg:text-6xl">
-            Bangun pembelajaran kewargaan digital yang
-            <span className="block text-teal-300">
-              terstruktur, etis, dan berdampak nyata.
-            </span>
+          <h1 className="mt-6 text-4xl font-bold leading-tight tracking-tight text-slate-900 sm:text-5xl lg:text-6xl">
+            Belajar kewarganegaraan jadi{" "}
+            <span className="text-teal-600">menyenangkan dan bermakna</span>
           </h1>
 
-          <p className="mt-6 max-w-2xl text-lg leading-8 text-slate-300">
-            AI-CELM mengintegrasikan microlearning, feedback argumentasi CER,
-            forum deliberasi, civic action project, portofolio, dan analytics
-            dalam satu ekosistem pembelajaran modern.
+          <p className="mt-6 max-w-xl text-lg leading-8 text-slate-600">
+            AI-CELM membantu calon guru SD belajar Pendidikan Kewarganegaraan
+            secara bertahap: materi singkat, latihan argumentasi, diskusi, dan
+            proyek aksi nyata — semua dalam satu tempat yang mudah digunakan.
           </p>
 
-          <div className="mt-8 flex flex-wrap gap-4">
-            <Button
-              size="lg"
-              variant="primary"
-              leftIcon={<LayoutDashboard size={18} />}
-            >
-              Jelajahi Platform
-            </Button>
+          <ul className="mt-7 space-y-3">
+            {highlights.map((item) => (
+              <li
+                key={item}
+                className="flex items-center gap-3 text-base text-slate-700"
+              >
+                <CheckCircle2
+                  size={20}
+                  aria-hidden="true"
+                  className="shrink-0 text-teal-600"
+                />
+                {item}
+              </li>
+            ))}
+          </ul>
 
-            <Button size="lg" variant="outline" animatedArrow>
-              Lihat Struktur
-            </Button>
+          <div className="mt-9 flex flex-wrap gap-4">
+            <Link href="/register">
+              <Button
+                size="lg"
+                variant="primary"
+                rightIcon={<ArrowRight size={18} aria-hidden="true" />}
+              >
+                Mulai Belajar Gratis
+              </Button>
+            </Link>
+
+            <Link href="/login">
+              <Button size="lg" variant="outline">
+                Masuk ke Akun
+              </Button>
+            </Link>
           </div>
         </div>
 
-        {/* Preview Chart */}
-        <div
-          data-guide-anchor="hero-dashboard"
-          className="rounded-[32px] border border-white/10 bg-white/5 p-5 shadow-[0_20px_60px_rgba(0,0,0,0.35)] backdrop-blur-xl"
-        >
-          <div className="relative overflow-hidden rounded-[28px] border border-white/10 bg-slate-900 p-6 shadow-[0_0_0_1px_rgba(255,255,255,0.03),0_0_40px_rgba(45,212,191,0.06)]">
-            <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(45,212,191,0.18),transparent_30%),radial-gradient(circle_at_bottom_right,rgba(59,130,246,0.14),transparent_30%)]" />
-            <div className="pointer-events-none absolute -left-10 top-10 h-32 w-32 rounded-full bg-teal-400/10 blur-3xl" />
-            <div className="pointer-events-none absolute -right-8 bottom-0 h-28 w-28 rounded-full bg-cyan-400/10 blur-3xl" />
-
-            <div className="relative">
-              <div className="flex items-start justify-between gap-4 border-b border-white/10 pb-4">
-                <div>
-                  <div className="text-sm font-semibold text-white">
-                    Preview Dashboard AI-CELM
-                  </div>
-                  <div className="text-xs text-slate-400">
-                    Ringkasan ekosistem pembelajaran modern
-                  </div>
+        {/* Kartu preview ringkasan */}
+        <div className="rounded-3xl border border-slate-200 bg-white p-4 shadow-xl shadow-slate-200/60 sm:p-5">
+          <div className="rounded-3xl border border-slate-100 bg-slate-50 p-5 sm:p-6">
+            <div className="flex items-start justify-between gap-4 border-b border-slate-200 pb-4">
+              <div>
+                <div className="text-base font-bold text-slate-900">
+                  Ringkasan Belajar
                 </div>
-
-                <div className="shrink-0 rounded-full border border-emerald-400/20 bg-emerald-400/10 px-3 py-1 text-xs font-medium text-emerald-300">
-                  Human-in-the-loop
+                <div className="text-sm text-slate-500">
+                  Contoh tampilan dasbor mahasiswa
                 </div>
               </div>
+              <span className="shrink-0 rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-700">
+                Didampingi dosen
+              </span>
+            </div>
 
-              <div className="mt-5 grid gap-4 lg:grid-cols-[0.9fr_1.1fr]">
-                <div className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <GlowCard
-                      className="p-4 shadow-[0_0_25px_rgba(45,212,191,0.08)]"
-                      glowColor="rgba(45,212,191,0.18)"
-                    >
-                      <div className="text-[11px] uppercase tracking-[0.18em] text-slate-400">
-                        Modul aktif
-                      </div>
-                      <div className="mt-2 text-2xl font-semibold text-white">
-                        08
-                      </div>
-                      <div className="mt-3 h-2 rounded-full bg-slate-700">
-                        <div className="h-2 w-[72%] rounded-full bg-gradient-to-r from-teal-400 to-cyan-300" />
-                      </div>
-                    </GlowCard>
+            <div className="mt-5 grid gap-4 sm:grid-cols-2">
+              <MiniStat
+                icon={Target}
+                tone="teal"
+                label="Modul selesai"
+                value="8 / 10"
+                bar={80}
+              />
+              <MiniStat
+                icon={Sparkles}
+                tone="violet"
+                label="Skor argumentasi"
+                value="84%"
+                bar={84}
+              />
+              <MiniStat
+                icon={MessagesSquare}
+                tone="sky"
+                label="Diskusi aktif"
+                value="26"
+                bar={62}
+              />
+              <MiniStat
+                icon={CheckCircle2}
+                tone="emerald"
+                label="Proyek aksi"
+                value="12"
+                bar={70}
+              />
+            </div>
 
-                    <GlowCard
-                      className="p-4 shadow-[0_0_25px_rgba(56,189,248,0.08)]"
-                      glowColor="rgba(56,189,248,0.18)"
-                    >
-                      <div className="text-[11px] uppercase tracking-[0.18em] text-slate-400">
-                        Skor CER
-                      </div>
-                      <div className="mt-2 text-2xl font-semibold text-white">
-                        84%
-                      </div>
-                      <div className="mt-2 text-xs text-teal-300">
-                        +12% dari minggu lalu
-                      </div>
-                    </GlowCard>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <GlowCard
-                      className="p-4 shadow-[0_0_25px_rgba(16,185,129,0.08)]"
-                      glowColor="rgba(16,185,129,0.18)"
-                    >
-                      <div className="text-[11px] uppercase tracking-[0.18em] text-slate-400">
-                        Civic Action
-                      </div>
-                      <div className="mt-2 text-2xl font-semibold text-white">
-                        12
-                      </div>
-                      <div className="mt-2 text-xs text-emerald-300">
-                        Proyek aktif berjalan
-                      </div>
-                    </GlowCard>
-
-                    <GlowCard
-                      className="p-4 shadow-[0_0_25px_rgba(168,85,247,0.08)]"
-                      glowColor="rgba(168,85,247,0.18)"
-                    >
-                      <div className="text-[11px] uppercase tracking-[0.18em] text-slate-400">
-                        Forum Aktif
-                      </div>
-                      <div className="mt-2 text-2xl font-semibold text-white">
-                        26
-                      </div>
-                      <div className="mt-2 text-xs text-fuchsia-300">
-                        Diskusi mingguan
-                      </div>
-                    </GlowCard>
-                  </div>
-
-                  <GlowCard
-                    className="p-4 shadow-[0_0_30px_rgba(45,212,191,0.06)]"
-                    glowColor="rgba(45,212,191,0.16)"
-                  >
-                    <div className="flex items-start justify-between gap-3">
-                      <div>
-                        <div className="text-sm font-semibold text-white">
-                          Portfolio
-                        </div>
-                        <div className="mt-1 max-w-[180px] text-xs leading-5 text-slate-400">
-                          Dokumentasi aksi dan refleksi
-                        </div>
-                      </div>
-
-                      <div className="shrink-0 rounded-full border border-teal-400/15 bg-teal-400/10 px-1.5 py-1 text-[11px] font-medium text-teal-300">
-                        Hari Ini
-                      </div>
-                    </div>
-
-                    <div className="mt-4 space-y-4">
-                      <div>
-                        <div className="mb-2 flex items-center justify-between text-xs text-slate-400">
-                          <span>Refleksi mahasiswa</span>
-                          <span>68%</span>
-                        </div>
-                        <div className="h-2 rounded-full bg-slate-700">
-                          <div className="h-2 w-[68%] rounded-full bg-gradient-to-r from-teal-400 to-cyan-300" />
-                        </div>
-                      </div>
-
-                      <div>
-                        <div className="mb-2 flex items-center justify-between text-xs text-slate-400">
-                          <span>Portofolio lengkap</span>
-                          <span>81%</span>
-                        </div>
-                        <div className="h-2 rounded-full bg-slate-700">
-                          <div className="h-2 w-[81%] rounded-full bg-gradient-to-r from-cyan-400 to-sky-300" />
-                        </div>
-                      </div>
-                    </div>
-                  </GlowCard>
+            <div className="mt-4 rounded-2xl border border-slate-200 bg-white p-4">
+              <div className="flex items-center justify-between">
+                <div className="text-sm font-semibold text-slate-900">
+                  Keterlibatan mingguan
                 </div>
-
-                <GlowCard
-                  tilt={false}
-                  className="p-4 shadow-[0_0_35px_rgba(59,130,246,0.08)]"
-                  glowColor="rgba(59,130,246,0.18)"
-                >
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <div className="text-sm font-semibold text-white">
-                        Engagement Overview
-                      </div>
-                      <div className="mt-1 text-xs text-slate-400">
-                        Aktivitas mahasiswa per minggu
-                      </div>
-                    </div>
-
-                    <div className="shrink-0 rounded-full border border-white/10 bg-slate-700/60 px-2.5 py-1 text-[11px] font-medium text-slate-300">
-                      Data Real-Time
-                    </div>
-                  </div>
-
-                  <div className="mt-4 h-80 rounded-2xl bg-slate-900/60 p-3">
-                    <HeroPreviewChart />
-                  </div>
-
-                  <div className="mt-4 grid grid-cols-3 gap-3">
-                    <div className="rounded-xl bg-slate-900/70 p-3">
-                      <div className="text-[11px] uppercase tracking-wide text-slate-500">
-                        Kognitif
-                      </div>
-                      <div className="mt-1 text-lg font-semibold text-white">
-                        88%
-                      </div>
-                    </div>
-
-                    <div className="rounded-xl bg-slate-900/70 p-3">
-                      <div className="text-[11px] uppercase tracking-wide text-slate-500">
-                        Afektif
-                      </div>
-                      <div className="mt-1 text-lg font-semibold text-white">
-                        79%
-                      </div>
-                    </div>
-
-                    <div className="rounded-xl bg-slate-900/70 p-3">
-                      <div className="text-[11px] uppercase tracking-wide text-slate-500">
-                        Perilaku
-                      </div>
-                      <div className="mt-1 text-lg font-semibold text-white">
-                        84%
-                      </div>
-                    </div>
-                  </div>
-                </GlowCard>
+                <span className="text-xs text-slate-500">
+                  6 minggu terakhir
+                </span>
+              </div>
+              <div className="mt-3 h-44">
+                <HeroPreviewChart />
               </div>
             </div>
           </div>
         </div>
-        {/* End of Preview Chart */}
       </Container>
     </section>
+  );
+}
+
+const toneMap = {
+  teal: "bg-teal-100 text-teal-700",
+  violet: "bg-violet-100 text-violet-700",
+  sky: "bg-sky-100 text-sky-700",
+  emerald: "bg-emerald-100 text-emerald-700",
+} as const;
+
+const barMap = {
+  teal: "bg-teal-600",
+  violet: "bg-violet-600",
+  sky: "bg-sky-500",
+  emerald: "bg-emerald-600",
+} as const;
+
+function MiniStat({
+  icon: Icon,
+  tone,
+  label,
+  value,
+  bar,
+}: {
+  icon: React.ComponentType<{ size?: number; "aria-hidden"?: boolean }>;
+  tone: keyof typeof toneMap;
+  label: string;
+  value: string;
+  bar: number;
+}) {
+  return (
+    <div className="rounded-2xl border border-slate-200 bg-white p-4">
+      <div className="flex items-center gap-2.5">
+        <div
+          className={`flex h-9 w-9 items-center justify-center rounded-xl ${toneMap[tone]}`}
+        >
+          <Icon size={18} aria-hidden={true} />
+        </div>
+        <div className="text-sm text-slate-500">{label}</div>
+      </div>
+      <div className="mt-3 text-2xl font-bold text-slate-900">{value}</div>
+      <div className="mt-2 h-2 rounded-full bg-slate-100">
+        <div
+          className={`h-2 rounded-full ${barMap[tone]}`}
+          style={{ width: `${bar}%` }}
+        />
+      </div>
+    </div>
   );
 }

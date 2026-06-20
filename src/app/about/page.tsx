@@ -1,100 +1,102 @@
 /** @format */
 
 import Link from "next/link";
+import { ArrowRight } from "lucide-react";
+import Navbar from "@/components/layout/navbar";
+import Footer from "@/components/layout/footer";
 import Container from "@/components/ui/container";
 import Button from "@/components/ui/button";
 
 const goals = [
   {
     title: "Mengintegrasikan pembelajaran",
-    desc: "AI-CELM menghubungkan microlearning, argumentasi CER, diskusi, proyek aksi, portofolio, dan analytics dalam satu alur pembelajaran yang utuh.",
+    desc: "AI-CELM menghubungkan materi, latihan argumentasi, diskusi, proyek aksi, portofolio, dan pemantauan dalam satu alur belajar yang utuh.",
   },
   {
     title: "Memperkuat peran dosen",
-    desc: "Platform dirancang untuk membantu dosen memandu pembelajaran, memantau progres, dan mengambil keputusan pedagogis secara lebih terarah.",
+    desc: "Platform membantu dosen memandu pembelajaran, memantau kemajuan, dan mengambil keputusan pengajaran secara lebih terarah.",
   },
   {
     title: "Mendorong keterlibatan mahasiswa",
-    desc: "Mahasiswa tidak hanya mengakses materi, tetapi juga berdiskusi, menyusun argumen, membangun proyek, dan mendokumentasikan hasil belajar.",
+    desc: "Mahasiswa tidak hanya membaca materi, tetapi juga berdiskusi, menyusun argumen, membuat proyek, dan mendokumentasikan hasil belajar.",
   },
 ];
 
 const principles = [
   {
-    title: "Structured Learning",
-    desc: "Pembelajaran disusun bertahap melalui modul dan unit yang mendukung progres belajar yang jelas dan terukur.",
+    title: "Belajar Terstruktur",
+    desc: "Pembelajaran disusun bertahap lewat modul dan bagian yang mendukung kemajuan belajar yang jelas dan terukur.",
   },
   {
-    title: "Reflective Learning",
-    desc: "Mahasiswa didorong untuk menyusun argumen, merefleksikan proses belajar, dan menghubungkan pengetahuan dengan konteks nyata.",
+    title: "Belajar Reflektif",
+    desc: "Mahasiswa didorong menyusun argumen, merefleksikan proses belajar, dan menghubungkan pengetahuan dengan konteks nyata.",
   },
   {
-    title: "Collaborative Deliberation",
-    desc: "Diskusi dan deliberasi menjadi bagian penting untuk membangun pemahaman, argumentasi, dan keterlibatan sosial.",
+    title: "Diskusi Kolaboratif",
+    desc: "Diskusi menjadi bagian penting untuk membangun pemahaman, argumentasi, dan keterlibatan sosial.",
   },
   {
-    title: "Action-Oriented Engagement",
-    desc: "Pembelajaran tidak berhenti pada pemahaman konsep, tetapi diarahkan pada civic action project yang berdampak nyata.",
+    title: "Berorientasi Aksi",
+    desc: "Pembelajaran diarahkan pada proyek aksi kewargaan yang berdampak nyata, bukan sekadar memahami konsep.",
   },
   {
-    title: "Human-in-the-Loop AI",
-    desc: "AI digunakan untuk mendukung pembelajaran, sementara dosen tetap memegang kontrol dalam penilaian dan intervensi akademik.",
+    title: "Human-in-the-Loop",
+    desc: "AI mendukung pembelajaran, sementara dosen tetap memegang kontrol dalam penilaian dan intervensi akademik.",
   },
   {
-    title: "Evidence-Based Monitoring",
-    desc: "Portofolio dan analytics membantu menyediakan bukti perkembangan belajar yang lebih rapi, terukur, dan mudah dipantau.",
+    title: "Berbasis Bukti",
+    desc: "Portofolio dan pemantauan menyediakan bukti perkembangan belajar yang rapi, terukur, dan mudah dipantau.",
   },
 ];
 
 const audiences = [
   {
     title: "Mahasiswa",
-    desc: "Mengikuti pembelajaran modular, mengerjakan CER, berdiskusi, mengembangkan civic action project, dan membangun portofolio belajar.",
+    desc: "Mengikuti pembelajaran modular, berlatih argumentasi, berdiskusi, mengembangkan proyek aksi, dan membangun portofolio belajar.",
   },
   {
     title: "Dosen",
-    desc: "Mengelola alur pembelajaran, memantau progres mahasiswa, memberikan umpan balik, dan mengevaluasi capaian belajar.",
+    desc: "Mengelola alur pembelajaran, memantau kemajuan mahasiswa, memberi umpan balik, dan mengevaluasi capaian belajar.",
   },
   {
-    title: "Admin / Program",
-    desc: "Mengelola akun, course, struktur pembelajaran, serta memastikan sistem berjalan secara aman dan terintegrasi.",
+    title: "Admin",
+    desc: "Mengelola akun, mata kuliah, dan pendaftaran kelas serta memastikan sistem berjalan aman dan terintegrasi.",
   },
 ];
 
 export default function AboutPage() {
   return (
-    <main className="bg-slate-950 text-white">
-      <section className="relative overflow-hidden border-b border-white/10 py-20 sm:py-24">
-        <Container>
+    <main className="min-h-screen bg-white text-slate-900">
+      <Navbar />
+
+      <section className="relative overflow-hidden border-b border-slate-200 bg-slate-50 py-20 sm:py-24">
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(13,148,136,0.08),transparent_40%)]"
+        />
+        <Container className="relative">
           <div className="max-w-3xl">
-            <div className="mb-4 flex items-center gap-3">
-              <span className="h-2 w-2 rounded-full bg-teal-300 shadow-[0_0_10px_rgba(45,212,191,0.6)]" />
-              <span className="h-px w-12 bg-gradient-to-r from-teal-300/50 to-transparent" />
+            <div className="text-sm font-semibold uppercase tracking-[0.2em] text-teal-600">
+              Tentang Platform
             </div>
-
-            <div className="text-sm font-semibold uppercase tracking-[0.25em] text-teal-300">
-              Tentang platform
-            </div>
-
-            <h1 className="mt-4 text-4xl font-semibold leading-tight text-white sm:text-5xl">
-              AI-CELM sebagai ekosistem pembelajaran civic engagement berbasis
-              AI
+            <h1 className="mt-4 text-4xl font-bold leading-tight text-slate-900 sm:text-5xl">
+              AI-CELM, ekosistem belajar PKn SD berbasis AI
             </h1>
-
-            <p className="mt-6 max-w-2xl text-base leading-8 text-slate-300 sm:text-lg">
-              AI-CELM adalah platform pembelajaran yang dirancang untuk
-              mengintegrasikan microlearning, argumentasi CER, deliberasi, civic
-              action project, portofolio, dan learning analytics dalam satu
+            <p className="mt-6 max-w-2xl text-lg leading-8 text-slate-600">
+              AI-CELM dirancang untuk menghubungkan materi, latihan argumentasi,
+              diskusi, proyek aksi, portofolio, dan pemantauan dalam satu
               pengalaman belajar yang terstruktur, etis, dan terdokumentasi.
             </p>
 
             <div className="mt-8 flex flex-col gap-4 sm:flex-row">
               <Link href="/guide">
-                <Button size="lg" animatedArrow>
+                <Button
+                  size="lg"
+                  rightIcon={<ArrowRight size={18} aria-hidden="true" />}
+                >
                   Lihat Panduan
                 </Button>
               </Link>
-
               <Link href="/login">
                 <Button variant="outline" size="lg">
                   Masuk ke Platform
@@ -109,24 +111,23 @@ export default function AboutPage() {
         <Container>
           <div className="grid gap-10 lg:grid-cols-[1fr_1.1fr]">
             <div>
-              <div className="text-sm font-semibold uppercase tracking-[0.25em] text-teal-300">
+              <div className="text-sm font-semibold uppercase tracking-[0.2em] text-teal-600">
                 Apa itu AI-CELM?
               </div>
-              <h2 className="mt-3 text-3xl font-semibold text-white sm:text-4xl">
-                Lebih dari sekadar LMS
+              <h2 className="mt-3 text-3xl font-bold text-slate-900 sm:text-4xl">
+                Lebih dari sekadar tempat materi
               </h2>
-              <p className="mt-5 text-slate-300 leading-8">
-                AI-CELM tidak hanya berfungsi sebagai tempat mengunggah materi
-                dan melihat tugas. Platform ini dirancang untuk mendukung
-                pembelajaran civic engagement yang menekankan pemahaman,
+              <p className="mt-5 text-base leading-8 text-slate-600">
+                AI-CELM bukan hanya tempat mengunggah materi dan melihat tugas.
+                Platform ini mendukung pembelajaran yang menekankan pemahaman,
                 argumentasi, diskusi, aksi, refleksi, dan evaluasi dalam satu
-                alur digital yang terintegrasi.
+                alur yang terintegrasi.
               </p>
-              <p className="mt-4 text-slate-300 leading-8">
+              <p className="mt-4 text-base leading-8 text-slate-600">
                 Dengan dukungan AI, mahasiswa dan dosen memperoleh bantuan dalam
-                proses belajar dan monitoring. Namun, keputusan akademik,
-                penilaian akhir, serta intervensi pedagogis tetap berada dalam
-                kendali dosen sebagai bagian dari prinsip human-in-the-loop.
+                proses belajar dan pemantauan. Namun, penilaian akhir dan
+                keputusan akademik tetap berada di tangan dosen sebagai bagian
+                dari prinsip human-in-the-loop.
               </p>
             </div>
 
@@ -134,12 +135,12 @@ export default function AboutPage() {
               {goals.map((goal) => (
                 <div
                   key={goal.title}
-                  className="rounded-[28px] border border-white/10 bg-white/5 p-6"
+                  className="rounded-3xl border border-slate-200 bg-white p-6"
                 >
-                  <h3 className="text-xl font-semibold text-white">
+                  <h3 className="text-xl font-bold text-slate-900">
                     {goal.title}
                   </h3>
-                  <p className="mt-3 text-sm leading-7 text-slate-300">
+                  <p className="mt-3 text-base leading-7 text-slate-600">
                     {goal.desc}
                   </p>
                 </div>
@@ -149,19 +150,18 @@ export default function AboutPage() {
         </Container>
       </section>
 
-      <section className="border-y border-white/10 bg-white/[0.02] py-20">
+      <section className="border-y border-slate-200 bg-slate-50 py-20">
         <Container>
           <div className="max-w-2xl">
-            <div className="text-sm font-semibold uppercase tracking-[0.25em] text-teal-300">
-              Prinsip pedagogis
+            <div className="text-sm font-semibold uppercase tracking-[0.2em] text-teal-600">
+              Prinsip Pembelajaran
             </div>
-            <h2 className="mt-3 text-3xl font-semibold text-white sm:text-4xl">
-              Pendekatan pembelajaran yang menjadi fondasi AI-CELM
+            <h2 className="mt-3 text-3xl font-bold text-slate-900 sm:text-4xl">
+              Pendekatan yang menjadi fondasi AI-CELM
             </h2>
-            <p className="mt-4 text-slate-300">
-              Platform ini dibangun dengan mempertimbangkan kebutuhan
-              pembelajaran yang aktif, reflektif, kolaboratif, dan berbasis aksi
-              sosial, sekaligus tetap menjaga etika penggunaan AI.
+            <p className="mt-4 text-lg leading-8 text-slate-600">
+              Dibangun untuk pembelajaran yang aktif, reflektif, kolaboratif,
+              dan berbasis aksi, sekaligus tetap menjaga etika penggunaan AI.
             </p>
           </div>
 
@@ -169,12 +169,12 @@ export default function AboutPage() {
             {principles.map((item) => (
               <div
                 key={item.title}
-                className="rounded-[28px] border border-white/10 bg-white/5 p-6 transition duration-300 hover:border-teal-300/20 hover:bg-white/[0.06]"
+                className="rounded-3xl border border-slate-200 bg-white p-6 transition hover:-translate-y-1 hover:shadow-lg hover:shadow-slate-200/70"
               >
-                <h3 className="text-xl font-semibold text-white">
+                <h3 className="text-xl font-bold text-slate-900">
                   {item.title}
                 </h3>
-                <p className="mt-3 text-sm leading-7 text-slate-300">
+                <p className="mt-3 text-base leading-7 text-slate-600">
                   {item.desc}
                 </p>
               </div>
@@ -186,16 +186,15 @@ export default function AboutPage() {
       <section className="py-20">
         <Container>
           <div className="max-w-2xl">
-            <div className="text-sm font-semibold uppercase tracking-[0.25em] text-teal-300">
-              Pengguna platform
+            <div className="text-sm font-semibold uppercase tracking-[0.2em] text-teal-600">
+              Pengguna Platform
             </div>
-            <h2 className="mt-3 text-3xl font-semibold text-white sm:text-4xl">
-              Dirancang untuk mendukung tiga peran utama
+            <h2 className="mt-3 text-3xl font-bold text-slate-900 sm:text-4xl">
+              Dirancang untuk tiga peran utama
             </h2>
-            <p className="mt-4 text-slate-300">
-              AI-CELM membangun ekosistem yang mempertemukan mahasiswa, dosen,
-              dan pengelola sistem dalam alur kerja yang saling terhubung namun
-              tetap memiliki ruang peran yang jelas.
+            <p className="mt-4 text-lg leading-8 text-slate-600">
+              AI-CELM mempertemukan mahasiswa, dosen, dan admin dalam alur kerja
+              yang saling terhubung namun tetap punya ruang peran yang jelas.
             </p>
           </div>
 
@@ -203,12 +202,12 @@ export default function AboutPage() {
             {audiences.map((audience) => (
               <div
                 key={audience.title}
-                className="rounded-[28px] border border-white/10 bg-white/5 p-6"
+                className="rounded-3xl border border-slate-200 bg-white p-6"
               >
-                <h3 className="text-xl font-semibold text-white">
+                <h3 className="text-xl font-bold text-slate-900">
                   {audience.title}
                 </h3>
-                <p className="mt-3 text-sm leading-7 text-slate-300">
+                <p className="mt-3 text-base leading-7 text-slate-600">
                   {audience.desc}
                 </p>
               </div>
@@ -219,39 +218,42 @@ export default function AboutPage() {
 
       <section className="pb-20">
         <Container>
-          <div className="rounded-[32px] border border-white/10 bg-gradient-to-br from-white/5 to-teal-400/5 p-8 sm:p-10 lg:p-12">
-            <div className="mx-auto max-w-3xl text-center">
-              <div className="inline-flex items-center rounded-full border border-teal-300/20 bg-teal-400/10 px-4 py-2 text-sm font-medium text-teal-200">
-                Platform yang terstruktur, etis, dan berorientasi aksi
+          <div className="overflow-hidden rounded-3xl bg-teal-600 px-6 py-12 text-center sm:px-10 sm:py-16">
+            <div className="mx-auto max-w-3xl">
+              <div className="inline-flex items-center rounded-full bg-white/15 px-4 py-2 text-sm font-medium text-white">
+                Terstruktur, etis, dan berorientasi aksi
               </div>
-
-              <h2 className="mt-5 text-3xl font-semibold text-white sm:text-4xl">
+              <h2 className="mt-5 text-3xl font-bold text-white sm:text-4xl">
                 Jelajahi AI-CELM lebih lanjut
               </h2>
-
-              <p className="mt-4 text-slate-300 sm:text-lg leading-8">
+              <p className="mx-auto mt-4 max-w-2xl text-lg leading-8 text-teal-50">
                 Pelajari cara penggunaan platform, pahami alur kerja setiap
-                peran, dan mulai eksplorasi pembelajaran civic engagement yang
-                didukung AI secara bertanggung jawab.
+                peran, dan mulai pengalaman belajar yang didukung AI secara
+                bertanggung jawab.
               </p>
-
               <div className="mt-8 flex flex-col items-center justify-center gap-4 sm:flex-row">
                 <Link href="/guide">
-                  <Button size="lg" animatedArrow>
+                  <Button
+                    size="lg"
+                    variant="secondary"
+                    rightIcon={<ArrowRight size={18} aria-hidden="true" />}
+                  >
                     Buka Panduan
                   </Button>
                 </Link>
-
-                <Link href="/register">
-                  <Button variant="outline" size="lg">
-                    Daftar Sekarang
-                  </Button>
+                <Link
+                  href="/register"
+                  className="rounded-2xl px-5 py-3 text-base font-semibold text-white transition hover:bg-white/10"
+                >
+                  Daftar Sekarang
                 </Link>
               </div>
             </div>
           </div>
         </Container>
       </section>
+
+      <Footer />
     </main>
   );
 }

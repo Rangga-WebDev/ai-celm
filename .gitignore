@@ -43,3 +43,6 @@ next-env.d.ts
 /src/generated/prisma
 
 prisma/seed.ts
+
+# uploaded course materials (local storage)
+/uploads
