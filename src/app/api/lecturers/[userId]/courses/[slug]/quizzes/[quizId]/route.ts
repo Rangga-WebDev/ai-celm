@@ -35,6 +35,8 @@ async function resolveLecturerQuiz(
       description: true,
       status: true,
       timeLimitMinutes: true,
+      dueAt: true,
+      sourceMaterialId: true,
       passingScore: true,
       showScoreToStudent: true,
       createdAt: true,
@@ -46,6 +48,13 @@ async function resolveLecturerQuiz(
           slug: true,
         },
       },
+      sourceMaterial: {
+        select: {
+          id: true,
+          title: true,
+          fileName: true,
+        },
+      },
       questions: {
         orderBy: { order: "asc" },
         select: {
@@ -53,6 +62,8 @@ async function resolveLecturerQuiz(
           questionText: true,
           questionType: true,
           explanation: true,
+          referenceAnswer: true,
+          gradingCriteria: true,
           order: true,
           points: true,
           options: {
@@ -177,6 +188,9 @@ export async function PATCH(request: NextRequest, { params }: Params) {
       },
       select: {
         id: true,
+        module: {
+          select: { courseId: true },
+        },
         _count: {
           select: { attempts: true },
         },
@@ -198,10 +212,32 @@ export async function PATCH(request: NextRequest, { params }: Params) {
       description,
       status,
       timeLimitMinutes,
+      dueAt,
+      sourceMaterialId,
       passingScore,
       showScoreToStudent,
       questions,
     } = parsed.data;
+
+    if (sourceMaterialId) {
+      const material = await prisma.courseMaterial.findFirst({
+        where: {
+          id: sourceMaterialId,
+          courseId: existing.module.courseId,
+        },
+        select: { id: true },
+      });
+
+      if (!material) {
+        return NextResponse.json(
+          {
+            success: false,
+            message: "Materi sumber tidak ditemukan pada course ini",
+          },
+          { status: 404 },
+        );
+      }
+    }
 
     const replaceQuestions = questions !== undefined;
 
@@ -224,6 +260,8 @@ export async function PATCH(request: NextRequest, { params }: Params) {
           description: description.length > 0 ? description : null,
           status,
           timeLimitMinutes: timeLimitMinutes ?? null,
+          dueAt: dueAt ?? null,
+          sourceMaterialId: sourceMaterialId ?? null,
           passingScore,
           showScoreToStudent,
         },
@@ -240,6 +278,10 @@ export async function PATCH(request: NextRequest, { params }: Params) {
       let questionOrder = 1;
 
       for (const question of questions) {
+        const isChoice =
+          question.questionType === "MULTIPLE_CHOICE" ||
+          question.questionType === "TRUE_FALSE";
+
         await tx.quizQuestion.create({
           data: {
             quizId,
@@ -247,15 +289,25 @@ export async function PATCH(request: NextRequest, { params }: Params) {
             questionType: question.questionType,
             explanation:
               question.explanation.length > 0 ? question.explanation : null,
+            referenceAnswer:
+              question.referenceAnswer.length > 0
+                ? question.referenceAnswer
+                : null,
+            gradingCriteria:
+              question.gradingCriteria.length > 0
+                ? question.gradingCriteria
+                : null,
             order: questionOrder,
             points: question.points,
-            options: {
-              create: question.options.map((option, index) => ({
-                optionText: option.optionText,
-                isCorrect: option.isCorrect,
-                order: index + 1,
-              })),
-            },
+            options: isChoice
+              ? {
+                  create: question.options.map((option, index) => ({
+                    optionText: option.optionText,
+                    isCorrect: option.isCorrect,
+                    order: index + 1,
+                  })),
+                }
+              : undefined,
           },
         });
 

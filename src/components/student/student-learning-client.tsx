@@ -18,6 +18,7 @@ import {
   RefreshCcw,
   Target,
 } from "lucide-react";
+import Markdown from "@/components/ui/markdown";
 
 type ProgressStatus =
   | "NOT_STARTED"
@@ -612,10 +613,15 @@ export default function StudentLearningClient({
                   />
                   Materi
                 </div>
-                <div className="whitespace-pre-wrap text-base leading-8 text-slate-700">
-                  {activeUnit.content ??
-                    "Materi belum tersedia. Silakan hubungi dosen pengampu."}
-                </div>
+                {activeUnit.content ? (
+                  <Markdown className="text-base leading-8">
+                    {activeUnit.content}
+                  </Markdown>
+                ) : (
+                  <div className="text-base leading-8 text-slate-700">
+                    Materi belum tersedia. Silakan hubungi dosen pengampu.
+                  </div>
+                )}
               </div>
 
               <ResourceSection

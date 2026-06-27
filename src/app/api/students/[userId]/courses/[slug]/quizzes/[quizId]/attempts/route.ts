@@ -2,6 +2,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import {
+  AIInteractionType,
   EnrollmentStatus,
   ModuleStatus,
   QuizStatus,
@@ -9,7 +10,12 @@ import {
 } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/api-guard";
-import { quizAttemptSchema } from "@/lib/validators/quiz.schema";
+import {
+  isChoiceQuestionType,
+  quizAttemptSchema,
+} from "@/lib/validators/quiz.schema";
+import { gradeQuizTextAnswer } from "@/lib/ai/quiz-answer-grader";
+import { isAiEnabled } from "@/lib/ai/openai";
 
 type Params = {
   params: Promise<{
@@ -97,11 +103,24 @@ export async function POST(request: NextRequest, { params }: Params) {
         id: true,
         passingScore: true,
         showScoreToStudent: true,
+        dueAt: true,
+        moduleId: true,
+        module: {
+          select: {
+            course: { select: { title: true } },
+          },
+        },
+        sourceMaterial: {
+          select: { extractedText: true },
+        },
         questions: {
           select: {
             id: true,
+            questionText: true,
             questionType: true,
             explanation: true,
+            referenceAnswer: true,
+            gradingCriteria: true,
             points: true,
             options: {
               select: {
@@ -128,37 +147,139 @@ export async function POST(request: NextRequest, { params }: Params) {
       );
     }
 
+    if (quiz.dueAt && quiz.dueAt.getTime() < Date.now()) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "Tenggat kuis telah berakhir, pengumpulan ditutup",
+        },
+        { status: 409 },
+      );
+    }
+
     const answerMap = new Map(
-      parsed.data.answers.map((a) => [a.questionId, a.selectedOptionId]),
+      parsed.data.answers.map((a) => [a.questionId, a]),
     );
+
+    const courseTitle = quiz.module.course.title;
+    const materialText = quiz.sourceMaterial?.extractedText ?? null;
+    const aiEnabled = isAiEnabled();
+
+    type GradedAnswer = {
+      questionId: string;
+      selectedOptionId: string | null;
+      answerText: string | null;
+      isCorrect: boolean | null;
+      earnedPoints: number;
+      correctOptionId: string | null;
+      explanation: string | null;
+      aiFeedback: string | null;
+      gradedByAi: boolean;
+    };
+
+    const aiLogsToCreate: Array<{
+      userId: string;
+      courseId: string;
+      moduleId: string;
+      interactionType: AIInteractionType;
+      prompt: string;
+      response: string;
+      modelName: string | null;
+      inputTokens: number | null;
+      outputTokens: number | null;
+    }> = [];
+    const gradedAnswers: GradedAnswer[] = [];
 
     let maxScore = 0;
     let score = 0;
 
-    const gradedAnswers = quiz.questions.map((question) => {
+    for (const question of quiz.questions) {
       maxScore += question.points;
+      const submitted = answerMap.get(question.id);
 
-      const selectedOptionId = answerMap.get(question.id) ?? null;
-      const correctOption = question.options.find((o) => o.isCorrect);
-      const validSelection =
-        selectedOptionId !== null &&
-        question.options.some((o) => o.id === selectedOptionId);
+      if (isChoiceQuestionType(question.questionType)) {
+        const selectedOptionId = submitted?.selectedOptionId ?? null;
+        const correctOption = question.options.find((o) => o.isCorrect);
+        const validSelection =
+          selectedOptionId !== null &&
+          selectedOptionId !== undefined &&
+          question.options.some((o) => o.id === selectedOptionId);
 
-      const isCorrect =
-        validSelection && correctOption?.id === selectedOptionId;
-      const earnedPoints = isCorrect ? question.points : 0;
+        const isCorrect =
+          validSelection && correctOption?.id === selectedOptionId;
+        const earnedPoints = isCorrect ? question.points : 0;
+
+        score += earnedPoints;
+
+        gradedAnswers.push({
+          questionId: question.id,
+          selectedOptionId: validSelection ? selectedOptionId : null,
+          answerText: null,
+          isCorrect,
+          earnedPoints,
+          correctOptionId: correctOption?.id ?? null,
+          explanation: question.explanation,
+          aiFeedback: null,
+          gradedByAi: false,
+        });
+        continue;
+      }
+
+      // Soal esai / jawaban singkat: nilai dengan AI bila tersedia.
+      const answerText = submitted?.answerText?.trim() ?? "";
+      let earnedPoints = 0;
+      let isCorrect: boolean | null = null;
+      let aiFeedback: string | null = null;
+      let gradedByAi = false;
+
+      if (aiEnabled && answerText.length > 0) {
+        try {
+          const result = await gradeQuizTextAnswer({
+            courseTitle,
+            materialText,
+            questionText: question.questionText,
+            referenceAnswer: question.referenceAnswer,
+            gradingCriteria: question.gradingCriteria,
+            maxPoints: question.points,
+            studentAnswer: answerText,
+          });
+
+          earnedPoints = result.grade.earnedPoints;
+          isCorrect = result.grade.isCorrect;
+          aiFeedback = result.grade.feedback;
+          gradedByAi = true;
+
+          aiLogsToCreate.push({
+            userId,
+            courseId: course.id,
+            moduleId: quiz.moduleId,
+            interactionType: AIInteractionType.RUBRIC_ASSIST,
+            prompt: result.promptText,
+            response: result.rawResponse,
+            modelName: result.modelName,
+            inputTokens: result.inputTokens,
+            outputTokens: result.outputTokens,
+          });
+        } catch (gradeError) {
+          console.error("AI grading failed for quiz answer:", gradeError);
+          // Fallback: biarkan untuk dinilai manual oleh dosen.
+        }
+      }
 
       score += earnedPoints;
 
-      return {
+      gradedAnswers.push({
         questionId: question.id,
-        selectedOptionId: validSelection ? selectedOptionId : null,
+        selectedOptionId: null,
+        answerText: answerText.length > 0 ? answerText : null,
         isCorrect,
         earnedPoints,
-        correctOptionId: correctOption?.id ?? null,
+        correctOptionId: null,
         explanation: question.explanation,
-      };
-    });
+        aiFeedback,
+        gradedByAi,
+      });
+    }
 
     const percentage =
       maxScore > 0 ? Math.round((score / maxScore) * 10000) / 100 : 0;
@@ -178,8 +299,11 @@ export async function POST(request: NextRequest, { params }: Params) {
           create: gradedAnswers.map((a) => ({
             questionId: a.questionId,
             selectedOptionId: a.selectedOptionId,
+            answerText: a.answerText,
             isCorrect: a.isCorrect,
             earnedPoints: a.earnedPoints,
+            aiFeedback: a.aiFeedback,
+            gradedByAi: a.gradedByAi,
           })),
         },
       },
@@ -193,6 +317,10 @@ export async function POST(request: NextRequest, { params }: Params) {
       },
     });
 
+    if (aiLogsToCreate.length > 0) {
+      await prisma.aIResponseLog.createMany({ data: aiLogsToCreate });
+    }
+
     const review = quiz.showScoreToStudent
       ? gradedAnswers.map((a) => ({
           questionId: a.questionId,
@@ -201,6 +329,7 @@ export async function POST(request: NextRequest, { params }: Params) {
           isCorrect: a.isCorrect,
           earnedPoints: a.earnedPoints,
           explanation: a.explanation,
+          aiFeedback: a.aiFeedback,
         }))
       : null;
 

@@ -13,6 +13,7 @@ import {
   Layers3,
   PlayCircle,
 } from "lucide-react";
+import ModuleLearningContentView from "@/components/student/module-learning-content-view";
 
 type StudentModuleDetailClientProps = {
   user: {
@@ -45,6 +46,7 @@ type CourseModulesResponse = {
       isLocked: boolean;
       masteryThreshold: number;
       totalUnits: number;
+      learningContent: unknown;
       createdAt: string;
       updatedAt: string;
     }>;
@@ -385,6 +387,9 @@ export default function StudentModuleDetailClient({
           subtitle="menit"
         />
       </section>
+
+      {/* Materi belajar terstruktur */}
+      <ModuleLearningContentView learningContent={moduleMeta.learningContent} />
 
       {/* Daftar bagian */}
       <section className="rounded-3xl border border-slate-200 bg-white p-5 sm:p-6">

@@ -30,10 +30,14 @@ type OptionDraft = {
   isCorrect: boolean;
 };
 
+type QuestionType = "MULTIPLE_CHOICE" | "TRUE_FALSE" | "SHORT_ANSWER" | "ESSAY";
+
 type QuestionDraft = {
   questionText: string;
-  questionType: "MULTIPLE_CHOICE" | "TRUE_FALSE";
+  questionType: QuestionType;
   explanation: string;
+  referenceAnswer: string;
+  gradingCriteria: string;
   points: number;
   options: OptionDraft[];
 };
@@ -43,9 +47,31 @@ type QuizMeta = {
   description: string;
   status: "DRAFT" | "PUBLISHED" | "ARCHIVED";
   timeLimitMinutes: string;
+  dueAt: string;
+  sourceMaterialId: string;
   passingScore: number;
   showScoreToStudent: boolean;
 };
+
+type MaterialOption = {
+  id: string;
+  title: string;
+  fileName: string;
+};
+
+function isChoiceType(type: QuestionType): boolean {
+  return type === "MULTIPLE_CHOICE" || type === "TRUE_FALSE";
+}
+
+function toDateTimeLocal(iso: string | null): string {
+  if (!iso) return "";
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return "";
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(
+    date.getDate(),
+  )}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+}
 
 type QuizResponse = {
   success: boolean;
@@ -57,6 +83,8 @@ type QuizResponse = {
       description: string | null;
       status: string;
       timeLimitMinutes: number | null;
+      dueAt: string | null;
+      sourceMaterialId: string | null;
       passingScore: number;
       showScoreToStudent: boolean;
       module: { id: string; title: string; slug: string };
@@ -65,6 +93,8 @@ type QuizResponse = {
         questionText: string;
         questionType: string;
         explanation: string | null;
+        referenceAnswer: string | null;
+        gradingCriteria: string | null;
         order: number;
         points: number;
         options: Array<{
@@ -84,6 +114,8 @@ function emptyMcQuestion(): QuestionDraft {
     questionText: "",
     questionType: "MULTIPLE_CHOICE",
     explanation: "",
+    referenceAnswer: "",
+    gradingCriteria: "",
     points: 1,
     options: [
       { optionText: "", isCorrect: true },
@@ -110,10 +142,13 @@ export default function LecturerQuizBuilderClient({
     description: "",
     status: "DRAFT",
     timeLimitMinutes: "",
+    dueAt: "",
+    sourceMaterialId: "",
     passingScore: 75,
     showScoreToStudent: true,
   });
   const [questions, setQuestions] = useState<QuestionDraft[]>([]);
+  const [materials, setMaterials] = useState<MaterialOption[]>([]);
   const [attemptsCount, setAttemptsCount] = useState(0);
 
   const [loading, setLoading] = useState(true);
@@ -122,6 +157,7 @@ export default function LecturerQuizBuilderClient({
   const [notice, setNotice] = useState<string | null>(null);
 
   const basePath = `/api/lecturers/${user.id}/courses/${courseSlug}/quizzes/${quizId}`;
+  const materialsPath = `/api/lecturers/${user.id}/courses/${courseSlug}/materials`;
   const questionsLocked = attemptsCount > 0;
 
   useEffect(() => {
@@ -130,11 +166,30 @@ export default function LecturerQuizBuilderClient({
         setLoading(true);
         setError(null);
 
-        const res = await fetch(basePath, { cache: "no-store" });
+        const [res, materialsRes] = await Promise.all([
+          fetch(basePath, { cache: "no-store" }),
+          fetch(materialsPath, { cache: "no-store" }),
+        ]);
         const json = (await res.json()) as QuizResponse;
 
         if (!res.ok || !json.success) {
           throw new Error(json.message || "Gagal memuat kuis");
+        }
+
+        if (materialsRes.ok) {
+          const materialsJson = (await materialsRes.json()) as {
+            success: boolean;
+            data?: Array<{ id: string; title: string; fileName: string }>;
+          };
+          if (materialsJson.success && Array.isArray(materialsJson.data)) {
+            setMaterials(
+              materialsJson.data.map((m) => ({
+                id: m.id,
+                title: m.title,
+                fileName: m.fileName,
+              })),
+            );
+          }
         }
 
         const quiz = json.data.quiz;
@@ -145,24 +200,33 @@ export default function LecturerQuizBuilderClient({
           status: quiz.status as QuizMeta["status"],
           timeLimitMinutes:
             quiz.timeLimitMinutes !== null ? String(quiz.timeLimitMinutes) : "",
+          dueAt: toDateTimeLocal(quiz.dueAt),
+          sourceMaterialId: quiz.sourceMaterialId ?? "",
           passingScore: quiz.passingScore,
           showScoreToStudent: quiz.showScoreToStudent,
         });
         setAttemptsCount(quiz._count.attempts);
         setQuestions(
-          quiz.questions.map((q) => ({
-            questionText: q.questionText,
-            questionType:
-              q.questionType === "TRUE_FALSE"
-                ? "TRUE_FALSE"
-                : "MULTIPLE_CHOICE",
-            explanation: q.explanation ?? "",
-            points: q.points,
-            options: q.options.map((o) => ({
-              optionText: o.optionText,
-              isCorrect: o.isCorrect,
-            })),
-          })),
+          quiz.questions.map((q) => {
+            const type =
+              q.questionType === "TRUE_FALSE" ||
+              q.questionType === "SHORT_ANSWER" ||
+              q.questionType === "ESSAY"
+                ? (q.questionType as QuestionType)
+                : "MULTIPLE_CHOICE";
+            return {
+              questionText: q.questionText,
+              questionType: type,
+              explanation: q.explanation ?? "",
+              referenceAnswer: q.referenceAnswer ?? "",
+              gradingCriteria: q.gradingCriteria ?? "",
+              points: q.points,
+              options: q.options.map((o) => ({
+                optionText: o.optionText,
+                isCorrect: o.isCorrect,
+              })),
+            };
+          }),
         );
       } catch (err) {
         setError(err instanceof Error ? err.message : "Unknown error");
@@ -172,7 +236,7 @@ export default function LecturerQuizBuilderClient({
     }
 
     load();
-  }, [basePath]);
+  }, [basePath, materialsPath]);
 
   function updateQuestion(index: number, patch: Partial<QuestionDraft>) {
     setQuestions((prev) =>
@@ -180,15 +244,15 @@ export default function LecturerQuizBuilderClient({
     );
   }
 
-  function setQuestionType(
-    index: number,
-    type: "MULTIPLE_CHOICE" | "TRUE_FALSE",
-  ) {
+  function setQuestionType(index: number, type: QuestionType) {
     setQuestions((prev) =>
       prev.map((q, i) => {
         if (i !== index) return q;
         if (type === "TRUE_FALSE") {
           return { ...q, questionType: type, options: trueFalseOptions() };
+        }
+        if (type === "SHORT_ANSWER" || type === "ESSAY") {
+          return { ...q, questionType: type, options: [] };
         }
         return {
           ...q,
@@ -283,6 +347,9 @@ export default function LecturerQuizBuilderClient({
         status: meta.status,
         timeLimitMinutes:
           timeLimit === "" ? null : Number.parseInt(timeLimit, 10),
+        dueAt: meta.dueAt.trim() === "" ? null : meta.dueAt,
+        sourceMaterialId:
+          meta.sourceMaterialId === "" ? null : meta.sourceMaterialId,
         passingScore: meta.passingScore,
         showScoreToStudent: meta.showScoreToStudent,
       };
@@ -292,11 +359,15 @@ export default function LecturerQuizBuilderClient({
           questionText: q.questionText,
           questionType: q.questionType,
           explanation: q.explanation,
+          referenceAnswer: q.referenceAnswer,
+          gradingCriteria: q.gradingCriteria,
           points: q.points,
-          options: q.options.map((o) => ({
-            optionText: o.optionText,
-            isCorrect: o.isCorrect,
-          })),
+          options: isChoiceType(q.questionType)
+            ? q.options.map((o) => ({
+                optionText: o.optionText,
+                isCorrect: o.isCorrect,
+              }))
+            : [],
         }));
       }
 
@@ -381,6 +452,14 @@ export default function LecturerQuizBuilderClient({
             )}
             Simpan Kuis
           </button>
+          {attemptsCount > 0 ? (
+            <Link
+              href={`/lecturer/courses/${courseSlug}/quizzes/${quizId}/attempts`}
+              className="inline-flex items-center gap-2 rounded-2xl border border-white/40 px-5 py-3 text-base font-semibold text-white transition hover:bg-white/10"
+            >
+              Tinjau &amp; Nilai ({attemptsCount})
+            </Link>
+          ) : null}
         </div>
       </div>
 
@@ -509,6 +588,53 @@ export default function LecturerQuizBuilderClient({
               </button>
             </div>
           </div>
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="grid gap-2">
+              <label className="text-sm font-medium text-slate-700">
+                Tenggat Pengumpulan
+              </label>
+              <input
+                type="datetime-local"
+                value={meta.dueAt}
+                onChange={(event) =>
+                  setMeta((m) => ({ ...m, dueAt: event.target.value }))
+                }
+                className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-base text-slate-900 outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-100"
+              />
+              <p className="text-xs text-slate-500">
+                Kosongkan jika kuis tanpa tenggat. Setelah lewat, mahasiswa
+                tidak bisa mengumpulkan.
+              </p>
+            </div>
+
+            <div className="grid gap-2">
+              <label className="text-sm font-medium text-slate-700">
+                Materi Sumber (untuk penilaian AI)
+              </label>
+              <select
+                value={meta.sourceMaterialId}
+                onChange={(event) =>
+                  setMeta((m) => ({
+                    ...m,
+                    sourceMaterialId: event.target.value,
+                  }))
+                }
+                className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-base text-slate-900 outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-100"
+              >
+                <option value="">Tidak ada materi sumber</option>
+                {materials.map((material) => (
+                  <option key={material.id} value={material.id}>
+                    {material.title} ({material.fileName})
+                  </option>
+                ))}
+              </select>
+              <p className="text-xs text-slate-500">
+                AI menilai jawaban esai/isian singkat berdasarkan materi PDF
+                ini.
+              </p>
+            </div>
+          </div>
         </div>
       </section>
 
@@ -560,16 +686,15 @@ export default function LecturerQuizBuilderClient({
                 <select
                   value={question.questionType}
                   onChange={(event) =>
-                    setQuestionType(
-                      qIndex,
-                      event.target.value as "MULTIPLE_CHOICE" | "TRUE_FALSE",
-                    )
+                    setQuestionType(qIndex, event.target.value as QuestionType)
                   }
                   disabled={questionsLocked}
                   className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-base text-slate-900 outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-100 disabled:opacity-60"
                 >
                   <option value="MULTIPLE_CHOICE">Pilihan Ganda</option>
                   <option value="TRUE_FALSE">Benar / Salah</option>
+                  <option value="SHORT_ANSWER">Isian Singkat (AI)</option>
+                  <option value="ESSAY">Esai (AI)</option>
                 </select>
 
                 <div className="inline-flex items-center gap-2">
@@ -592,79 +717,123 @@ export default function LecturerQuizBuilderClient({
                 </div>
               </div>
 
-              <div className="grid gap-2">
-                <span className="text-sm font-medium text-slate-700">
-                  Pilihan jawaban (klik lingkaran untuk menandai jawaban benar)
-                </span>
-                {question.options.map((option, oIndex) => (
-                  <div
-                    key={oIndex}
-                    className={`flex items-center gap-2 rounded-2xl border px-3 py-2 transition ${
-                      option.isCorrect
-                        ? "border-emerald-300 bg-emerald-50"
-                        : "border-slate-200 bg-white"
-                    }`}
-                  >
-                    <button
-                      type="button"
-                      onClick={() => setCorrectOption(qIndex, oIndex)}
-                      disabled={questionsLocked}
-                      className="shrink-0 text-emerald-600 disabled:opacity-60"
-                      aria-label="Tandai jawaban benar"
+              {isChoiceType(question.questionType) ? (
+                <div className="grid gap-2">
+                  <span className="text-sm font-medium text-slate-700">
+                    Pilihan jawaban (klik lingkaran untuk menandai jawaban
+                    benar)
+                  </span>
+                  {question.options.map((option, oIndex) => (
+                    <div
+                      key={oIndex}
+                      className={`flex items-center gap-2 rounded-2xl border px-3 py-2 transition ${
+                        option.isCorrect
+                          ? "border-emerald-300 bg-emerald-50"
+                          : "border-slate-200 bg-white"
+                      }`}
                     >
-                      {option.isCorrect ? (
-                        <CheckCircle2 size={22} aria-hidden />
-                      ) : (
-                        <Circle
-                          size={22}
-                          aria-hidden
-                          className="text-slate-400"
-                        />
-                      )}
-                    </button>
-                    <input
-                      type="text"
-                      value={option.optionText}
-                      onChange={(event) =>
-                        updateOption(qIndex, oIndex, {
-                          optionText: event.target.value,
-                        })
-                      }
-                      disabled={
-                        questionsLocked ||
-                        question.questionType === "TRUE_FALSE"
-                      }
-                      placeholder={`Pilihan ${oIndex + 1}`}
-                      className="flex-1 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-base text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-teal-500 focus:ring-2 focus:ring-teal-100 disabled:bg-slate-50 disabled:opacity-70"
-                    />
-                    {!questionsLocked &&
-                    question.questionType === "MULTIPLE_CHOICE" &&
-                    question.options.length > 2 ? (
                       <button
                         type="button"
-                        onClick={() => removeOption(qIndex, oIndex)}
-                        className="shrink-0 text-slate-400 transition hover:text-rose-600"
-                        aria-label="Hapus pilihan"
+                        onClick={() => setCorrectOption(qIndex, oIndex)}
+                        disabled={questionsLocked}
+                        className="shrink-0 text-emerald-600 disabled:opacity-60"
+                        aria-label="Tandai jawaban benar"
                       >
-                        <Trash2 size={18} aria-hidden />
+                        {option.isCorrect ? (
+                          <CheckCircle2 size={22} aria-hidden />
+                        ) : (
+                          <Circle
+                            size={22}
+                            aria-hidden
+                            className="text-slate-400"
+                          />
+                        )}
                       </button>
-                    ) : null}
-                  </div>
-                ))}
+                      <input
+                        type="text"
+                        value={option.optionText}
+                        onChange={(event) =>
+                          updateOption(qIndex, oIndex, {
+                            optionText: event.target.value,
+                          })
+                        }
+                        disabled={
+                          questionsLocked ||
+                          question.questionType === "TRUE_FALSE"
+                        }
+                        placeholder={`Pilihan ${oIndex + 1}`}
+                        className="flex-1 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-base text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-teal-500 focus:ring-2 focus:ring-teal-100 disabled:bg-slate-50 disabled:opacity-70"
+                      />
+                      {!questionsLocked &&
+                      question.questionType === "MULTIPLE_CHOICE" &&
+                      question.options.length > 2 ? (
+                        <button
+                          type="button"
+                          onClick={() => removeOption(qIndex, oIndex)}
+                          className="shrink-0 text-slate-400 transition hover:text-rose-600"
+                          aria-label="Hapus pilihan"
+                        >
+                          <Trash2 size={18} aria-hidden />
+                        </button>
+                      ) : null}
+                    </div>
+                  ))}
 
-                {!questionsLocked &&
-                question.questionType === "MULTIPLE_CHOICE" &&
-                question.options.length < 6 ? (
-                  <button
-                    type="button"
-                    onClick={() => addOption(qIndex)}
-                    className="inline-flex w-fit items-center gap-1 text-base font-medium text-teal-700 transition hover:text-teal-800"
-                  >
-                    <Plus size={16} aria-hidden />
-                    Tambah Pilihan
-                  </button>
-                ) : null}
-              </div>
+                  {!questionsLocked &&
+                  question.questionType === "MULTIPLE_CHOICE" &&
+                  question.options.length < 6 ? (
+                    <button
+                      type="button"
+                      onClick={() => addOption(qIndex)}
+                      className="inline-flex w-fit items-center gap-1 text-base font-medium text-teal-700 transition hover:text-teal-800"
+                    >
+                      <Plus size={16} aria-hidden />
+                      Tambah Pilihan
+                    </button>
+                  ) : null}
+                </div>
+              ) : (
+                <div className="grid gap-3">
+                  <div className="grid gap-2">
+                    <label className="text-sm font-medium text-slate-700">
+                      Kunci / Jawaban Referensi
+                    </label>
+                    <textarea
+                      value={question.referenceAnswer}
+                      onChange={(event) =>
+                        updateQuestion(qIndex, {
+                          referenceAnswer: event.target.value,
+                        })
+                      }
+                      disabled={questionsLocked}
+                      rows={3}
+                      placeholder="Jawaban ideal sebagai acuan penilaian AI"
+                      className="w-full resize-y rounded-2xl border border-slate-200 bg-white px-4 py-3 text-base text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-teal-500 focus:ring-2 focus:ring-teal-100 disabled:opacity-60"
+                    />
+                  </div>
+                  <div className="grid gap-2">
+                    <label className="text-sm font-medium text-slate-700">
+                      Kriteria / Rubrik Penilaian
+                    </label>
+                    <textarea
+                      value={question.gradingCriteria}
+                      onChange={(event) =>
+                        updateQuestion(qIndex, {
+                          gradingCriteria: event.target.value,
+                        })
+                      }
+                      disabled={questionsLocked}
+                      rows={3}
+                      placeholder="Mis. ketepatan konsep, contoh penerapan, kelengkapan argumen"
+                      className="w-full resize-y rounded-2xl border border-slate-200 bg-white px-4 py-3 text-base text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-teal-500 focus:ring-2 focus:ring-teal-100 disabled:opacity-60"
+                    />
+                  </div>
+                  <p className="text-xs text-slate-500">
+                    AI menilai jawaban mahasiswa berdasarkan materi sumber,
+                    kunci, dan kriteria di atas.
+                  </p>
+                </div>
+              )}
 
               <input
                 type="text"

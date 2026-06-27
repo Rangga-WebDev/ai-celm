@@ -15,6 +15,7 @@ import {
   TrendingUp,
   Users,
 } from "lucide-react";
+import { SpinnerBlock } from "@/components/ui/spinner";
 
 type User = {
   id: string;
@@ -213,7 +214,7 @@ export default function LecturerAtRiskClient({ user, courseSlug }: Props) {
 
         {/* Daftar */}
         {loading ? (
-          <p className="mt-6 text-base text-slate-500">Memuat...</p>
+          <SpinnerBlock label="Memuat data mahasiswa..." />
         ) : error ? (
           <div className="mt-6 rounded-3xl border border-rose-200 bg-rose-50 p-6 text-rose-700">
             <p className="text-base">{error}</p>

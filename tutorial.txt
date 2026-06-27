@@ -1,0 +1,341 @@
+================================================================================
+              TUTORIAL PENGGUNAAN AI-CELM (PEMBELAJARAN NYATA)
+        Platform Pembelajaran Pendidikan Kewarganegaraan Berbasis AI
+================================================================================
+
+Dokumen ini menjelaskan langkah demi langkah cara menggunakan AI-CELM untuk
+proses pembelajaran nyata, lengkap untuk peran DOSEN dan MAHASISWA (STUDENT).
+
+AI-CELM adalah LMS (Learning Management System) untuk mata kuliah PKn/Pancasila
+calon guru SD. Setiap fitur AI menghasilkan keluaran dalam Bahasa Indonesia
+dan memakai model GPT-4o-mini.
+
+
+================================================================================
+BAGIAN 0 — AKUN, LOGIN, DAN HAL UMUM
+================================================================================
+
+A. JENIS AKUN
+   - DOSEN (LECTURER)  : membuat & mengelola kelas, materi, kuis, tugas, forum.
+   - MAHASISWA (STUDENT): belajar, mengerjakan kuis/tugas, berdiskusi, portofolio.
+   - ADMIN             : mengelola pengguna & pendaftaran (di luar tutorial ini).
+
+B. PENDAFTARAN (khusus MAHASISWA)
+   1. Buka halaman /register
+   2. Isi: Nama Depan, Nama Belakang, Email, Kata Sandi, Konfirmasi kata sandi.
+   3. Centang persetujuan ketentuan, lalu klik "Buat Akun".
+   4. Setelah berhasil, Anda diarahkan ke halaman /login.
+   CATATAN: Pendaftaran mandiri hanya membuat akun MAHASISWA. Akun DOSEN
+   dibuatkan oleh Admin (atau sudah disiapkan untuk pengujian).
+
+C. MASUK (LOGIN) — untuk Dosen & Mahasiswa
+   1. Buka /login
+   2. Masukkan Email dan Kata Sandi.
+   3. Klik "Masuk". Sistem otomatis mengarahkan sesuai peran:
+      - Dosen     -> /lecturer/dashboard
+      - Mahasiswa -> /student/dashboard
+
+D. AKUN PENGUJI (TESTER) — semua berperan DOSEN
+   Email dan kata sandi para penguji menggunakan pola:
+        kata-sandi = [bagian-depan-email] + "12345!"
+   Contoh:
+        agustan@uinpalopo.ac.id        -> agustan12345!
+        abdul.azis@unismuh.ac.id       -> abdul.azis12345!
+        akbaraba97@gmail.com           -> akbaraba9712345!
+   (Hanya untuk keperluan pengujian.)
+
+E. PEMBATASAN AI (RATE LIMIT & KUOTA)
+   Setiap fitur AI dibatasi agar adil dan hemat:
+   - Maksimal 8 permintaan AI per menit.
+   - Maksimal 80 permintaan AI per hari per pengguna.
+   Bila batas tercapai, Anda akan melihat pesan seperti:
+      "Anda telah mencapai batas permintaan per menit. Coba lagi dalam X detik."
+      "Kuota AI harian Anda (80) sudah habis. Coba lagi besok."
+   Bila ini terjadi, tunggu sebentar lalu coba kembali.
+
+F. NOTIFIKASI
+   Ikon lonceng di bagian atas menampilkan pengingat (mis. tenggat tugas/kuis).
+   Klik untuk melihat daftar pengingat terbaru.
+
+
+================================================================================
+BAGIAN 1 — PANDUAN UNTUK DOSEN (LECTURER)
+================================================================================
+
+NAVIGASI UTAMA (Sidebar Dosen)
+   - Beranda            -> /lecturer/dashboard
+   - Mata Kuliah        -> /lecturer/courses
+
+   Menu KONTEKS PER KELAS (muncul saat membuka satu mata kuliah):
+   - Ringkasan Kelas    -> /lecturer/courses/[slug]
+   - Modul              -> /lecturer/courses/[slug]/modules
+   - Bahan Belajar      -> /lecturer/courses/[slug]/resources
+   - Tugas Argumentasi  -> /lecturer/courses/[slug]/cer
+   - Forum Diskusi      -> /lecturer/courses/[slug]/forums
+   - Project Aksi       -> /lecturer/courses/[slug]/projects
+
+
+--------------------------------------------------------------------------------
+ALUR LENGKAP MEMBANGUN KELAS (urutan yang disarankan)
+--------------------------------------------------------------------------------
+
+LANGKAH 1 — MEMBUAT / MEMBUKA MATA KULIAH
+   1. Klik menu "Mata Kuliah".
+   2. Buat mata kuliah baru: isi Judul, Kode, Deskripsi, dan status publikasi.
+   3. Klik kelas untuk masuk ke "Ringkasan Kelas" (CPL/CPMK, ringkasan kelas).
+
+LANGKAH 2 — MENAMBAH MODUL
+   1. Di dalam kelas, buka menu "Modul".
+   2. Tambah modul baru (judul, deskripsi, urutan).
+   3. Setiap modul dapat berisi beberapa Unit pembelajaran.
+
+LANGKAH 3 — MENGUNGGAH BAHAN BELAJAR (MATERI)
+   1. Buka menu "Bahan Belajar".
+   2. Unggah materi: PDF, DOC, SLIDE, VIDEO, LINK, atau IMAGE.
+   3. Untuk PDF/DOCX, sistem otomatis mengekstrak teks. Teks ini menjadi
+      sumber untuk fitur AI (pembuatan kuis, konten modul, study kit, chat).
+
+LANGKAH 4 — MEMBUAT STUDY KIT DENGAN AI (opsional, sangat membantu)
+   1. Buka detail sebuah materi (PDF).
+   2. Klik tombol "Buat Study Kit dengan AI".
+   3. AI menghasilkan: Ringkasan, Poin Kunci, Flashcard, dan Mini Quiz.
+   4. Study kit ini otomatis tersedia untuk mahasiswa.
+
+LANGKAH 5 — MENULIS / MENGHASILKAN KONTEN MODUL
+   1. Buka "Modul" -> pilih modul -> klik link "Konten".
+   2. Editor konten modul memiliki 4 bagian:
+        - Pengantar (Introduction)
+        - Aktivitas (Activities)
+        - Penilaian (Assessment)
+        - Dukungan  (Support: glosarium, referensi, bacaan lanjutan)
+   3. Tiga cara mengisi konten:
+        a. Manual  : tulis langsung di setiap bagian.
+        b. AI      : pilih materi sumber lalu klik "Generate Konten dengan AI"
+                     (AI membuat 4 bagian otomatis dari PDF).
+        c. Teks PDF: tempel teks mentah dari PDF lalu rapikan.
+   4. Klik Simpan. Konten ditampilkan ke mahasiswa dalam format Markdown rapi.
+
+LANGKAH 6 — MEMBUAT KUIS
+   1. Buka "Modul" -> pilih modul -> buka pembuat kuis (Quiz Builder).
+   2. Isi info kuis: Judul, Deskripsi, Nilai Lulus (passing score),
+      Batas Waktu (menit), dan TENGGAT (dueAt) bila perlu.
+   3. (Opsional) Tautkan Materi Sumber agar AI punya konteks penilaian.
+   4. Tambahkan soal. Tipe soal yang didukung:
+        - MULTIPLE_CHOICE (pilihan ganda)
+        - TRUE_FALSE (benar/salah, tepat 2 opsi)
+        - SHORT_ANSWER (jawaban singkat)
+        - ESSAY (esai)
+   5. Dua cara membuat soal:
+        a. Manual : tambah soal satu per satu.
+                    - Pilihan ganda: isi opsi + tandai jawaban benar + pembahasan.
+                    - Esai/Jawaban singkat: isi "Jawaban Acuan" + "Kriteria
+                      Penilaian (rubrik)" + poin. Ini dipakai AI untuk menilai.
+        b. AI     : klik "Buat Kuis dengan AI" (pilih materi) -> AI membuat
+                    soal pilihan ganda / benar-salah otomatis.
+   6. Susun urutan soal, lalu Publikasikan kuis.
+
+LANGKAH 7 — MENILAI & MENGOREKSI HASIL KUIS (termasuk OVERRIDE AI)
+   1. Di pembuat kuis, klik tombol "Tinjau & Nilai (jumlah)".
+      (Atau buka /lecturer/courses/[slug]/quizzes/[quizId]/attempts)
+   2. Daftar pengerjaan muncul: nama mahasiswa, skor, status, tanggal kirim.
+   3. Soal pilihan ganda dinilai otomatis.
+   4. Soal Esai/Jawaban singkat dinilai oleh AI berdasarkan Jawaban Acuan +
+      Rubrik. Anda akan melihat:
+        - Skor AI dan umpan balik AI (aiFeedback) per soal.
+        - Badge "Dinilai AI" atau "Dinilai dosen".
+   5. MENGUBAH (OVERRIDE) PENILAIAN AI:
+        - Pada tiap jawaban teks, ubah nilai poin (tidak boleh > poin maksimal
+          soal) dan/atau perbarui umpan balik.
+        - Klik Simpan. Sistem otomatis menghitung ulang skor total, persentase,
+          dan status LULUS/TIDAK sesuai nilai lulus kuis.
+        - Setelah diubah, badge berubah menjadi "Dinilai dosen".
+
+LANGKAH 8 — MEMBUAT TUGAS ARGUMENTASI (CER: Klaim-Bukti-Alasan)
+   1. Buka menu "Tugas Argumentasi".
+   2. Buat tugas: Judul, Deskripsi, Prompt, Tenggat, Target (Kelas/Modul/Unit),
+      dan Status (DRAFT/ACTIVE/CLOSED/ARCHIVED).
+   3. Tetapkan pertanyaan pemandu untuk Klaim, Bukti, dan Alasan.
+   4. Atur Rubrik penilaian (JSON kriteria).
+   5. Bantuan AI:
+        - "Bantu AI untuk membuat prompt" -> saran prompt CER.
+        - "Bandingkan dengan Rubrik AI"   -> evaluasi rubrik.
+   6. Saat mahasiswa mengirim, buka submission untuk menilai:
+        - Lihat Klaim/Bukti/Alasan mahasiswa.
+        - "Lihat Saran Penilaian AI" -> AI memberi usulan skor + alasan.
+        - Anda dapat menimpa dengan skor & umpan balik manual.
+        - Tandai "Perlu Revisi" atau "Disetujui".
+
+LANGKAH 9 — MEMBUAT PROJECT AKSI KEWARGANEGARAAN
+   1. Buka menu "Project Aksi".
+   2. Buat project: Judul, Tujuan, Brief, Jenis Luaran (Poster, Laporan, Video,
+      Prototipe, dll), Target, Tenggat, dan Status.
+   3. Tinjau submission mahasiswa: judul, ringkasan, tautan artefak, refleksi.
+   4. Beri umpan balik + skor, lalu tandai "Disetujui" atau "Perlu Revisi".
+
+LANGKAH 10 — MENGELOLA FORUM DISKUSI
+   1. Buka menu "Forum Diskusi".
+   2. Buat thread: Judul, Prompt, Deskripsi, kaitkan ke Modul/Unit, Status
+      (ACTIVE/LOCKED/PINNED).
+   3. Pada tampilan pemantauan thread, Anda dapat melihat:
+        - Semua postingan (struktur balasan berjenjang).
+        - Statistik: total post, peserta, mahasiswa aktif, mahasiswa pasif.
+        - "Buat Ringkasan AI" -> AI merangkum deliberasi diskusi.
+        - Kontrol Pin/Lock thread.
+
+LANGKAH 11 — MEMANTAU MAHASISWA BERISIKO (AT-RISK)
+   1. Dari Beranda/Dashboard, buka pemantauan risiko.
+   2. Lihat ringkasan: total mahasiswa + kategori risiko TINGGI/SEDANG/RENDAH.
+   3. Saring berdasarkan tingkat risiko.
+   4. Tiap mahasiswa menampilkan: progress %, hari sejak aktivitas terakhir,
+      rata-rata nilai kuis, tugas tertunda, dan alasan risiko.
+   5. Tindakan: kirim notifikasi/email ke mahasiswa berisiko.
+
+
+================================================================================
+BAGIAN 2 — PANDUAN UNTUK MAHASISWA (STUDENT)
+================================================================================
+
+NAVIGASI UTAMA (Sidebar Mahasiswa)
+   - Beranda        -> /student/dashboard
+   - Mata Kuliah    -> /student/courses
+   - Modul Belajar  -> /student/modules
+   - Portofolio     -> /student/portfolio
+
+   Fitur dalam halaman (tanpa menu terpisah):
+   - Bantuan (ikon chat mengambang) -> Asisten AI
+   - Tugas Argumentasi, Forum, Project, Study Kit -> diakses dari dalam Mata Kuliah
+
+
+--------------------------------------------------------------------------------
+ALUR BELAJAR LENGKAP (urutan yang disarankan)
+--------------------------------------------------------------------------------
+
+LANGKAH 1 — MELIHAT KELAS & PROGRES
+   1. Buka "Beranda" untuk melihat ringkasan kelas terbaru dan progres.
+   2. Buka "Mata Kuliah" untuk daftar semua kelas yang Anda ikuti.
+   3. Klik sebuah kelas untuk melihat detail: info dosen, RPS/silabus, dan
+      kartu akses cepat (Modul, Kuis, Tugas Argumentasi, Project Aksi, Forum,
+      Bahan Belajar Tambahan), serta progress per modul.
+
+LANGKAH 2 — BELAJAR DARI MODUL
+   1. Buka "Modul Belajar" (daftar modul lintas kelas) ATAU lewat Mata Kuliah.
+   2. Klik modul untuk membuka detail:
+        - Konten Pembelajaran (jika dibuat dosen): 4 bagian -> Pengantar,
+          Aktivitas, Penilaian, Dukungan (ditampilkan dalam format Markdown).
+        - Daftar Unit dengan status: BELUM MULAI -> SEDANG BERJALAN -> SELESAI.
+        - Estimasi waktu per unit.
+      CATATAN: beberapa modul terkunci sampai modul sebelumnya selesai.
+
+LANGKAH 3 — MENGERJAKAN UNIT
+   1. Klik unit di dalam modul untuk membuka halaman pembelajaran unit.
+   2. Baca materi/sumber (PDF, video, link). Konten dirender rapi (Markdown).
+   3. Gunakan navigasi unit berikutnya/sebelumnya.
+   4. Klik "Selesai" untuk menandai unit selesai (penyelesaian manual).
+
+LANGKAH 4 — MENGERJAKAN KUIS
+   1. Buka Mata Kuliah -> tab Kuis.
+   2. Daftar kuis menampilkan: judul, tenggat (bila ada), riwayat percobaan
+      & skor, serta status (BELUM/DIKERJAKAN/LULUS/TIDAK LULUS).
+   3. Klik kuis untuk mulai:
+        - Perhatikan banner "Batas waktu" bila ada tenggat.
+        - Jawab soal: pilihan ganda (radio), benar/salah (tombol), atau
+          ESAI/JAWABAN SINGKAT (kotak teks).
+        - Bila ada batas waktu, timer berjalan.
+        - Klik Kirim.
+   4. Melihat hasil & umpan balik:
+        - Per soal: jawaban Anda, kunci (untuk pilihan ganda), pembahasan.
+        - Untuk ESAI: umpan balik AI (aiFeedback) + poin yang diperoleh.
+        - Skor total ditampilkan jika diizinkan dosen.
+        - Bila dosen menyesuaikan nilai, muncul indikator bahwa penilaian AI
+          telah diubah dosen.
+
+LANGKAH 5 — MENGGUNAKAN ASISTEN AI (BANTUAN)
+   1. Klik ikon chat mengambang ("Bantuan").
+   2. Ketik pertanyaan, atau pilih saran seperti:
+        - "Apa inti dari materi minggu ini?"
+        - "Jelaskan dengan bahasa sederhana."
+        - "Beri contoh penerapannya untuk siswa SD."
+   3. AI menjawab berdasarkan materi kelas (RAG) dan menampilkan
+      "Bahan yang digunakan" (sumber yang dirujuk).
+   4. Bila kuota habis, tunggu lalu coba lagi (lihat Bagian 0.E).
+
+LANGKAH 6 — MENGERJAKAN TUGAS ARGUMENTASI (CER)
+   1. Buka Mata Kuliah -> tab Tugas Argumentasi.
+   2. Klik tugas untuk membaca prompt & pertanyaan pemandu.
+   3. Isi tiga kolom: Klaim, Bukti, dan Alasan.
+   4. Simpan sebagai draf atau Kirim.
+   5. Pantau status: SUBMITTED -> (PERLU REVISI) -> SUBMITTED lagi -> GRADED
+      -> APPROVED. Lihat umpan balik & nilai dari dosen.
+
+LANGKAH 7 — MENGIRIM PROJECT AKSI
+   1. Buka Mata Kuliah -> tab Project Aksi.
+   2. Klik project, lalu isi: Judul, Ringkasan, Tautan Artefak (unggah/link),
+      dan Refleksi.
+   3. Simpan draf atau Kirim. Lihat umpan balik & nilai dosen.
+   4. Status mengikuti alur: SUBMITTED -> (PERLU REVISI) -> GRADED -> APPROVED.
+
+LANGKAH 8 — BERDISKUSI DI FORUM
+   1. Buka Mata Kuliah -> tab Forum Diskusi.
+   2. Klik thread untuk membaca prompt dan postingan (balasan berjenjang).
+   3. Tulis balasan Anda dan kirim.
+   4. Gunakan "Dapatkan panduan berargumen dari AI" untuk memperoleh saran
+      cara berargumen sesuai prompt diskusi.
+
+LANGKAH 9 — MEMANFAATKAN STUDY KIT
+   1. Buka Mata Kuliah -> tab Study Kit / Bahan Belajar Tambahan.
+   2. Buka study kit untuk mempelajari:
+        - Ringkasan materi
+        - Poin Kunci
+        - Flashcard (istilah & penjelasan)
+        - Mini Quiz (latihan pilihan ganda + pembahasan + skor)
+
+LANGKAH 10 — MELIHAT PORTOFOLIO
+   1. Buka menu "Portofolio".
+   2. Halaman menampilkan ringkasan otomatis:
+        - Kartu statistik: Mata Kuliah, Progress, Modul Diselesaikan,
+          Rata-rata Nilai, CER Dinilai, Project Dinilai, Pencapaian.
+        - Ringkasan AI: headline + ringkasan + daftar kekuatan (strengths) +
+          highlight pencapaian, beserta tanggal dibuat.
+        - Tombol "Perbarui Ringkasan" untuk membuat ulang ringkasan AI.
+        - Rincian per mata kuliah: modul selesai, kuis (lulus/tidak), CER &
+          project yang dikirim/dinilai.
+
+
+================================================================================
+BAGIAN 3 — RINGKASAN FITUR AI & LOKASINYA
+================================================================================
+
+  FITUR AI                    | PERAN   | LOKASI / TOMBOL
+  --------------------------- | ------- | -------------------------------------
+  Generate Kuis               | Dosen   | Quiz Builder -> "Buat Kuis dengan AI"
+  Penilaian Esai/Jwb Singkat  | Keduanya| Otomatis saat esai dikirim; tampil
+                              |         | di tinjauan kuis (mhs) & detail (dosen)
+  Override Penilaian Kuis     | Dosen   | Tinjau & Nilai -> ubah poin/umpan balik
+  Generate Konten Modul       | Dosen   | Editor Modul -> "Generate Konten dgn AI"
+  Generate Study Kit          | Dosen   | Detail Materi -> "Buat Study Kit dgn AI"
+  Chat/Tanya Jawab Materi     | Mhs     | Ikon "Bantuan" (chat mengambang)
+  Saran Penilaian CER         | Dosen   | Submission CER -> "Lihat Saran AI"
+  Bantu Prompt CER            | Dosen   | Buat/Edit CER -> "Bantu AI buat prompt"
+  Ringkasan Forum             | Dosen   | Pantau Forum -> "Buat Ringkasan AI"
+  Panduan Argumen Forum       | Mhs     | Thread Forum -> "Panduan berargumen AI"
+  Ringkasan Portofolio        | Mhs     | Portofolio -> "Perbarui Ringkasan"
+  Deteksi Mahasiswa Berisiko  | Dosen   | Dashboard -> pemantauan risiko
+
+
+================================================================================
+BAGIAN 4 — TIPS & PEMECAHAN MASALAH
+================================================================================
+
+  - Konten AI lebih baik jika materi PDF jelas & terstruktur (teks dapat
+    diekstrak; PDF hasil scan/gambar sulit dibaca AI).
+  - Untuk penilaian esai oleh AI, selalu isi "Jawaban Acuan" dan "Kriteria
+    Penilaian" pada soal agar penilaian akurat.
+  - Jika muncul pesan batas/kuota AI, tunggu sebentar (per menit) atau coba
+    besok (kuota harian). Lihat Bagian 0.E.
+  - Selalu klik Simpan setelah mengedit konten/penilaian.
+  - Periksa ikon lonceng notifikasi untuk pengingat tenggat tugas & kuis.
+  - Dosen tetap memegang keputusan akhir: nilai AI dapat ditimpa kapan saja.
+
+================================================================================
+                              SELAMAT BELAJAR & MENGAJAR
+================================================================================

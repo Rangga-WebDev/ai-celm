@@ -15,6 +15,7 @@ import {
   PlayCircle,
   RefreshCw,
 } from "lucide-react";
+import Markdown from "@/components/ui/markdown";
 
 type StudentUnitDetailClientProps = {
   user: {
@@ -505,9 +506,9 @@ export default function StudentUnitDetailClient({
           <h2 className="text-lg font-bold text-slate-900">Materi</h2>
         </div>
         {currentUnit.content ? (
-          <div className="whitespace-pre-line wrap-break-word text-base leading-8 text-slate-700">
+          <Markdown className="text-base leading-8">
             {currentUnit.content}
-          </div>
+          </Markdown>
         ) : (
           <div className="text-base text-slate-600">
             Belum ada materi pada bagian ini.

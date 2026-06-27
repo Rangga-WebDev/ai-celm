@@ -14,6 +14,7 @@ type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
   rightIcon?: ReactNode;
   fullWidth?: boolean;
   animatedArrow?: boolean;
+  loading?: boolean;
 };
 
 export default function Button({
@@ -24,6 +25,7 @@ export default function Button({
   rightIcon,
   fullWidth = false,
   animatedArrow = false,
+  loading = false,
   className,
   disabled,
   ...props
@@ -79,7 +81,8 @@ export default function Button({
 
   return (
     <button
-      disabled={disabled}
+      disabled={disabled || loading}
+      aria-busy={loading || undefined}
       className={clsx(
         baseClasses,
         sizeClasses[size],
@@ -89,9 +92,33 @@ export default function Button({
       )}
       {...props}
     >
-      {leftIcon && <span className="shrink-0">{leftIcon}</span>}
+      {loading ? (
+        <svg
+          className="h-5 w-5 shrink-0 animate-spin"
+          viewBox="0 0 24 24"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+          aria-hidden="true"
+        >
+          <circle
+            className="opacity-25"
+            cx="12"
+            cy="12"
+            r="10"
+            stroke="currentColor"
+            strokeWidth="4"
+          />
+          <path
+            className="opacity-90"
+            fill="currentColor"
+            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+          />
+        </svg>
+      ) : (
+        leftIcon && <span className="shrink-0">{leftIcon}</span>
+      )}
       <span>{children}</span>
-      {renderRightIcon()}
+      {!loading && renderRightIcon()}
     </button>
   );
 }

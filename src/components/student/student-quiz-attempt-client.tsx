@@ -6,13 +6,16 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import {
   ArrowLeft,
+  CalendarClock,
   CheckCircle2,
   Clock3,
   Loader2,
   RotateCcw,
   Send,
+  Sparkles,
   XCircle,
 } from "lucide-react";
+import Markdown from "@/components/ui/markdown";
 
 type StudentQuizAttemptClientProps = {
   user: {
@@ -44,6 +47,7 @@ type Quiz = {
   title: string;
   description: string | null;
   timeLimitMinutes: number | null;
+  dueAt: string | null;
   passingScore: number;
   showScoreToStudent: boolean;
   module: { id: string; title: string; slug: string };
@@ -73,9 +77,10 @@ type ReviewItem = {
   questionId: string;
   selectedOptionId: string | null;
   correctOptionId: string | null;
-  isCorrect: boolean;
+  isCorrect: boolean | null;
   earnedPoints: number;
   explanation: string | null;
+  aiFeedback: string | null;
 };
 
 type AttemptResult = {
@@ -91,6 +96,21 @@ type AttemptResult = {
   review: ReviewItem[] | null;
 };
 
+const CHOICE_TYPES = new Set(["MULTIPLE_CHOICE", "TRUE_FALSE"]);
+
+function isChoiceQuestion(type: string): boolean {
+  return CHOICE_TYPES.has(type);
+}
+
+function formatDeadline(iso: string): string {
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return iso;
+  return date.toLocaleString("id-ID", {
+    dateStyle: "medium",
+    timeStyle: "short",
+  });
+}
+
 export default function StudentQuizAttemptClient({
   user,
   courseSlug,
@@ -99,7 +119,6 @@ export default function StudentQuizAttemptClient({
   const [quiz, setQuiz] = useState<Quiz | null>(null);
   const [pastAttempts, setPastAttempts] = useState<PastAttempt[]>([]);
   const [answers, setAnswers] = useState<Record<string, string>>({});
-
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -142,11 +161,23 @@ export default function StudentQuizAttemptClient({
     return map;
   }, [result]);
 
-  const answeredCount = Object.keys(answers).length;
+  const answeredCount = Object.values(answers).filter(
+    (value) => value.trim().length > 0,
+  ).length;
   const totalQuestions = quiz?.questions.length ?? 0;
+  const isPastDue = useMemo(() => {
+    if (!quiz?.dueAt) return false;
+    const due = new Date(quiz.dueAt).getTime();
+    return Number.isFinite(due) && due < Date.now();
+  }, [quiz?.dueAt]);
 
   async function handleSubmit() {
     if (!quiz) return;
+
+    if (isPastDue) {
+      setError("Tenggat kuis telah berakhir, pengumpulan ditutup.");
+      return;
+    }
 
     if (answeredCount < totalQuestions) {
       const confirmed = window.confirm(
@@ -160,10 +191,19 @@ export default function StudentQuizAttemptClient({
 
     try {
       const payload = {
-        answers: quiz.questions.map((q) => ({
-          questionId: q.id,
-          selectedOptionId: answers[q.id] ?? null,
-        })),
+        answers: quiz.questions.map((q) => {
+          const value = answers[q.id] ?? "";
+          if (isChoiceQuestion(q.questionType)) {
+            return {
+              questionId: q.id,
+              selectedOptionId: value.length > 0 ? value : null,
+            };
+          }
+          return {
+            questionId: q.id,
+            answerText: value.trim().length > 0 ? value : null,
+          };
+        }),
       };
 
       const res = await fetch(`${basePath}/attempts`, {
@@ -241,6 +281,17 @@ export default function StudentQuizAttemptClient({
               {quiz.timeLimitMinutes} menit
             </span>
           ) : null}
+          {quiz.dueAt ? (
+            <span
+              className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-base ${
+                isPastDue ? "bg-rose-500/90 text-white" : "bg-white/15"
+              }`}
+            >
+              <CalendarClock size={16} aria-hidden="true" />
+              {isPastDue ? "Ditutup " : "Tenggat "}
+              {formatDeadline(quiz.dueAt)}
+            </span>
+          ) : null}
         </div>
 
         <p className="mt-5 text-base text-teal-50">
@@ -255,6 +306,19 @@ export default function StudentQuizAttemptClient({
           </p>
         ) : null}
       </section>
+
+      {isPastDue && !result ? (
+        <div className="flex items-start gap-2 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-base text-rose-700">
+          <CalendarClock
+            size={18}
+            aria-hidden="true"
+            className="mt-0.5 shrink-0"
+          />
+          <span>
+            Tenggat kuis telah berakhir. Pengumpulan jawaban sudah ditutup.
+          </span>
+        </div>
+      ) : null}
 
       {/* Hasil / riwayat */}
       {result ? (
@@ -357,58 +421,100 @@ export default function StudentQuizAttemptClient({
                 </div>
               </div>
 
-              <div className="mt-4 grid gap-2">
-                {question.options.map((option) => {
-                  const isSelected = selected === option.id;
-                  const isCorrectAnswer =
-                    review && review.correctOptionId === option.id;
-                  const isWrongSelected =
-                    review &&
-                    review.selectedOptionId === option.id &&
-                    !review.isCorrect;
+              {isChoiceQuestion(question.questionType) ? (
+                <div className="mt-4 grid gap-2">
+                  {question.options.map((option) => {
+                    const isSelected = selected === option.id;
+                    const isCorrectAnswer =
+                      review && review.correctOptionId === option.id;
+                    const isWrongSelected =
+                      review &&
+                      review.selectedOptionId === option.id &&
+                      !review.isCorrect;
 
-                  let optionClass =
-                    "border-slate-200 bg-white text-slate-700 hover:bg-slate-50";
-                  if (submitted && isCorrectAnswer) {
-                    optionClass =
-                      "border-emerald-300 bg-emerald-50 text-emerald-800";
-                  } else if (submitted && isWrongSelected) {
-                    optionClass = "border-rose-300 bg-rose-50 text-rose-700";
-                  } else if (!submitted && isSelected) {
-                    optionClass = "border-teal-400 bg-teal-50 text-slate-900";
-                  }
+                    let optionClass =
+                      "border-slate-200 bg-white text-slate-700 hover:bg-slate-50";
+                    if (submitted && isCorrectAnswer) {
+                      optionClass =
+                        "border-emerald-300 bg-emerald-50 text-emerald-800";
+                    } else if (submitted && isWrongSelected) {
+                      optionClass = "border-rose-300 bg-rose-50 text-rose-700";
+                    } else if (!submitted && isSelected) {
+                      optionClass = "border-teal-400 bg-teal-50 text-slate-900";
+                    }
 
-                  return (
-                    <button
-                      key={option.id}
-                      type="button"
-                      disabled={submitted}
-                      onClick={() =>
+                    return (
+                      <button
+                        key={option.id}
+                        type="button"
+                        disabled={submitted}
+                        onClick={() =>
+                          setAnswers((prev) => ({
+                            ...prev,
+                            [question.id]: option.id,
+                          }))
+                        }
+                        className={`flex items-center gap-3 rounded-2xl border px-4 py-3 text-left text-base transition disabled:cursor-default ${optionClass}`}
+                      >
+                        <span
+                          className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full border ${
+                            isSelected || (submitted && isCorrectAnswer)
+                              ? "border-current"
+                              : "border-slate-400"
+                          }`}
+                        >
+                          {isSelected || (submitted && isCorrectAnswer) ? (
+                            <span className="h-2.5 w-2.5 rounded-full bg-current" />
+                          ) : null}
+                        </span>
+                        <span className="wrap-break-word">
+                          {option.optionText}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="mt-4">
+                  {submitted ? (
+                    <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-base leading-7 text-slate-700">
+                      <span className="text-sm font-semibold text-slate-500">
+                        Jawaban Anda:
+                      </span>
+                      <p className="mt-1 wrap-break-word whitespace-pre-wrap">
+                        {answers[question.id]?.trim()
+                          ? answers[question.id]
+                          : "(tidak dijawab)"}
+                      </p>
+                    </div>
+                  ) : (
+                    <textarea
+                      value={answers[question.id] ?? ""}
+                      onChange={(event) =>
                         setAnswers((prev) => ({
                           ...prev,
-                          [question.id]: option.id,
+                          [question.id]: event.target.value,
                         }))
                       }
-                      className={`flex items-center gap-3 rounded-2xl border px-4 py-3 text-left text-base transition disabled:cursor-default ${optionClass}`}
-                    >
-                      <span
-                        className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full border ${
-                          isSelected || (submitted && isCorrectAnswer)
-                            ? "border-current"
-                            : "border-slate-400"
-                        }`}
-                      >
-                        {isSelected || (submitted && isCorrectAnswer) ? (
-                          <span className="h-2.5 w-2.5 rounded-full bg-current" />
-                        ) : null}
-                      </span>
-                      <span className="wrap-break-word">
-                        {option.optionText}
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
+                      rows={5}
+                      placeholder="Tulis jawaban Anda di sini..."
+                      className="w-full resize-y rounded-2xl border border-slate-200 bg-white px-4 py-3 text-base text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-teal-500 focus:ring-2 focus:ring-teal-100"
+                    />
+                  )}
+                </div>
+              )}
+
+              {submitted && review?.aiFeedback ? (
+                <div className="mt-3 rounded-2xl border border-teal-200 bg-teal-50 p-3 text-base leading-7 text-teal-800">
+                  <span className="inline-flex items-center gap-1.5 font-semibold text-teal-700">
+                    <Sparkles size={16} aria-hidden="true" />
+                    Penilaian AI ({review.earnedPoints} poin):
+                  </span>
+                  <Markdown className="mt-1 text-base leading-7 text-teal-800">
+                    {review.aiFeedback}
+                  </Markdown>
+                </div>
+              ) : null}
 
               {submitted && review?.explanation ? (
                 <div className="mt-3 rounded-2xl border border-slate-200 bg-slate-50 p-3 text-base leading-7 text-slate-700">
@@ -436,7 +542,7 @@ export default function StudentQuizAttemptClient({
           </span>
           <button
             type="button"
-            disabled={submitting || totalQuestions === 0}
+            disabled={submitting || totalQuestions === 0 || isPastDue}
             onClick={handleSubmit}
             className="inline-flex items-center gap-2 rounded-2xl bg-teal-600 px-6 py-3 text-base font-semibold text-white transition hover:bg-teal-700 disabled:opacity-60"
           >

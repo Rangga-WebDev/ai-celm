@@ -58,6 +58,7 @@ export async function GET(_: Request, { params }: Params) {
       isLocked: module.isLocked,
       masteryThreshold: module.masteryThreshold,
       totalUnits: module.units.length,
+      learningContent: module.learningContent,
       createdAt: module.createdAt,
       updatedAt: module.updatedAt,
     }));

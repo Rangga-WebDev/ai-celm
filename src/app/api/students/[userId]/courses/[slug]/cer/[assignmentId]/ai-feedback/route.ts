@@ -10,6 +10,7 @@ import {
 import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/api-guard";
 import { isAiEnabled } from "@/lib/ai/openai";
+import { enforceAiRateLimit } from "@/lib/ai/rate-limit";
 import { generateCerFeedback } from "@/lib/ai/cer-feedback";
 import { cerAiFeedbackSchema } from "@/lib/validators/ai.schema";
 
@@ -53,6 +54,9 @@ export async function POST(request: NextRequest, { params }: Params) {
         { status: 503 },
       );
     }
+
+    const limited = await enforceAiRateLimit(auth.user.id);
+    if (limited.response) return limited.response;
 
     const json = await request.json().catch(() => null);
     const parsed = cerAiFeedbackSchema.safeParse(json);

@@ -6,6 +6,7 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import {
   ArrowLeft,
+  BookOpenText,
   Layers3,
   LibraryBig,
   Loader2,
@@ -710,6 +711,14 @@ function ModuleCard({
         </div>
 
         <div className="flex shrink-0 flex-wrap gap-2">
+          <Link
+            href={`/lecturer/courses/${courseSlug}/modules/${module.id}/content`}
+            className="inline-flex items-center gap-2 rounded-2xl bg-emerald-600 px-4 py-2.5 text-base font-semibold text-white transition hover:bg-emerald-700"
+          >
+            <BookOpenText size={16} aria-hidden="true" />
+            Konten
+          </Link>
+
           <Link
             href={`/lecturer/courses/${courseSlug}/modules/${module.id}/units`}
             className="inline-flex items-center gap-2 rounded-2xl bg-teal-600 px-4 py-2.5 text-base font-semibold text-white transition hover:bg-teal-700"

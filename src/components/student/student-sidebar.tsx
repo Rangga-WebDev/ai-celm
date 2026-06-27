@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import clsx from "clsx";
 import {
+  Award,
   BookOpen,
   GraduationCap,
   Home,
@@ -15,7 +16,7 @@ import {
 /**
  * Navigasi utama mahasiswa.
  * Hanya berisi tujuan yang benar-benar tersedia agar tidak ada link rusak (404).
- * CER, Forum, Project, dan Portofolio dibuka dari dalam masing-masing Mata Kuliah.
+ * CER, Forum, dan Project dibuka dari dalam masing-masing Mata Kuliah.
  */
 const navItems: Array<{
   label: string;
@@ -40,6 +41,12 @@ const navItems: Array<{
     href: "/student/modules",
     icon: GraduationCap,
     description: "Materi langkah demi langkah",
+  },
+  {
+    label: "Portofolio",
+    href: "/student/portfolio",
+    icon: Award,
+    description: "Rangkuman capaian belajar Anda",
   },
 ];
 

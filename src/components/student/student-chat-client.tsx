@@ -13,6 +13,7 @@ import {
   Sparkles,
   User as UserIcon,
 } from "lucide-react";
+import Markdown from "@/components/ui/markdown";
 
 type User = {
   id: string;
@@ -243,7 +244,13 @@ function MessageBubble({ message }: { message: ChatMessage }) {
               : "border border-slate-200 bg-slate-50 text-slate-800"
           }`}
         >
-          {message.content}
+          {isUser ? (
+            message.content
+          ) : (
+            <Markdown className="text-left text-base text-slate-800">
+              {message.content}
+            </Markdown>
+          )}
         </div>
         {!isUser &&
           message.usedMaterials &&

@@ -9,6 +9,7 @@ import {
 import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/api-guard";
 import { isAiEnabled } from "@/lib/ai/openai";
+import { enforceAiRateLimit } from "@/lib/ai/rate-limit";
 import { generateDiscussionSummary } from "@/lib/ai/discussion-summary";
 
 export const dynamic = "force-dynamic";
@@ -57,6 +58,9 @@ export async function POST(_: NextRequest, { params }: Params) {
         { status: 503 },
       );
     }
+
+    const limited = await enforceAiRateLimit(auth.user.id);
+    if (limited.response) return limited.response;
 
     const course = await prisma.course.findFirst({
       where: { slug, lecturerId: userId },

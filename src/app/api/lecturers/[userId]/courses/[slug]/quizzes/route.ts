@@ -85,6 +85,7 @@ export async function GET(_: NextRequest, { params }: Params) {
         description: true,
         status: true,
         timeLimitMinutes: true,
+        dueAt: true,
         passingScore: true,
         showScoreToStudent: true,
         createdAt: true,
@@ -186,6 +187,8 @@ export async function POST(request: NextRequest, { params }: Params) {
       description,
       status,
       timeLimitMinutes,
+      dueAt,
+      sourceMaterialId,
       passingScore,
       showScoreToStudent,
     } = parsed.data;
@@ -208,6 +211,26 @@ export async function POST(request: NextRequest, { params }: Params) {
       );
     }
 
+    if (sourceMaterialId) {
+      const material = await prisma.courseMaterial.findFirst({
+        where: {
+          id: sourceMaterialId,
+          courseId: course.id,
+        },
+        select: { id: true },
+      });
+
+      if (!material) {
+        return NextResponse.json(
+          {
+            success: false,
+            message: "Materi sumber tidak ditemukan pada course ini",
+          },
+          { status: 404 },
+        );
+      }
+    }
+
     const quiz = await prisma.quiz.create({
       data: {
         moduleId,
@@ -215,6 +238,8 @@ export async function POST(request: NextRequest, { params }: Params) {
         description: description.length > 0 ? description : null,
         status,
         timeLimitMinutes: timeLimitMinutes ?? null,
+        dueAt: dueAt ?? null,
+        sourceMaterialId: sourceMaterialId ?? null,
         passingScore,
         showScoreToStudent,
       },
@@ -222,6 +247,7 @@ export async function POST(request: NextRequest, { params }: Params) {
         id: true,
         title: true,
         status: true,
+        dueAt: true,
         module: {
           select: { id: true, title: true },
         },

@@ -51,6 +51,7 @@ export default async function LecturerModuleResourcesPage({
   return (
     <main className="space-y-6 p-6">
       <LecturerResourceManagerClient
+        userId={user.id}
         courseModule={{
           id: courseModule.id,
           title: courseModule.title,

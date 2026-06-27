@@ -198,7 +198,7 @@ export default function RegisterForm() {
           </div>
         ) : null}
 
-        <Button variant="primary" size="md" fullWidth disabled={isLoading}>
+        <Button variant="primary" size="md" fullWidth loading={isLoading}>
           {isLoading ? "Memproses..." : "Buat Akun"}
         </Button>
       </form>

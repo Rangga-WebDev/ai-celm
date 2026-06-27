@@ -9,6 +9,7 @@ import {
 import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/api-guard";
 import { isAiEnabled } from "@/lib/ai/openai";
+import { enforceAiRateLimit } from "@/lib/ai/rate-limit";
 import { retrieveRelevantChunks } from "@/lib/ai/material-retrieval";
 import { answerMaterialQuestion } from "@/lib/ai/material-chat";
 
@@ -68,6 +69,9 @@ export async function POST(req: NextRequest, { params }: Params) {
         { status: 503 },
       );
     }
+
+    const limited = await enforceAiRateLimit(auth.user.id);
+    if (limited.response) return limited.response;
 
     const course = await prisma.course.findFirst({
       where: { slug, isPublished: true },

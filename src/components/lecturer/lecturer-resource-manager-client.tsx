@@ -35,6 +35,7 @@ type CourseModuleInfo = {
 };
 
 type Props = {
+  userId: string;
   courseModule: CourseModuleInfo;
   resources: ResourceItem[];
 };
@@ -72,10 +73,12 @@ const emptyForm = {
 };
 
 export default function LecturerResourceManagerClient({
+  userId,
   courseModule,
   resources,
 }: Props) {
   const router = useRouter();
+  const resourcesBasePath = `/api/lecturers/${userId}/courses/${courseModule.courseSlug}/resources`;
   const [form, setForm] = useState(emptyForm);
   const [editingResourceId, setEditingResourceId] = useState<string | null>(
     null,
@@ -112,11 +115,13 @@ export default function LecturerResourceManagerClient({
         type: form.type,
         url: form.url,
         sortOrder: form.sortOrder ? Number(form.sortOrder) : null,
+        targetType: "MODULE" as const,
+        moduleId: courseModule.id,
       };
 
       const url = editingResourceId
-        ? `/api/lecturer/resources/${editingResourceId}`
-        : `/api/lecturer/modules/${courseModule.id}/resources`;
+        ? `${resourcesBasePath}/${editingResourceId}`
+        : resourcesBasePath;
 
       const method = editingResourceId ? "PATCH" : "POST";
 
@@ -154,7 +159,7 @@ export default function LecturerResourceManagerClient({
     try {
       setMessage(null);
 
-      const res = await fetch(`/api/lecturer/resources/${resourceId}`, {
+      const res = await fetch(`${resourcesBasePath}/${resourceId}`, {
         method: "DELETE",
       });
 

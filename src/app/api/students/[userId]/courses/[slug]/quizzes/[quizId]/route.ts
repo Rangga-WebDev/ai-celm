@@ -85,6 +85,7 @@ export async function GET(_: NextRequest, { params }: Params) {
         timeLimitMinutes: true,
         passingScore: true,
         showScoreToStudent: true,
+        dueAt: true,
         module: {
           select: { id: true, title: true, slug: true },
         },

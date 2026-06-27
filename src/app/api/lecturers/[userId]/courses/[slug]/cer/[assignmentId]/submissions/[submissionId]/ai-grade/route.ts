@@ -9,6 +9,7 @@ import {
 import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/api-guard";
 import { isAiEnabled } from "@/lib/ai/openai";
+import { enforceAiRateLimit } from "@/lib/ai/rate-limit";
 import { generateCerGradingAssist } from "@/lib/ai/cer-grading-assist";
 
 export const runtime = "nodejs";
@@ -67,6 +68,9 @@ export async function POST(request: NextRequest, { params }: Params) {
         { status: 503 },
       );
     }
+
+    const limited = await enforceAiRateLimit(auth.user.id);
+    if (limited.response) return limited.response;
 
     const submission = await prisma.cerSubmission.findFirst({
       where: {

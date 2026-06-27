@@ -284,7 +284,7 @@ export async function POST(request: NextRequest, { params }: Params) {
     const existingSlug = await prisma.microUnit.findUnique({
       where: {
         moduleId_slug: {
-          moduleId: module.id,
+          moduleId: targetModule.id,
           slug: unitSlug,
         },
       },
@@ -305,7 +305,7 @@ export async function POST(request: NextRequest, { params }: Params) {
 
     const lastUnit = await prisma.microUnit.findFirst({
       where: {
-        moduleId: module.id,
+        moduleId: targetModule.id,
       },
       orderBy: {
         order: "desc",
@@ -323,7 +323,7 @@ export async function POST(request: NextRequest, { params }: Params) {
     const existingOrder = await prisma.microUnit.findUnique({
       where: {
         moduleId_order: {
-          moduleId: module.id,
+          moduleId: targetModule.id,
           order: requestedOrder,
         },
       },
@@ -344,7 +344,7 @@ export async function POST(request: NextRequest, { params }: Params) {
 
     const unit = await prisma.microUnit.create({
       data: {
-        moduleId: module.id,
+        moduleId: targetModule.id,
         title,
         slug: unitSlug,
         description,

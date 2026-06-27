@@ -5,6 +5,7 @@ import { AIInteractionType, Role } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/api-guard";
 import { isAiEnabled } from "@/lib/ai/openai";
+import { enforceAiRateLimit } from "@/lib/ai/rate-limit";
 import { generateCerAssignmentDraft } from "@/lib/ai/cer-assignment-assist";
 
 export const runtime = "nodejs";
@@ -46,6 +47,9 @@ export async function POST(request: NextRequest, { params }: Params) {
         { status: 503 },
       );
     }
+
+    const limited = await enforceAiRateLimit(auth.user.id);
+    if (limited.response) return limited.response;
 
     const course = await prisma.course.findFirst({
       where: {
