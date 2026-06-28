@@ -11,6 +11,7 @@ enum Role {
   STUDENT
   LECTURER
   ADMIN
+  VALIDATOR
 }
 
 enum EnrollmentStatus {
@@ -23,6 +24,12 @@ enum ModuleStatus {
   DRAFT
   PUBLISHED
   ARCHIVED
+}
+
+enum ModuleTaskType {
+  NONE
+  SMALL
+  BIG
 }
 
 enum ProgressStatus {
@@ -60,6 +67,7 @@ enum ResourceType {
   IMAGE
   QUIZ
   TEMPLATE
+  ARTICLE
   OTHER
 }
 
@@ -142,6 +150,12 @@ enum DiscussionPostStatus {
   FLAGGED
 }
 
+enum ModerationFlag {
+  CLEAN
+  CAUTION
+  SEVERE
+}
+
 enum QuizStatus {
   DRAFT
   PUBLISHED
@@ -153,6 +167,33 @@ enum QuizQuestionType {
   TRUE_FALSE
   SHORT_ANSWER
   ESSAY
+}
+
+enum GradeSource {
+  QUIZ
+  CER
+  PROJECT
+  PARTICIPATION
+  MANUAL
+}
+
+enum LetterGrade {
+  A
+  AB
+  B
+  BC
+  C
+  D
+  E
+}
+
+enum NotificationType {
+  DEADLINE
+  GRADE
+  MATERIAL
+  FORUM
+  ANNOUNCEMENT
+  SYSTEM
 }
 
 model User {
@@ -182,6 +223,15 @@ model User {
   analyticsEvents       LearningAnalyticsEvent[]
   quizAttempts          QuizAttempt[]
   portfolio             Portfolio?
+  componentScores       ComponentScore[]         @relation("ComponentScoreStudent")
+  gradedComponentScores ComponentScore[]         @relation("ComponentScoreGrader")
+  courseGrades          CourseGrade[]            @relation("CourseGradeStudent")
+  notifications         Notification[]
+  passwordResetTokens   PasswordResetToken[]
+  assignmentsCreated    Assignment[]             @relation("AssignmentCreator")
+  assignmentSubmissions AssignmentSubmission[]   @relation("AssignmentSubmissionStudent")
+  assignmentReviews     AssignmentSubmission[]   @relation("AssignmentSubmissionReviewer")
+  civicResponses        CivicEngagementResponse[]
 }
 
 model Course {
@@ -212,6 +262,10 @@ model Course {
   cerAssignments  CerAssignment[]
   materials       CourseMaterial[]
   studyKits       MaterialStudyKit[]
+  gradeComponents GradeComponent[]
+  courseGrades    CourseGrade[]
+  assignments     Assignment[]
+  civicResponses  CivicEngagementResponse[]
 
   @@index([lecturerId])
 }
@@ -337,6 +391,7 @@ model Module {
   masteryThreshold Float        @default(75)
   unlockRule       Json?
 
+  taskType                ModuleTaskType @default(NONE)
   learningContent         Json?
   contentSourceMaterialId String?
   contentGeneratedByAi    Boolean   @default(false)
@@ -356,6 +411,7 @@ model Module {
   cerAssignments    CerAssignment[]
   projects          CivicActionProject[]
   materials         CourseMaterial[]
+  assignments       Assignment[]
 
   @@unique([courseId, slug])
   @@unique([courseId, order])
@@ -487,7 +543,11 @@ model LearningResource {
   title        String
   description  String?
   type         ResourceType
-  url          String
+  url          String?
+  content      String?
+  aiGenerated  Boolean      @default(false)
+  sourceMaterialId String?
+  modelName    String?
   sortOrder    Int?
   uploadedById String?
   createdAt    DateTime     @default(now())
@@ -497,11 +557,13 @@ model LearningResource {
   module     Module?    @relation(fields: [moduleId], references: [id], onDelete: Cascade)
   microUnit  MicroUnit? @relation(fields: [microUnitId], references: [id], onDelete: Cascade)
   uploadedBy User?      @relation("ResourceUploader", fields: [uploadedById], references: [id], onDelete: SetNull)
+  sourceMaterial CourseMaterial? @relation("ResourceSourceMaterial", fields: [sourceMaterialId], references: [id], onDelete: SetNull)
 
   @@index([courseId])
   @@index([moduleId])
   @@index([microUnitId])
   @@index([type])
+  @@index([sourceMaterialId])
 }
 
 model CourseMaterial {
@@ -528,6 +590,8 @@ model CourseMaterial {
   uploadedBy User?   @relation("MaterialUploader", fields: [uploadedById], references: [id], onDelete: SetNull)
   studyKit   MaterialStudyKit?
   quizzes    Quiz[]
+  learningResources LearningResource[] @relation("ResourceSourceMaterial")
+  assignments       Assignment[]       @relation("AssignmentSourceMaterial")
 
   @@index([courseId])
   @@index([moduleId])
@@ -602,6 +666,12 @@ model DiscussionPost {
   content String
   status  DiscussionPostStatus @default(VISIBLE)
 
+  moderationFlag       ModerationFlag @default(CLEAN)
+  moderationCategories String?
+  moderationNote       String?
+  moderationRevision   String?
+  moderationReviewed   Boolean        @default(false)
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -617,6 +687,7 @@ model DiscussionPost {
   @@index([authorId])
   @@index([parentId])
   @@index([status])
+  @@index([moderationFlag])
 }
 
 model CivicActionProject {
@@ -909,4 +980,205 @@ model Portfolio {
   student User @relation(fields: [studentId], references: [id], onDelete: Cascade)
 
   @@index([studentId])
+}
+
+model GradeComponent {
+  id        String      @id @default(cuid())
+  courseId  String
+  name      String
+  source    GradeSource @default(MANUAL)
+  weight    Float       @default(0)
+  maxScore  Float       @default(100)
+  order     Int
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+
+  course Course           @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  scores ComponentScore[]
+
+  @@unique([courseId, order])
+  @@index([courseId])
+}
+
+model ComponentScore {
+  id          String  @id @default(cuid())
+  componentId String
+  studentId   String
+  score       Float
+  note        String?
+  updatedById String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  component GradeComponent @relation(fields: [componentId], references: [id], onDelete: Cascade)
+  student   User           @relation("ComponentScoreStudent", fields: [studentId], references: [id], onDelete: Cascade)
+  updatedBy User?          @relation("ComponentScoreGrader", fields: [updatedById], references: [id], onDelete: SetNull)
+
+  @@unique([componentId, studentId])
+  @@index([componentId])
+  @@index([studentId])
+}
+
+model CourseGrade {
+  id           String       @id @default(cuid())
+  courseId     String
+  studentId    String
+  numericScore Float?
+  letterGrade  LetterGrade?
+  isFinalized  Boolean      @default(false)
+  finalizedAt  DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  course  Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  student User   @relation("CourseGradeStudent", fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@unique([courseId, studentId])
+  @@index([courseId])
+  @@index([studentId])
+}
+
+model Notification {
+  id        String           @id @default(cuid())
+  userId    String
+  type      NotificationType @default(SYSTEM)
+  title     String
+  body      String?
+  href      String?
+  isRead    Boolean          @default(false)
+  readAt    DateTime?
+  createdAt DateTime         @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([userId, isRead])
+  @@index([createdAt])
+}
+
+model PasswordResetToken {
+  id        String    @id @default(cuid())
+  userId    String
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+enum AssignmentExamType {
+  NONE
+  UTS
+  UAS
+}
+
+model Assignment {
+  id          String  @id @default(cuid())
+  courseId    String
+  moduleId    String?
+  createdById String
+
+  title            String
+  slug             String
+  description      String?
+  instructions     String?
+  rubric           Json?
+  dueAt            DateTime?
+  maxScore         Float         @default(100)
+  allowText        Boolean       @default(true)
+  allowFile        Boolean       @default(true)
+  sourceMaterialId String?
+  generatedByAi    Boolean       @default(false)
+  examType         AssignmentExamType @default(NONE)
+  status           ProjectStatus @default(DRAFT)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  course         Course          @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  module         Module?         @relation(fields: [moduleId], references: [id], onDelete: SetNull)
+  createdBy      User            @relation("AssignmentCreator", fields: [createdById], references: [id], onDelete: Cascade)
+  sourceMaterial CourseMaterial? @relation("AssignmentSourceMaterial", fields: [sourceMaterialId], references: [id], onDelete: SetNull)
+  submissions    AssignmentSubmission[]
+
+  @@unique([courseId, slug])
+  @@index([courseId])
+  @@index([moduleId])
+  @@index([createdById])
+  @@index([status])
+  @@index([dueAt])
+  @@index([examType])
+}
+
+model AssignmentSubmission {
+  id           String @id @default(cuid())
+  assignmentId String
+  studentId    String
+
+  content       String?
+  attachmentKey String?
+  fileName      String?
+  mimeType      String?
+  fileSize      Int?
+
+  status       SubmissionStatus @default(DRAFT)
+  score        Float?
+  feedback     String?
+  submittedAt  DateTime?
+  reviewedAt   DateTime?
+  reviewedById String?
+
+  aiDeclared      Boolean @default(false)
+  aiUsage         String?
+  aiPrompt        String?
+  aiVerification  String?
+  honestyPledge   Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  assignment Assignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+  student    User       @relation("AssignmentSubmissionStudent", fields: [studentId], references: [id], onDelete: Cascade)
+  reviewedBy User?      @relation("AssignmentSubmissionReviewer", fields: [reviewedById], references: [id], onDelete: SetNull)
+
+  @@unique([assignmentId, studentId])
+  @@index([assignmentId])
+  @@index([studentId])
+  @@index([status])
+}
+
+enum CivicTestType {
+  PRE
+  POST
+}
+
+model CivicEngagementResponse {
+  id       String        @id @default(cuid())
+  userId   String
+  courseId String
+  type     CivicTestType
+
+  answers Json
+
+  scoreCognitive  Float
+  scoreAffective  Float
+  scoreBehavioral Float
+  scoreOverall    Float
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, courseId, type])
+  @@index([courseId])
+  @@index([userId])
+  @@index([type])
 }

@@ -225,7 +225,8 @@ export async function PATCH(request: NextRequest, { params }: Params) {
 
       const score = fresh.reduce((sum, a) => sum + a.earnedPoints, 0);
       const maxScore = fresh.reduce((sum, a) => sum + a.question.points, 0);
-      const percentage = maxScore > 0 ? (score / maxScore) * 100 : 0;
+      const percentage =
+        maxScore > 0 ? Math.round((score / maxScore) * 10000) / 100 : 0;
       const isPassed = percentage >= quiz.passingScore;
 
       return tx.quizAttempt.update({

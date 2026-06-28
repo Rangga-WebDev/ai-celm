@@ -2,7 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/session";
-import LecturerModuleContentClient from "@/components/lecturer/lecturer-module-content-client";
+import LecturerModuleWorkspaceClient from "@/components/lecturer/lecturer-module-workspace-client";
 
 export const dynamic = "force-dynamic";
 
@@ -27,7 +27,7 @@ export default async function LecturerModuleContentPage({ params }: PageProps) {
   const { slug, moduleId } = await params;
 
   return (
-    <LecturerModuleContentClient
+    <LecturerModuleWorkspaceClient
       user={user}
       courseSlug={slug}
       moduleId={moduleId}

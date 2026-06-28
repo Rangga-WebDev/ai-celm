@@ -7,7 +7,7 @@ const secret = new TextEncoder().encode(process.env.JWT_SECRET);
 export type SessionPayload = {
   userId: string;
   email: string;
-  role: "STUDENT" | "LECTURER" | "ADMIN";
+  role: "STUDENT" | "LECTURER" | "ADMIN" | "VALIDATOR";
 };
 
 export async function signSession(payload: SessionPayload) {

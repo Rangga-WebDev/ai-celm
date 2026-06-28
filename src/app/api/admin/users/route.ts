@@ -8,7 +8,10 @@ import { Role } from "@/generated/prisma/client";
 
 function isValidRole(value: unknown): value is Role {
   return (
-    value === Role.STUDENT || value === Role.LECTURER || value === Role.ADMIN
+    value === Role.STUDENT ||
+    value === Role.LECTURER ||
+    value === Role.ADMIN ||
+    value === Role.VALIDATOR
   );
 }
 

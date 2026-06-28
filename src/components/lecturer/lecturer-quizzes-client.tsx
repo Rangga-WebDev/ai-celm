@@ -22,6 +22,8 @@ type LecturerQuizzesClientProps = {
     role: string;
   };
   courseSlug: string;
+  scopedModuleId?: string;
+  embedded?: boolean;
 };
 
 type ModuleOption = {
@@ -88,6 +90,8 @@ function statusLabel(status: string) {
 export default function LecturerQuizzesClient({
   user,
   courseSlug,
+  scopedModuleId,
+  embedded = false,
 }: LecturerQuizzesClientProps) {
   const [courseTitle, setCourseTitle] = useState("");
   const [modules, setModules] = useState<ModuleOption[]>([]);
@@ -124,7 +128,9 @@ export default function LecturerQuizzesClient({
         setCourseTitle(json.data.course.title);
         setModules(json.data.modules);
         setQuizzes(json.data.quizzes);
-        if (json.data.modules.length > 0 && moduleId === "") {
+        if (scopedModuleId) {
+          setModuleId(scopedModuleId);
+        } else if (json.data.modules.length > 0 && moduleId === "") {
           setModuleId(json.data.modules[0].id);
         }
 
@@ -206,6 +212,7 @@ export default function LecturerQuizzesClient({
         body: JSON.stringify({
           materialId: aiMaterialId,
           questionCount: aiQuestionCount,
+          ...(scopedModuleId ? { moduleId: scopedModuleId } : {}),
         }),
       });
       const json = await res.json();
@@ -242,31 +249,41 @@ export default function LecturerQuizzesClient({
     }
   }
 
+  const visibleQuizzes = scopedModuleId
+    ? quizzes.filter((q) => q.module.id === scopedModuleId)
+    : quizzes;
+
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <Link
-          href={`/lecturer/courses/${courseSlug}`}
-          className="inline-flex items-center gap-2 text-base font-medium text-teal-700 transition hover:text-teal-800"
-        >
-          <ArrowLeft size={18} aria-hidden="true" />
-          Kembali ke Mata Kuliah
-        </Link>
-      </div>
+      {!embedded ? (
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <Link
+            href={`/lecturer/courses/${courseSlug}`}
+            className="inline-flex items-center gap-2 text-base font-medium text-teal-700 transition hover:text-teal-800"
+          >
+            <ArrowLeft size={18} aria-hidden="true" />
+            Kembali ke Mata Kuliah
+          </Link>
+        </div>
+      ) : null}
 
-      <section className="rounded-3xl bg-teal-600 p-6 text-white sm:p-8">
-        <span className="inline-flex items-center gap-2 rounded-full bg-white/15 px-3 py-1.5 text-sm">
-          <HelpCircle size={16} aria-hidden="true" />
-          Pengelolaan Kuis
-        </span>
-        <p className="mt-4 text-sm text-teal-50">{courseTitle || courseSlug}</p>
-        <h1 className="mt-1 text-2xl font-bold sm:text-3xl">Kuis</h1>
-        <p className="mt-3 max-w-3xl text-base text-teal-50">
-          Buat kuis pilihan ganda atau benar/salah yang dinilai otomatis. Kuis
-          melekat pada sebuah modul dan hanya tampil ke mahasiswa setelah
-          berstatus Terbit.
-        </p>
-      </section>
+      {!embedded ? (
+        <section className="rounded-3xl bg-teal-600 p-6 text-white sm:p-8">
+          <span className="inline-flex items-center gap-2 rounded-full bg-white/15 px-3 py-1.5 text-sm">
+            <HelpCircle size={16} aria-hidden="true" />
+            Pengelolaan Kuis
+          </span>
+          <p className="mt-4 text-sm text-teal-50">
+            {courseTitle || courseSlug}
+          </p>
+          <h1 className="mt-1 text-2xl font-bold sm:text-3xl">Kuis</h1>
+          <p className="mt-3 max-w-3xl text-base text-teal-50">
+            Buat kuis pilihan ganda atau benar/salah yang dinilai otomatis. Kuis
+            melekat pada sebuah modul dan hanya tampil ke mahasiswa setelah
+            berstatus Terbit.
+          </p>
+        </section>
+      ) : null}
 
       <section className="rounded-3xl border border-slate-200 bg-white p-6">
         <h2 className="text-lg font-bold text-slate-900">Buat Kuis Baru</h2>
@@ -275,25 +292,29 @@ export default function LecturerQuizzesClient({
         </p>
 
         <div className="mt-5 grid gap-4 rounded-2xl border border-slate-200 bg-slate-50 p-4 sm:grid-cols-[1fr_2fr_auto] sm:items-end">
-          <div className="grid gap-2">
-            <label className="text-sm font-medium text-slate-700">Modul</label>
-            <select
-              value={moduleId}
-              onChange={(event) => setModuleId(event.target.value)}
-              disabled={modules.length === 0}
-              className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-base text-slate-900 outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-100 disabled:opacity-60"
-            >
-              {modules.length === 0 ? (
-                <option value="">Belum ada modul</option>
-              ) : (
-                modules.map((m) => (
-                  <option key={m.id} value={m.id}>
-                    {m.order}. {m.title}
-                  </option>
-                ))
-              )}
-            </select>
-          </div>
+          {scopedModuleId ? null : (
+            <div className="grid gap-2">
+              <label className="text-sm font-medium text-slate-700">
+                Modul
+              </label>
+              <select
+                value={moduleId}
+                onChange={(event) => setModuleId(event.target.value)}
+                disabled={modules.length === 0}
+                className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-base text-slate-900 outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-100 disabled:opacity-60"
+              >
+                {modules.length === 0 ? (
+                  <option value="">Belum ada modul</option>
+                ) : (
+                  modules.map((m) => (
+                    <option key={m.id} value={m.id}>
+                      {m.order}. {m.title}
+                    </option>
+                  ))
+                )}
+              </select>
+            </div>
+          )}
 
           <div className="grid gap-2">
             <label className="text-sm font-medium text-slate-700">
@@ -425,12 +446,12 @@ export default function LecturerQuizzesClient({
           <div className="rounded-3xl border border-rose-200 bg-rose-50 p-6 text-base text-rose-700">
             {error}
           </div>
-        ) : quizzes.length === 0 ? (
+        ) : visibleQuizzes.length === 0 ? (
           <div className="rounded-3xl border border-slate-200 bg-white p-6 text-base text-slate-600">
             Belum ada kuis. Buat kuis pertama menggunakan formulir di atas.
           </div>
         ) : (
-          quizzes.map((quiz) => (
+          visibleQuizzes.map((quiz) => (
             <div
               key={quiz.id}
               className="rounded-3xl border border-slate-200 bg-white p-6"

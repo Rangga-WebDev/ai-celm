@@ -11,6 +11,7 @@ import {
   GraduationCap,
   LayoutDashboard,
   LibraryBig,
+  ListChecks,
   MessageSquareMore,
   Target,
   X,
@@ -84,6 +85,11 @@ export default function LecturerSidebar({
           label: "Project Aksi",
           href: `/lecturer/courses/${courseSlug}/projects`,
           icon: Target,
+        },
+        {
+          label: "Nilai",
+          href: `/lecturer/courses/${courseSlug}/grades`,
+          icon: ListChecks,
         },
       ]
     : [];

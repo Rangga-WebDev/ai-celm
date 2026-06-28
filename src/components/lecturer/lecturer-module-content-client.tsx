@@ -3,10 +3,13 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   ArrowLeft,
+  CheckCircle2,
+  Circle,
   FileText,
+  ListChecks,
   Loader2,
   Plus,
   Save,
@@ -19,6 +22,7 @@ import {
   type ModuleLearningContent,
   normalizeModuleLearningContent,
 } from "@/lib/validators/module-content.schema";
+import { evaluateModulePublishReadiness } from "@/lib/materials/module-content-format";
 
 type LecturerModuleContentClientProps = {
   user: {
@@ -72,8 +76,13 @@ export default function LecturerModuleContentClient({
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [generating, setGenerating] = useState<"ai" | "raw" | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [quizGenerating, setQuizGenerating] = useState(false);
+  const [generatedQuizId, setGeneratedQuizId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const basePath = `/api/lecturers/${user.id}/courses/${courseSlug}/modules/${moduleId}/content`;
 
@@ -140,6 +149,114 @@ export default function LecturerModuleContentClient({
       setError(err instanceof Error ? err.message : "Unknown error");
     } finally {
       setGenerating(null);
+    }
+  }
+
+  async function handleUpload(file: File) {
+    setUploading(true);
+    setError(null);
+    setNotice(null);
+
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("moduleId", moduleId);
+
+      const res = await fetch(
+        `/api/lecturers/${user.id}/courses/${courseSlug}/materials`,
+        { method: "POST", body: formData },
+      );
+      const json = await res.json();
+
+      if (!res.ok || !json.success) {
+        throw new Error(json.message || "Gagal mengunggah materi.");
+      }
+
+      const uploaded = json.data as {
+        id: string;
+        title: string;
+        fileName: string;
+        charCount: number | null;
+        status: string;
+        moduleId: string | null;
+      };
+
+      if (uploaded.status !== "READY") {
+        setError(
+          "Materi terunggah, tetapi teksnya tidak terbaca (mungkin PDF hasil pindai/gambar). Coba berkas lain.",
+        );
+      } else {
+        setMaterials((prev) => [
+          {
+            id: uploaded.id,
+            title: uploaded.title,
+            fileName: uploaded.fileName,
+            charCount: uploaded.charCount,
+            moduleId: uploaded.moduleId,
+          },
+          ...prev,
+        ]);
+        setSelectedMaterialId(uploaded.id);
+        setNotice(
+          "Materi PDF berhasil diunggah. Klik 'Buat dengan AI' untuk menyusun modul.",
+        );
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Unknown error");
+    } finally {
+      setUploading(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+    }
+  }
+
+  function handleFileChange(event: React.ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    if (file) {
+      void handleUpload(file);
+    }
+  }
+
+  async function handleGenerateQuiz() {
+    if (!selectedMaterialId) {
+      setError("Pilih atau unggah materi PDF terlebih dahulu.");
+      return;
+    }
+
+    setQuizGenerating(true);
+    setError(null);
+    setNotice(null);
+    setGeneratedQuizId(null);
+
+    try {
+      const res = await fetch(
+        `/api/lecturers/${user.id}/courses/${courseSlug}/quizzes/ai-generate`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            materialId: selectedMaterialId,
+            moduleId,
+            questionCount: 5,
+          }),
+        },
+      );
+      const json = await res.json();
+
+      if (!res.ok || !json.success) {
+        throw new Error(json.message || "Gagal membuat kuis dari modul.");
+      }
+
+      setGeneratedQuizId(json.data?.quizId ?? null);
+      setNotice(
+        json.message ||
+          "Kuis draf berhasil dibuat. Tinjau dan terbitkan dari menu Kuis.",
+      );
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Unknown error");
+    } finally {
+      setQuizGenerating(false);
     }
   }
 
@@ -252,19 +369,49 @@ export default function LecturerModuleContentClient({
         </div>
       ) : null}
 
+      <PublishChecklist content={content} />
+
       {/* Panel pembuatan dari PDF / AI */}
       <section className="rounded-3xl border border-slate-200 bg-white p-6">
         <h2 className="text-lg font-bold text-slate-900">
           Buat dari PDF atau AI
         </h2>
         <p className="mt-1 text-sm text-slate-600">
-          Pilih materi PDF yang sudah diunggah pada kelas ini.
+          Unggah PDF baru di sini, atau pilih materi PDF yang sudah ada di kelas
+          ini.
         </p>
+
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept=".pdf,.doc,.docx,.txt,.md,application/pdf"
+          onChange={handleFileChange}
+          className="hidden"
+        />
+
+        <div className="mt-4 flex flex-wrap items-center gap-3 rounded-2xl border border-dashed border-teal-300 bg-teal-50/60 px-4 py-4">
+          <button
+            type="button"
+            disabled={uploading}
+            onClick={() => fileInputRef.current?.click()}
+            className="inline-flex items-center gap-2 rounded-2xl bg-teal-600 px-5 py-3 text-base font-semibold text-white transition hover:bg-teal-700 disabled:opacity-60"
+          >
+            {uploading ? (
+              <Loader2 size={18} className="animate-spin" aria-hidden />
+            ) : (
+              <Upload size={18} aria-hidden />
+            )}
+            {uploading ? "Mengunggah..." : "Unggah PDF Modul"}
+          </button>
+          <span className="text-sm text-slate-600">
+            Format PDF, Word, TXT, atau Markdown (maks 15 MB). Teks akan dibaca
+            otomatis untuk bahan AI.
+          </span>
+        </div>
 
         {materials.length === 0 ? (
           <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-base text-amber-800">
-            Belum ada materi PDF siap pakai. Unggah materi pada menu
-            Materi/Berkas kelas terlebih dahulu.
+            Belum ada materi PDF siap pakai. Unggah PDF di atas untuk memulai.
           </div>
         ) : (
           <div className="mt-4 grid gap-3 sm:grid-cols-[1fr_auto_auto]">
@@ -310,10 +457,54 @@ export default function LecturerModuleContentClient({
         )}
       </section>
 
+      {/* Panel pembuatan kuis dari modul */}
+      <section className="rounded-3xl border border-slate-200 bg-white p-6">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h2 className="flex items-center gap-2 text-lg font-bold text-slate-900">
+              <ListChecks size={20} aria-hidden className="text-teal-600" />
+              Kuis dari Modul
+            </h2>
+            <p className="mt-1 text-sm text-slate-600">
+              AI menyusun soal pilihan ganda dari materi terpilih, otomatis
+              terkait modul ini. Tinjau dan terbitkan di menu Kuis.
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            {generatedQuizId ? (
+              <Link
+                href={`/lecturer/courses/${courseSlug}/quizzes/${generatedQuizId}`}
+                className="inline-flex items-center gap-2 rounded-2xl border border-teal-200 px-4 py-3 text-base font-semibold text-teal-700 transition hover:bg-teal-50"
+              >
+                Buka Kuis
+              </Link>
+            ) : null}
+            <button
+              type="button"
+              disabled={quizGenerating || !selectedMaterialId}
+              onClick={handleGenerateQuiz}
+              className="inline-flex items-center gap-2 rounded-2xl bg-teal-600 px-5 py-3 text-base font-semibold text-white transition hover:bg-teal-700 disabled:opacity-60"
+            >
+              {quizGenerating ? (
+                <Loader2 size={18} className="animate-spin" aria-hidden />
+              ) : (
+                <Sparkles size={18} aria-hidden />
+              )}
+              Buat Kuis dari Modul
+            </button>
+          </div>
+        </div>
+        {!selectedMaterialId ? (
+          <p className="mt-3 text-sm text-amber-700">
+            Pilih atau unggah materi PDF di atas terlebih dahulu untuk membuat
+            kuis.
+          </p>
+        ) : null}
+      </section>
+
       {/* I. Pendahuluan */}
       <section className="rounded-3xl border border-slate-200 bg-white p-6">
         <h2 className="text-lg font-bold text-slate-900">I. Pendahuluan</h2>
-
         <div className="mt-4 grid gap-4">
           <StringListEditor
             label="Capaian Pembelajaran"
@@ -761,6 +952,68 @@ export default function LecturerModuleContentClient({
         </button>
       </div>
     </div>
+  );
+}
+
+function PublishChecklist({ content }: { content: ModuleLearningContent }) {
+  const readiness = evaluateModulePublishReadiness(content);
+
+  const items = [
+    {
+      label: "Deskripsi pendahuluan terisi",
+      done: content.introduction.description.trim().length > 0,
+    },
+    {
+      label: "Minimal satu kegiatan belajar berisi",
+      done: content.activities.some((a) => a.content.trim().length > 0),
+    },
+    {
+      label: "Minimal satu pertanyaan tes formatif",
+      done: content.assessment.formativeQuestions.some(
+        (q) => q.question.trim().length > 0,
+      ),
+    },
+  ];
+
+  return (
+    <section
+      className={`rounded-3xl border p-5 ${
+        readiness.ready
+          ? "border-emerald-200 bg-emerald-50"
+          : "border-amber-200 bg-amber-50"
+      }`}
+    >
+      <h2 className="text-base font-bold text-slate-900">
+        Kelengkapan untuk diterbitkan
+      </h2>
+      <p className="mt-1 text-sm text-slate-600">
+        {readiness.ready
+          ? "Konten sudah lengkap. Menyimpan akan otomatis membuat bagian 'Materi Pembelajaran' untuk mahasiswa, sehingga progres tidak 0/0."
+          : "Lengkapi item berikut agar modul bisa diterbitkan dan tidak tampil 0/0 di halaman belajar mahasiswa."}
+      </p>
+      <ul className="mt-3 space-y-2">
+        {items.map((item) => (
+          <li key={item.label} className="flex items-center gap-2 text-base">
+            {item.done ? (
+              <CheckCircle2
+                size={18}
+                className="shrink-0 text-emerald-600"
+                aria-hidden
+              />
+            ) : (
+              <Circle
+                size={18}
+                className="shrink-0 text-slate-400"
+                aria-hidden
+              />
+            )}
+            <span className={item.done ? "text-slate-700" : "text-slate-600"}>
+              {item.label}
+            </span>
+          </li>
+        ))}
+      </ul>
+    </section>
   );
 }
 

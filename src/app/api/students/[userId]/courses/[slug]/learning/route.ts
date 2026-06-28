@@ -1,7 +1,11 @@
 /** @format */
 
 import { NextRequest, NextResponse } from "next/server";
-import { EnrollmentStatus, ModuleStatus, Role } from "@/generated/prisma/client";
+import {
+  EnrollmentStatus,
+  ModuleStatus,
+  Role,
+} from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/api-guard";
 
@@ -106,6 +110,36 @@ export async function GET(_: NextRequest, { params }: Params) {
         isLocked: true,
         unlockRule: true,
         masteryThreshold: true,
+        learningContent: true,
+        contentGeneratedByAi: true,
+        contentUpdatedAt: true,
+        quizzes: {
+          where: { status: "PUBLISHED" },
+          orderBy: { createdAt: "asc" },
+          select: {
+            id: true,
+            title: true,
+            description: true,
+            timeLimitMinutes: true,
+            passingScore: true,
+            _count: { select: { questions: true } },
+          },
+        },
+        assignments: {
+          where: {
+            examType: "NONE",
+            status: { in: ["ACTIVE", "CLOSED"] },
+          },
+          orderBy: [{ dueAt: "asc" }, { createdAt: "desc" }],
+          select: {
+            id: true,
+            title: true,
+            description: true,
+            dueAt: true,
+            maxScore: true,
+            status: true,
+          },
+        },
         resources: {
           orderBy: [{ sortOrder: "asc" }, { createdAt: "desc" }],
           select: {
@@ -117,6 +151,8 @@ export async function GET(_: NextRequest, { params }: Params) {
             description: true,
             type: true,
             url: true,
+            content: true,
+            aiGenerated: true,
             sortOrder: true,
             createdAt: true,
           },
@@ -148,6 +184,8 @@ export async function GET(_: NextRequest, { params }: Params) {
                 description: true,
                 type: true,
                 url: true,
+                content: true,
+                aiGenerated: true,
                 sortOrder: true,
                 createdAt: true,
               },
@@ -157,7 +195,9 @@ export async function GET(_: NextRequest, { params }: Params) {
       },
     });
 
-    const moduleIds = learningModules.map((learningModule) => learningModule.id);
+    const moduleIds = learningModules.map(
+      (learningModule) => learningModule.id,
+    );
     const microUnitIds = learningModules.flatMap((learningModule) =>
       learningModule.units.map((unit) => unit.id),
     );
@@ -223,6 +263,8 @@ export async function GET(_: NextRequest, { params }: Params) {
             description: true,
             type: true,
             url: true,
+            content: true,
+            aiGenerated: true,
             sortOrder: true,
             createdAt: true,
           },
@@ -261,9 +303,13 @@ export async function GET(_: NextRequest, { params }: Params) {
       0,
     );
 
+    const completedModules = modules.filter(
+      (learningModule) => learningModule.progress?.status === "COMPLETED",
+    ).length;
+
     const overallProgress =
-      totalRequiredUnits > 0
-        ? Math.round((completedRequiredUnits / totalRequiredUnits) * 100)
+      modules.length > 0
+        ? Math.round((completedModules / modules.length) * 100)
         : 0;
 
     return NextResponse.json(
@@ -275,6 +321,7 @@ export async function GET(_: NextRequest, { params }: Params) {
           enrollment,
           summary: {
             totalModules: modules.length,
+            completedModules,
             totalUnits: modules.reduce(
               (sum, learningModule) => sum + learningModule.units.length,
               0,

@@ -8,6 +8,11 @@ import {
   buildStudentReminders,
   type ReminderItem,
 } from "@/lib/notifications/reminders";
+import {
+  listNotifications,
+  unreadCount,
+  type StoredNotification,
+} from "@/lib/notifications/store";
 
 export const dynamic = "force-dynamic";
 
@@ -27,10 +32,19 @@ export async function GET() {
       items = await buildLecturerReminders(auth.user.id);
     }
 
+    const [notifications, unread] = await Promise.all([
+      listNotifications(auth.user.id),
+      unreadCount(auth.user.id),
+    ]);
+
     return NextResponse.json({
       success: true,
       message: "Pengingat berhasil dimuat.",
-      data: { items },
+      data: {
+        items,
+        notifications: notifications as StoredNotification[],
+        unreadCount: unread,
+      },
     });
   } catch (error) {
     console.error("GET notifications error:", error);
@@ -38,7 +52,7 @@ export async function GET() {
       {
         success: false,
         message: "Gagal memuat pengingat.",
-        data: { items: [] },
+        data: { items: [], notifications: [], unreadCount: 0 },
       },
       { status: 500 },
     );

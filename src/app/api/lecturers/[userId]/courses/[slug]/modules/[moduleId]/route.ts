@@ -1,9 +1,11 @@
 /** @format */
 
 import { NextRequest, NextResponse } from "next/server";
-import { ModuleStatus, Role } from "@/generated/prisma/client";
+import { ModuleStatus, ModuleTaskType, Role } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/api-guard";
+import { normalizeModuleLearningContent } from "@/lib/validators/module-content.schema";
+import { evaluateModulePublishReadiness } from "@/lib/materials/module-content-format";
 
 type Params = {
   params: Promise<{
@@ -69,6 +71,20 @@ function isValidModuleStatus(value: unknown): value is ModuleStatus {
   );
 }
 
+function toModuleTaskType(
+  value: unknown,
+  fallback: ModuleTaskType,
+): ModuleTaskType {
+  if (
+    value === ModuleTaskType.NONE ||
+    value === ModuleTaskType.SMALL ||
+    value === ModuleTaskType.BIG
+  ) {
+    return value;
+  }
+  return fallback;
+}
+
 async function getOwnedCourseAndModule(
   userId: string,
   courseSlug: string,
@@ -109,7 +125,10 @@ async function getOwnedCourseAndModule(
       isLocked: true,
       unlockRule: true,
       masteryThreshold: true,
+      taskType: true,
+      learningContent: true,
       courseId: true,
+      _count: { select: { units: true } },
     },
   });
 
@@ -228,6 +247,7 @@ export async function PATCH(request: NextRequest, { params }: Params) {
     const isLocked = Boolean(body.isLocked);
     const unlockRule = optionalText(body.unlockRule);
     const masteryThreshold = toMasteryThreshold(body.masteryThreshold);
+    const taskType = toModuleTaskType(body.taskType, targetModule.taskType);
 
     if (!title) {
       return NextResponse.json(
@@ -247,6 +267,33 @@ export async function PATCH(request: NextRequest, { params }: Params) {
         },
         { status: 400 },
       );
+    }
+
+    if (
+      statusInput === ModuleStatus.PUBLISHED &&
+      targetModule.status !== ModuleStatus.PUBLISHED
+    ) {
+      const content = normalizeModuleLearningContent(
+        targetModule.learningContent,
+      );
+      const readiness = evaluateModulePublishReadiness(content);
+      const missing = [...readiness.missing];
+
+      if (targetModule._count.units === 0) {
+        missing.push("Minimal satu bagian/kegiatan untuk mahasiswa");
+      }
+
+      if (missing.length > 0) {
+        return NextResponse.json(
+          {
+            success: false,
+            message: `Modul belum bisa diterbitkan. Lengkapi: ${missing.join(
+              ", ",
+            )}.`,
+          },
+          { status: 400 },
+        );
+      }
     }
 
     const moduleSlug = rawSlug ? slugify(rawSlug) : slugify(title);
@@ -321,6 +368,7 @@ export async function PATCH(request: NextRequest, { params }: Params) {
         isLocked,
         unlockRule: unlockRule ?? undefined,
         masteryThreshold,
+        taskType,
       },
       include: {
         _count: {

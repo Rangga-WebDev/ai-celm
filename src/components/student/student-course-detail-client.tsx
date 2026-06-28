@@ -6,19 +6,24 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import {
   ArrowRight,
+  Award,
   BookOpen,
   CheckCircle2,
   ChevronDown,
   ClipboardCheck,
+  ClipboardList,
   FileQuestion,
   FileText,
   GraduationCap,
+  HeartHandshake,
   MessagesSquare,
   PlayCircle,
   Rocket,
   Sparkles,
   Target,
 } from "lucide-react";
+import LearningResourceView from "@/components/student/learning-resource-view";
+import LearningPathMap from "@/components/student/learning-path-map";
 
 type StudentCourseDetailClientProps = {
   user: {
@@ -80,7 +85,9 @@ type CourseDetailResponse = {
       title: string;
       description: string | null;
       type: string;
-      url: string;
+      url: string | null;
+      content: string | null;
+      aiGenerated: boolean | null;
     }>;
   };
 };
@@ -323,6 +330,30 @@ export default function StudentCourseDetailClient({
       label: "Kuis",
       desc: "Uji pemahaman Anda",
     },
+    {
+      href: `/student/courses/${slug}/assignments`,
+      icon: ClipboardList,
+      label: "Tugas",
+      desc: "Kerjakan tugas dari modul",
+    },
+    {
+      href: `/student/courses/${slug}/exams`,
+      icon: ClipboardList,
+      label: "Ujian (UTS & UAS)",
+      desc: "Kerjakan soal UTS & UAS",
+    },
+    {
+      href: `/student/courses/${slug}/civic-test`,
+      icon: HeartHandshake,
+      label: "Tes Civic Engagement",
+      desc: "Isi pre-test & post-test kepedulian",
+    },
+    {
+      href: `/student/courses/${slug}/grades`,
+      icon: Award,
+      label: "Nilai",
+      desc: "Lihat nilai & bobot penilaian",
+    },
   ];
 
   return (
@@ -411,6 +442,29 @@ export default function StudentCourseDetailClient({
           value={`${derived.totalResources}`}
         />
       </section>
+
+      {/* Peta belajar visual */}
+      {progress.modules.length > 0 ? (
+        <LearningPathMap
+          courseSlug={slug}
+          modules={progress.modules.map((module) => {
+            const totalUnits = module.units.length;
+            const completedUnits = module.units.filter(
+              (unit) => unit.progress.status === "COMPLETED",
+            ).length;
+            return {
+              id: module.id,
+              title: module.title,
+              slug: module.slug,
+              order: module.order,
+              status: module.progress.status,
+              progressPercent: module.progress.progressPercent,
+              totalUnits,
+              completedUnits,
+            };
+          })}
+        />
+      ) : null}
 
       {/* Daftar modul */}
       <section>
@@ -576,27 +630,7 @@ export default function StudentCourseDetailClient({
           </h2>
           <div className="space-y-3">
             {course.resources.map((resource) => (
-              <a
-                key={resource.id}
-                href={resource.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-4 rounded-2xl border border-slate-200 bg-white p-4 transition hover:border-teal-300 hover:bg-teal-50"
-              >
-                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-teal-100 text-teal-700">
-                  <FileText size={22} aria-hidden="true" />
-                </span>
-                <span className="min-w-0">
-                  <span className="block text-base font-semibold text-slate-900">
-                    {resource.title}
-                  </span>
-                  {resource.description && (
-                    <span className="block text-base text-slate-600">
-                      {resource.description}
-                    </span>
-                  )}
-                </span>
-              </a>
+              <LearningResourceView key={resource.id} resource={resource} />
             ))}
           </div>
         </section>

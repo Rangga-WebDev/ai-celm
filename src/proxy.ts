@@ -11,6 +11,7 @@ export async function proxy(req: NextRequest) {
   const isProtected =
     pathname.startsWith("/student") ||
     pathname.startsWith("/lecturer") ||
+    pathname.startsWith("/validator") ||
     pathname.startsWith("/admin");
 
   if (!isProtected) {
@@ -19,7 +20,7 @@ export async function proxy(req: NextRequest) {
 
   if (!token) {
     return NextResponse.redirect(new URL("/login", req.url));
-  } 
+  }
 
   try {
     const session = await verifySession(token);
@@ -36,6 +37,10 @@ export async function proxy(req: NextRequest) {
       return NextResponse.redirect(new URL("/login", req.url));
     }
 
+    if (pathname.startsWith("/validator") && session.role !== "VALIDATOR") {
+      return NextResponse.redirect(new URL("/login", req.url));
+    }
+
     return NextResponse.next();
   } catch {
     return NextResponse.redirect(new URL("/login", req.url));
@@ -43,5 +48,10 @@ export async function proxy(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/student/:path*", "/lecturer/:path*", "/admin/:path*"],
+  matcher: [
+    "/student/:path*",
+    "/lecturer/:path*",
+    "/validator/:path*",
+    "/admin/:path*",
+  ],
 };

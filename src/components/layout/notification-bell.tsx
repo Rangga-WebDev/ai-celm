@@ -8,7 +8,10 @@ import {
   BookOpen,
   CalendarClock,
   ClipboardCheck,
+  GraduationCap,
   Loader2,
+  Megaphone,
+  MessagesSquare,
 } from "lucide-react";
 
 type ReminderType = "DEADLINE" | "MATERIAL" | "GRADING";
@@ -22,6 +25,34 @@ type ReminderItem = {
   href: string;
   timestamp: string;
   severity: ReminderSeverity;
+};
+
+type NotificationType =
+  | "DEADLINE"
+  | "GRADE"
+  | "MATERIAL"
+  | "FORUM"
+  | "ANNOUNCEMENT"
+  | "SYSTEM";
+
+type StoredNotification = {
+  id: string;
+  type: NotificationType;
+  title: string;
+  body: string | null;
+  href: string | null;
+  isRead: boolean;
+  createdAt: string;
+};
+
+type DisplayItem = {
+  key: string;
+  icon: typeof Bell;
+  title: string;
+  description: string;
+  href: string;
+  severity: ReminderSeverity;
+  unread: boolean;
 };
 
 const SEEN_STORAGE_KEY = "ai-celm-notif-seen";
@@ -48,10 +79,28 @@ function saveSeenIds(ids: string[]) {
   }
 }
 
-const typeIcon: Record<ReminderType, typeof Bell> = {
+const reminderIcon: Record<ReminderType, typeof Bell> = {
   DEADLINE: CalendarClock,
   MATERIAL: BookOpen,
   GRADING: ClipboardCheck,
+};
+
+const notificationIcon: Record<NotificationType, typeof Bell> = {
+  DEADLINE: CalendarClock,
+  GRADE: GraduationCap,
+  MATERIAL: BookOpen,
+  FORUM: MessagesSquare,
+  ANNOUNCEMENT: Megaphone,
+  SYSTEM: Bell,
+};
+
+const notificationSeverity: Record<NotificationType, ReminderSeverity> = {
+  DEADLINE: "warning",
+  GRADE: "info",
+  MATERIAL: "info",
+  FORUM: "info",
+  ANNOUNCEMENT: "info",
+  SYSTEM: "info",
 };
 
 const severityChip: Record<ReminderSeverity, string> = {
@@ -68,6 +117,8 @@ const severityLabel: Record<ReminderSeverity, string> = {
 
 export default function NotificationBell() {
   const [items, setItems] = useState<ReminderItem[]>([]);
+  const [notifications, setNotifications] = useState<StoredNotification[]>([]);
+  const [serverUnread, setServerUnread] = useState(0);
   const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
   const [seenIds, setSeenIds] = useState<string[]>([]);
@@ -81,6 +132,10 @@ export default function NotificationBell() {
 
       if (res.ok && json.success) {
         setItems((json.data?.items ?? []) as ReminderItem[]);
+        setNotifications(
+          (json.data?.notifications ?? []) as StoredNotification[],
+        );
+        setServerUnread(Number(json.data?.unreadCount ?? 0));
       }
     } catch {
       // Diamkan error jaringan agar lonceng tidak mengganggu
@@ -116,19 +171,68 @@ export default function NotificationBell() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [open]);
 
-  const unreadCount = useMemo(() => {
+  const reminderUnread = useMemo(() => {
     const seen = new Set(seenIds);
     return items.filter((item) => !seen.has(item.id)).length;
   }, [items, seenIds]);
+
+  const unreadCount = reminderUnread + serverUnread;
+
+  const displayItems = useMemo<DisplayItem[]>(() => {
+    const notifItems: DisplayItem[] = notifications.map((notif) => ({
+      key: `notif:${notif.id}`,
+      icon: notificationIcon[notif.type] ?? Bell,
+      title: notif.title,
+      description: notif.body ?? "",
+      href: notif.href ?? "#",
+      severity: notificationSeverity[notif.type] ?? "info",
+      unread: !notif.isRead,
+    }));
+
+    const seen = new Set(seenIds);
+    const reminderItems: DisplayItem[] = items.map((item) => ({
+      key: `reminder:${item.id}`,
+      icon: reminderIcon[item.type],
+      title: item.title,
+      description: item.description,
+      href: item.href,
+      severity: item.severity,
+      unread: !seen.has(item.id),
+    }));
+
+    return [...notifItems, ...reminderItems];
+  }, [notifications, items, seenIds]);
+
+  async function markServerRead() {
+    if (serverUnread === 0) return;
+    try {
+      await fetch("/api/notifications/read", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ all: true }),
+      });
+    } catch {
+      // Abaikan kegagalan jaringan
+    }
+  }
 
   function toggleOpen() {
     const next = !open;
     setOpen(next);
 
-    if (next && items.length > 0) {
-      const ids = items.map((item) => item.id);
-      setSeenIds(ids);
-      saveSeenIds(ids);
+    if (next) {
+      if (items.length > 0) {
+        const ids = items.map((item) => item.id);
+        setSeenIds(ids);
+        saveSeenIds(ids);
+      }
+      if (serverUnread > 0) {
+        void markServerRead();
+        setServerUnread(0);
+        setNotifications((prev) =>
+          prev.map((notif) => ({ ...notif, isRead: true })),
+        );
+      }
     }
   }
 
@@ -138,7 +242,7 @@ export default function NotificationBell() {
         type="button"
         onClick={toggleOpen}
         aria-label={
-          unreadCount > 0 ? `Pengingat, ${unreadCount} baru` : "Pengingat"
+          unreadCount > 0 ? `Notifikasi, ${unreadCount} baru` : "Notifikasi"
         }
         aria-expanded={open}
         className="relative flex h-11 w-11 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-700 transition hover:bg-slate-50"
@@ -155,31 +259,35 @@ export default function NotificationBell() {
         <div className="absolute right-0 z-40 mt-2 w-80 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl sm:w-96">
           <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3">
             <span className="text-base font-bold text-slate-900">
-              Pengingat
+              Notifikasi
             </span>
-            <span className="text-sm text-slate-500">{items.length} item</span>
+            <span className="text-sm text-slate-500">
+              {displayItems.length} item
+            </span>
           </div>
 
           <div className="max-h-96 overflow-y-auto">
             {loading ? (
               <div className="flex items-center gap-2 px-4 py-6 text-base text-slate-500">
                 <Loader2 size={18} className="animate-spin" aria-hidden />
-                Memuat pengingat...
+                Memuat notifikasi...
               </div>
-            ) : items.length === 0 ? (
+            ) : displayItems.length === 0 ? (
               <div className="px-4 py-8 text-center text-base text-slate-500">
-                Tidak ada pengingat saat ini.
+                Tidak ada notifikasi saat ini.
               </div>
             ) : (
               <ul className="divide-y divide-slate-100">
-                {items.map((item) => {
-                  const Icon = typeIcon[item.type];
+                {displayItems.map((item) => {
+                  const Icon = item.icon;
                   return (
-                    <li key={item.id}>
+                    <li key={item.key}>
                       <Link
                         href={item.href}
                         onClick={() => setOpen(false)}
-                        className="flex gap-3 px-4 py-3 transition hover:bg-slate-50"
+                        className={`flex gap-3 px-4 py-3 transition hover:bg-slate-50 ${
+                          item.unread ? "bg-teal-50/40" : ""
+                        }`}
                       >
                         <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-600">
                           <Icon size={18} aria-hidden="true" />
@@ -189,10 +297,15 @@ export default function NotificationBell() {
                             <span className="truncate text-base font-semibold text-slate-900">
                               {item.title}
                             </span>
+                            {item.unread ? (
+                              <span className="h-2 w-2 shrink-0 rounded-full bg-rose-500" />
+                            ) : null}
                           </span>
-                          <span className="mt-0.5 block text-sm text-slate-600">
-                            {item.description}
-                          </span>
+                          {item.description ? (
+                            <span className="mt-0.5 block text-sm text-slate-600">
+                              {item.description}
+                            </span>
+                          ) : null}
                           <span
                             className={`mt-1.5 inline-block rounded-full px-2 py-0.5 text-xs font-semibold ${severityChip[item.severity]}`}
                           >

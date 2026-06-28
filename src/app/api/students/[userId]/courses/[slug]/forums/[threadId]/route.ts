@@ -5,11 +5,14 @@ import {
   DiscussionPostStatus,
   DiscussionThreadStatus,
   EnrollmentStatus,
+  ModerationFlag,
+  NotificationType,
   Role,
 } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/api-guard";
 import { discussionPostSchema } from "@/lib/validators/forum.schema";
+import { moderateCommunication } from "@/lib/ai/communication-moderation";
 
 type Params = {
   params: Promise<{
@@ -34,6 +37,10 @@ const postSelect = {
       role: true,
     },
   },
+  moderationFlag: true,
+  moderationCategories: true,
+  moderationNote: true,
+  moderationRevision: true,
 } as const;
 
 async function resolveStudentThread({
@@ -54,6 +61,7 @@ async function resolveStudentThread({
       id: true,
       title: true,
       slug: true,
+      lecturerId: true,
     },
   });
 
@@ -256,15 +264,60 @@ export async function POST(request: NextRequest, { params }: Params) {
       }
     }
 
+    const moderation = await moderateCommunication(content);
+
+    const moderationFlag =
+      moderation.flag === "SEVERE"
+        ? ModerationFlag.SEVERE
+        : moderation.flag === "CAUTION"
+          ? ModerationFlag.CAUTION
+          : ModerationFlag.CLEAN;
+
     const post = await prisma.discussionPost.create({
       data: {
         threadId,
         authorId: userId,
         parentId: parentId ?? null,
         content,
+        moderationFlag,
+        moderationCategories:
+          moderation.categories.length > 0
+            ? moderation.categories.join(", ")
+            : null,
+        moderationNote: moderation.message,
+        moderationRevision: moderation.revision,
+        // Pelanggaran berat tetap tampil namun ditandai untuk ditinjau dosen.
+        status:
+          moderationFlag === ModerationFlag.SEVERE
+            ? DiscussionPostStatus.FLAGGED
+            : DiscussionPostStatus.VISIBLE,
       },
       select: postSelect,
     });
+
+    // Pendekatan edukatif-restoratif: pelanggaran berat memberi tahu dosen
+    // agar dapat melakukan pendampingan, bukan menghukum otomatis.
+    if (
+      moderationFlag === ModerationFlag.SEVERE &&
+      resolved.course?.lecturerId
+    ) {
+      const authorName =
+        `${post.author.firstName ?? ""} ${post.author.lastName ?? ""}`.trim() ||
+        "Seorang mahasiswa";
+      await prisma.notification
+        .create({
+          data: {
+            userId: resolved.course.lecturerId,
+            type: NotificationType.FORUM,
+            title: "Perlu pendampingan etika diskusi",
+            body: `${authorName} menulis komentar di forum "${resolved.thread.title}" yang terindikasi melanggar etika komunikasi. Mohon ditinjau.`,
+            href: `/lecturer/courses/${slug}/forums/${threadId}`,
+          },
+        })
+        .catch((error) => {
+          console.error("Gagal membuat notifikasi moderasi:", error);
+        });
+    }
 
     return NextResponse.json(
       {
@@ -272,6 +325,12 @@ export async function POST(request: NextRequest, { params }: Params) {
         message: "Balasan terkirim",
         data: {
           post,
+          moderation: {
+            flag: moderation.flag,
+            categories: moderation.categories,
+            message: moderation.message,
+            revision: moderation.revision,
+          },
         },
       },
       { status: 201 },

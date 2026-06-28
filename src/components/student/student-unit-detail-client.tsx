@@ -16,6 +16,7 @@ import {
   RefreshCw,
 } from "lucide-react";
 import Markdown from "@/components/ui/markdown";
+import LearningResourceView from "@/components/student/learning-resource-view";
 
 type StudentUnitDetailClientProps = {
   user: {
@@ -85,7 +86,9 @@ type ModuleUnitsResponse = {
         title: string;
         description: string | null;
         type: string;
-        url: string;
+        url: string | null;
+        content: string | null;
+        aiGenerated: boolean | null;
       }>;
       createdAt: string;
       updatedAt: string;
@@ -525,29 +528,7 @@ export default function StudentUnitDetailClient({
           </div>
           <div className="space-y-3">
             {currentUnit.resources.map((resource) => (
-              <a
-                key={resource.id}
-                href={resource.url}
-                target="_blank"
-                rel="noreferrer"
-                className="flex items-center justify-between gap-4 rounded-2xl border border-slate-200 p-4 transition hover:border-teal-300 hover:bg-teal-50"
-              >
-                <div className="min-w-0">
-                  <div className="wrap-break-word text-base font-semibold text-slate-900">
-                    {resource.title}
-                  </div>
-                  {resource.description ? (
-                    <div className="mt-1 text-base text-slate-600">
-                      {resource.description}
-                    </div>
-                  ) : null}
-                </div>
-                <ExternalLink
-                  size={20}
-                  className="shrink-0 text-teal-600"
-                  aria-hidden="true"
-                />
-              </a>
+              <LearningResourceView key={resource.id} resource={resource} />
             ))}
           </div>
         </section>

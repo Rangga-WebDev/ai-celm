@@ -1,19 +1,19 @@
 /** @format */
 
-import { mkdir, readFile, unlink, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { randomUUID } from "node:crypto";
+import { getStorage } from "@/lib/storage";
 
 /**
- * Penyimpanan berkas materi pada filesystem lokal.
+ * Penyimpanan berkas materi.
  *
- * CATATAN: Penyimpanan ini bersifat lokal (folder `uploads/` di root proyek)
- * dan cocok untuk pengembangan / server yang persisten. Saat dideploy ke
- * lingkungan serverless yang efemeral (mis. Vercel), folder ini tidak permanen
- * dan perlu diganti dengan object storage (Supabase Storage / S3).
+ * Operasi I/O didelegasikan ke abstraksi `getStorage("materials")` sehingga
+ * dapat berjalan di filesystem lokal (default) maupun Supabase Storage
+ * tergantung env `STORAGE_DRIVER`. Kunci (`storageKey`) yang disimpan di
+ * database tetap berupa nama berkas polos agar kompatibel lintas driver.
  */
 
-const UPLOAD_ROOT = path.join(process.cwd(), "uploads", "materials");
+const storage = getStorage("materials");
 
 const EXTENSION_BY_MIME: Record<string, string> = {
   "application/pdf": "pdf",
@@ -37,35 +37,18 @@ export async function saveMaterialFile(
   mimeType: string,
   originalName: string,
 ): Promise<string> {
-  await mkdir(UPLOAD_ROOT, { recursive: true });
-
   const ext = extensionForMime(mimeType, originalName);
   const key = `${randomUUID()}.${ext}`;
-  const fullPath = path.join(UPLOAD_ROOT, key);
 
-  await writeFile(fullPath, buffer);
+  await storage.save(key, buffer, mimeType);
 
   return key;
 }
 
 export async function readMaterialFile(storageKey: string): Promise<Buffer> {
-  const fullPath = resolveSafePath(storageKey);
-  return readFile(fullPath);
+  return storage.read(storageKey);
 }
 
 export async function deleteMaterialFile(storageKey: string): Promise<void> {
-  try {
-    const fullPath = resolveSafePath(storageKey);
-    await unlink(fullPath);
-  } catch {
-    // Berkas mungkin sudah tidak ada; abaikan agar penghapusan record tetap jalan.
-  }
-}
-
-/**
- * Pastikan storageKey tidak keluar dari folder upload (cegah path traversal).
- */
-function resolveSafePath(storageKey: string): string {
-  const safeKey = path.basename(storageKey);
-  return path.join(UPLOAD_ROOT, safeKey);
+  await storage.delete(storageKey);
 }

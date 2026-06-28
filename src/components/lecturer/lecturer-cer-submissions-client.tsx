@@ -14,6 +14,7 @@ import {
   Sparkles,
   User2,
 } from "lucide-react";
+import AiReviewActions from "@/components/common/ai-review-actions";
 
 type LecturerCerSubmissionsClientProps = {
   user: {
@@ -271,16 +272,25 @@ function SubmissionCard({
     }
   }
 
-  function applyAiScore() {
-    if (aiResult) {
-      setScore(String(aiResult.nilaiSaran));
-    }
-  }
-
   function applyAiFeedback() {
     if (aiResult) {
       setFeedback(aiResult.masukanUntukMahasiswa);
     }
+  }
+
+  function approveAiSuggestion() {
+    if (!aiResult) return;
+    setScore(String(aiResult.nilaiSaran));
+    setFeedback(aiResult.masukanUntukMahasiswa);
+    setNotice("Saran AI diterapkan. Tinjau lalu simpan nilai.");
+  }
+
+  function appendLecturerNote(note: string) {
+    setFeedback((prev) =>
+      prev.trim().length > 0
+        ? `${prev}\n\n[Catatan pengajar] ${note}`
+        : `[Catatan pengajar] ${note}`,
+    );
   }
 
   async function submitGrade(action: "SAVE_REVIEW" | "REQUEST_REVISION") {
@@ -432,20 +442,6 @@ function SubmissionCard({
                   <span className="rounded-full bg-violet-100 px-3 py-1 text-sm font-semibold text-violet-700">
                     Saran nilai: {aiResult.nilaiSaran}
                   </span>
-                  <button
-                    type="button"
-                    onClick={applyAiScore}
-                    className="rounded-full border border-violet-300 px-3 py-1 text-sm font-medium text-violet-700 transition hover:bg-violet-50"
-                  >
-                    Pakai nilai
-                  </button>
-                  <button
-                    type="button"
-                    onClick={applyAiFeedback}
-                    className="rounded-full border border-violet-300 px-3 py-1 text-sm font-medium text-violet-700 transition hover:bg-violet-50"
-                  >
-                    Pakai masukan
-                  </button>
                 </div>
 
                 <p className="text-base leading-7 text-slate-700">
@@ -481,6 +477,18 @@ function SubmissionCard({
                     {aiResult.masukanUntukMahasiswa}
                   </p>
                 </div>
+
+                <AiReviewActions
+                  className="border-t border-violet-100 pt-3"
+                  approveLabel="Setujui (pakai nilai + masukan)"
+                  editLabel="Edit (salin masukan)"
+                  revising={aiLoading}
+                  onApprove={approveAiSuggestion}
+                  onEdit={applyAiFeedback}
+                  onReject={() => setAiResult(null)}
+                  onRequestRevision={requestAiSuggestion}
+                  onAddNote={appendLecturerNote}
+                />
               </div>
             ) : null}
           </div>

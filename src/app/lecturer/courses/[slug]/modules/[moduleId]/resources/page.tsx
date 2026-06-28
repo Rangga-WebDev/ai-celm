@@ -33,7 +33,9 @@ export default async function LecturerModuleResourcesPage({
     include: {
       course: {
         select: {
+          id: true,
           slug: true,
+          title: true,
         },
       },
       resources: {
@@ -48,6 +50,19 @@ export default async function LecturerModuleResourcesPage({
     redirect(`/lecturer/courses/${slug}/modules`);
   }
 
+  const materials = await prisma.courseMaterial.findMany({
+    where: {
+      courseId: courseModule.course.id,
+      status: "READY",
+    },
+    orderBy: { createdAt: "desc" },
+    select: {
+      id: true,
+      title: true,
+      charCount: true,
+    },
+  });
+
   return (
     <main className="space-y-6 p-6">
       <LecturerResourceManagerClient
@@ -58,6 +73,7 @@ export default async function LecturerModuleResourcesPage({
           courseSlug: courseModule.course.slug,
         }}
         resources={courseModule.resources}
+        materials={materials}
       />
     </main>
   );

@@ -8,6 +8,7 @@ import {
   moduleLearningContentSchema,
   normalizeModuleLearningContent,
 } from "@/lib/validators/module-content.schema";
+import { syncModuleContentUnit } from "@/lib/materials/module-content-unit";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -164,6 +165,12 @@ export async function PUT(request: NextRequest, { params }: Params) {
       },
       select: { id: true, contentUpdatedAt: true },
     });
+
+    await syncModuleContentUnit(
+      targetModule.id,
+      targetModule.title,
+      parsed.data,
+    );
 
     return NextResponse.json(
       {

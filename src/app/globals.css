@@ -70,3 +70,43 @@ body {
 .skip-to-content:focus {
   left: 0;
 }
+
+/* ===== Mode tampilan (aksesibilitas) ===== */
+
+/* Mode gelap: inversi warna terkontrol agar nyaman di mata.
+   Media (gambar/video) dikembalikan agar tidak ikut terbalik. */
+html[data-theme="dark"] {
+  filter: invert(0.92) hue-rotate(180deg);
+  background-color: #0e1726;
+}
+html[data-theme="dark"] img,
+html[data-theme="dark"] video,
+html[data-theme="dark"] [data-no-invert] {
+  filter: invert(1) hue-rotate(180deg);
+}
+
+/* Kontras tinggi: teks lebih pekat, tautan digarisbawahi, batas lebih tegas. */
+html[data-contrast="high"] body {
+  color: #000000;
+}
+html[data-contrast="high"]
+  :where(.text-slate-400, .text-slate-500, .text-slate-600) {
+  color: #1e293b !important;
+}
+html[data-contrast="high"] a {
+  text-decoration: underline;
+}
+html[data-contrast="high"]
+  :where(input, textarea, select, button, [class*="border"]) {
+  border-color: #0f172a !important;
+}
+
+/* Mode sederhana: kurangi bayangan, gradien, dan sudut sangat membulat
+   agar tampilan lebih tenang dan fokus pada konten. */
+html[data-simple="on"] * {
+  box-shadow: none !important;
+  background-image: none !important;
+}
+html[data-simple="on"] :where(.rounded-3xl, .rounded-2xl) {
+  border-radius: 0.75rem !important;
+}

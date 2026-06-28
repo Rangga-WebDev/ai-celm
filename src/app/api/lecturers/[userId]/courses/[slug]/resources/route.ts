@@ -351,6 +351,9 @@ export async function POST(request: NextRequest, { params }: Params) {
     const moduleId = optionalText(body.moduleId);
     const microUnitId = optionalText(body.microUnitId);
     const sortOrder = toNullableInt(body.sortOrder);
+    const content = optionalText(body.content);
+    const sourceMaterialId = optionalText(body.sourceMaterialId);
+    const isArticle = type === ResourceType.ARTICLE;
 
     if (!title) {
       return NextResponse.json(
@@ -362,7 +365,17 @@ export async function POST(request: NextRequest, { params }: Params) {
       );
     }
 
-    if (!url) {
+    if (isArticle) {
+      if (!content) {
+        return NextResponse.json(
+          {
+            success: false,
+            message: "Article content is required",
+          },
+          { status: 400 },
+        );
+      }
+    } else if (!url) {
       return NextResponse.json(
         {
           success: false,
@@ -417,7 +430,9 @@ export async function POST(request: NextRequest, { params }: Params) {
         title,
         description,
         type,
-        url,
+        url: isArticle ? null : url,
+        content: isArticle ? content : null,
+        sourceMaterialId: isArticle ? sourceMaterialId : null,
         sortOrder,
         uploadedById: userId,
       },

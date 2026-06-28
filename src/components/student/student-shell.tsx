@@ -5,6 +5,28 @@ import { useEffect, useState } from "react";
 import StudentSidebar from "@/components/student/student-sidebar";
 import StudentTopbar from "@/components/student/student-topbar";
 import StudentHelpPanel from "@/components/student/student-help-panel";
+import OnboardingTour, {
+  type OnboardingStep,
+} from "@/components/common/onboarding-tour";
+
+const STUDENT_TOUR_STEPS: OnboardingStep[] = [
+  {
+    title: "Selamat datang di AI-CELM",
+    body: "Ruang belajar kewargaan berbantuan AI. AI membantu Anda belajar, tetapi dosen tetap memegang keputusan akhir.",
+  },
+  {
+    title: "Mulai dari Mata Kuliah",
+    body: "Buka menu Mata Kuliah, pilih kelas Anda, lalu tekan Belajar untuk mengikuti modul langkah demi langkah.",
+  },
+  {
+    title: "Berlatih & berdiskusi",
+    body: "Kerjakan Tugas Argumentasi, ikuti Forum Diskusi, dan isi Tes Civic Engagement untuk mengukur perkembangan Anda.",
+  },
+  {
+    title: "Atur tampilan & bantuan",
+    body: "Gunakan tombol Pengaturan Tampilan (kiri bawah) untuk huruf besar/mode gelap, dan tombol Bantuan kapan saja Anda butuh panduan.",
+  },
+];
 
 type StudentShellProps = {
   children: React.ReactNode;
@@ -26,7 +48,12 @@ export default function StudentShell({ children, user }: StudentShellProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
-  const [fontScale, setFontScale] = useState(100);
+  const [fontScale, setFontScale] = useState<number>(() => {
+    if (typeof window === "undefined") return 100;
+    const saved = Number(window.localStorage.getItem(FONT_SCALE_KEY));
+    if (saved >= FONT_MIN && saved <= FONT_MAX) return saved;
+    return 100;
+  });
 
   // Tentukan apakah layar tergolong kecil (mobile/tablet).
   useEffect(() => {
@@ -39,14 +66,6 @@ export default function StudentShell({ children, user }: StudentShellProps) {
     checkViewport();
     window.addEventListener("resize", checkViewport);
     return () => window.removeEventListener("resize", checkViewport);
-  }, []);
-
-  // Muat preferensi ukuran huruf dari penyimpanan lokal.
-  useEffect(() => {
-    const saved = Number(window.localStorage.getItem(FONT_SCALE_KEY));
-    if (saved >= FONT_MIN && saved <= FONT_MAX) {
-      setFontScale(saved);
-    }
   }, []);
 
   // Terapkan ukuran huruf ke seluruh halaman.
@@ -96,6 +115,13 @@ export default function StudentShell({ children, user }: StudentShellProps) {
       </div>
 
       <StudentHelpPanel open={helpOpen} onClose={() => setHelpOpen(false)} />
+
+      <OnboardingTour
+        storageKey="aicelm:onboarded:student"
+        title="Panduan Singkat"
+        steps={STUDENT_TOUR_STEPS}
+        onOpenHelp={() => setHelpOpen(true)}
+      />
     </div>
   );
 }

@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 
 type ModuleStatus = "DRAFT" | "PUBLISHED" | "ARCHIVED";
+type ModuleTaskType = "NONE" | "SMALL" | "BIG";
 
 type User = {
   id: string;
@@ -62,6 +63,7 @@ type ModuleItem = {
   isLocked: boolean;
   unlockRule: string | null;
   masteryThreshold: number;
+  taskType: ModuleTaskType;
   createdAt: string;
   updatedAt: string;
   _count: {
@@ -98,6 +100,7 @@ type FormState = {
   isLocked: boolean;
   unlockRule: string;
   masteryThreshold: string;
+  taskType: ModuleTaskType;
 };
 
 const initialForm: FormState = {
@@ -110,6 +113,7 @@ const initialForm: FormState = {
   isLocked: false,
   unlockRule: "",
   masteryThreshold: "75",
+  taskType: "NONE",
 };
 
 const moduleStatusOptions: { value: ModuleStatus; label: string }[] = [
@@ -117,6 +121,23 @@ const moduleStatusOptions: { value: ModuleStatus; label: string }[] = [
   { value: "PUBLISHED", label: "Terbit (tampil ke mahasiswa)" },
   { value: "ARCHIVED", label: "Arsip" },
 ];
+
+const moduleTaskOptions: { value: ModuleTaskType; label: string }[] = [
+  { value: "NONE", label: "Tanpa tugas" },
+  { value: "SMALL", label: "Tugas kecil (CER)" },
+  { value: "BIG", label: "Tugas besar (Proyek Kewarganegaraan)" },
+];
+
+function taskTypeLabel(taskType: ModuleTaskType) {
+  switch (taskType) {
+    case "SMALL":
+      return "Tugas kecil";
+    case "BIG":
+      return "Tugas besar";
+    default:
+      return "Tanpa tugas";
+  }
+}
 
 function statusLabel(status: ModuleStatus) {
   switch (status) {
@@ -257,6 +278,7 @@ export default function LecturerModulesClient({
       isLocked: module.isLocked,
       unlockRule: module.unlockRule ?? "",
       masteryThreshold: String(module.masteryThreshold),
+      taskType: module.taskType,
     });
 
     window.scrollTo({
@@ -285,6 +307,7 @@ export default function LecturerModulesClient({
         isLocked: form.isLocked,
         unlockRule: form.unlockRule.trim(),
         masteryThreshold: Number(form.masteryThreshold),
+        taskType: form.taskType,
       };
 
       const isEditing = Boolean(editingModule);
@@ -528,6 +551,33 @@ export default function LecturerModulesClient({
 
             <div>
               <label className="text-sm font-medium text-slate-700">
+                Tugas modul
+              </label>
+              <select
+                value={form.taskType}
+                onChange={(event) =>
+                  setForm((prev) => ({
+                    ...prev,
+                    taskType: event.target.value as ModuleTaskType,
+                  }))
+                }
+                className={inputClass}
+              >
+                {moduleTaskOptions.map((task) => (
+                  <option key={task.value} value={task.value}>
+                    {task.label}
+                  </option>
+                ))}
+              </select>
+              <p className="mt-1 text-sm text-slate-500">
+                Tugas kecil memakai format CER, tugas besar memakai Proyek
+                Kewarganegaraan. Pilih &quot;Tanpa tugas&quot; bila modul ini
+                hanya materi.
+              </p>
+            </div>
+
+            <div>
+              <label className="text-sm font-medium text-slate-700">
                 Deskripsi singkat
               </label>
               <textarea
@@ -688,6 +738,11 @@ function ModuleCard({
             <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-600">
               Urutan {module.order}
             </span>
+            {module.taskType !== "NONE" ? (
+              <span className="rounded-full bg-violet-100 px-3 py-1 text-xs font-semibold text-violet-700">
+                {taskTypeLabel(module.taskType)}
+              </span>
+            ) : null}
           </div>
 
           <h3 className="mt-3 text-lg font-bold text-slate-900">
@@ -699,9 +754,6 @@ function ModuleCard({
           </p>
 
           <div className="mt-3 flex flex-wrap gap-2 text-sm text-slate-600">
-            <span className="rounded-full bg-slate-100 px-3 py-1">
-              {module._count.units} bagian
-            </span>
             <span className="rounded-full bg-slate-100 px-3 py-1">
               {module.estimatedMinutes
                 ? `${module.estimatedMinutes} menit`
@@ -716,15 +768,7 @@ function ModuleCard({
             className="inline-flex items-center gap-2 rounded-2xl bg-emerald-600 px-4 py-2.5 text-base font-semibold text-white transition hover:bg-emerald-700"
           >
             <BookOpenText size={16} aria-hidden="true" />
-            Konten
-          </Link>
-
-          <Link
-            href={`/lecturer/courses/${courseSlug}/modules/${module.id}/units`}
-            className="inline-flex items-center gap-2 rounded-2xl bg-teal-600 px-4 py-2.5 text-base font-semibold text-white transition hover:bg-teal-700"
-          >
-            <Layers3 size={16} aria-hidden="true" />
-            Bagian
+            Kelola
           </Link>
 
           <button

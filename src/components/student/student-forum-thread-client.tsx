@@ -11,6 +11,7 @@ import {
   Loader2,
   Lock,
   Send,
+  ShieldAlert,
   Sparkles,
   User2,
 } from "lucide-react";
@@ -73,6 +74,13 @@ type Deliberation = {
   sudutPandangLain: string[];
 };
 
+type ModerationNotice = {
+  flag: "CLEAN" | "CAUTION" | "SEVERE";
+  categories: string[];
+  message: string | null;
+  revision: string | null;
+};
+
 function buildTree(posts: Post[]): PostNode[] {
   const map = new Map<string, PostNode>();
   const roots: PostNode[] = [];
@@ -126,6 +134,8 @@ export default function StudentForumThreadClient({
   const [aiLoading, setAiLoading] = useState(false);
   const [deliberation, setDeliberation] = useState<Deliberation | null>(null);
   const [aiError, setAiError] = useState<string | null>(null);
+  const [moderationNotice, setModerationNotice] =
+    useState<ModerationNotice | null>(null);
 
   const basePath = `/api/students/${user.id}/courses/${courseSlug}/forums/${threadId}`;
 
@@ -164,6 +174,7 @@ export default function StudentForumThreadClient({
 
     setSending(true);
     setFormError(null);
+    setModerationNotice(null);
 
     try {
       const res = await fetch(basePath, {
@@ -178,6 +189,20 @@ export default function StudentForumThreadClient({
 
       if (!res.ok || !json.success) {
         throw new Error(json.message || "Gagal mengirim balasan");
+      }
+
+      const moderation = json.data?.moderation as ModerationNotice | undefined;
+
+      if (moderation && moderation.flag === "SEVERE") {
+        // Komentar berat ditahan untuk ditinjau dosen; tidak ditampilkan ke feed.
+        setModerationNotice(moderation);
+        setContent("");
+        setReplyTo(null);
+        return;
+      }
+
+      if (moderation && moderation.flag === "CAUTION") {
+        setModerationNotice(moderation);
       }
 
       setPosts((prev) => [...prev, json.data.post as Post]);
@@ -335,6 +360,73 @@ export default function StudentForumThreadClient({
           {formError ? (
             <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-base text-rose-700">
               {formError}
+            </div>
+          ) : null}
+
+          {moderationNotice &&
+          (moderationNotice.flag === "CAUTION" ||
+            moderationNotice.flag === "SEVERE") ? (
+            <div
+              role="status"
+              className={
+                moderationNotice.flag === "SEVERE"
+                  ? "rounded-2xl border border-rose-300 bg-rose-50 p-4"
+                  : "rounded-2xl border border-amber-300 bg-amber-50 p-4"
+              }
+            >
+              <div className="flex items-start gap-3">
+                <ShieldAlert
+                  size={20}
+                  aria-hidden="true"
+                  className={
+                    moderationNotice.flag === "SEVERE"
+                      ? "mt-0.5 shrink-0 text-rose-600"
+                      : "mt-0.5 shrink-0 text-amber-600"
+                  }
+                />
+                <div className="min-w-0 space-y-2">
+                  <p
+                    className={
+                      moderationNotice.flag === "SEVERE"
+                        ? "text-base font-semibold text-rose-800"
+                        : "text-base font-semibold text-amber-800"
+                    }
+                  >
+                    {moderationNotice.flag === "SEVERE"
+                      ? "Komentar ditahan untuk ditinjau dosen"
+                      : "Yuk, sampaikan dengan lebih santun"}
+                  </p>
+                  {moderationNotice.message ? (
+                    <p className="text-base text-slate-700">
+                      {moderationNotice.message}
+                    </p>
+                  ) : null}
+                  {moderationNotice.revision ? (
+                    <div className="rounded-xl border border-slate-200 bg-white p-3">
+                      <p className="text-sm font-semibold text-slate-500">
+                        Saran kalimat yang lebih sopan:
+                      </p>
+                      <p className="mt-1 text-base text-slate-800">
+                        {moderationNotice.revision}
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setContent(moderationNotice.revision ?? "");
+                          setModerationNotice(null);
+                        }}
+                        className="mt-2 inline-flex items-center gap-2 rounded-xl border border-teal-300 bg-teal-50 px-3 py-1.5 text-sm font-semibold text-teal-700 transition hover:bg-teal-100"
+                      >
+                        Gunakan saran ini
+                      </button>
+                    </div>
+                  ) : null}
+                  <p className="text-sm text-slate-500">
+                    Ini panduan untuk membangun diskusi yang sehat, bukan
+                    hukuman. Keputusan akhir tetap pada dosen.
+                  </p>
+                </div>
+              </div>
             </div>
           ) : null}
 

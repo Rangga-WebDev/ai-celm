@@ -16,7 +16,7 @@ import {
   Users,
 } from "lucide-react";
 
-type Role = "STUDENT" | "LECTURER" | "ADMIN";
+type Role = "STUDENT" | "LECTURER" | "ADMIN" | "VALIDATOR";
 
 type AdminUser = {
   id: string;
@@ -59,12 +59,13 @@ const initialForm: FormState = {
   role: "STUDENT",
 };
 
-const roleOptions: Role[] = ["STUDENT", "LECTURER", "ADMIN"];
+const roleOptions: Role[] = ["STUDENT", "LECTURER", "ADMIN", "VALIDATOR"];
 
 const roleLabels: Record<Role, string> = {
   STUDENT: "Mahasiswa",
   LECTURER: "Dosen",
   ADMIN: "Admin",
+  VALIDATOR: "Validator/Observer",
 };
 
 export default function AdminUsersClient({
@@ -610,9 +611,11 @@ function RoleBadge({ role }: { role: Role }) {
   const className =
     role === "ADMIN"
       ? "bg-violet-100 text-violet-700"
-      : role === "LECTURER"
-        ? "bg-teal-100 text-teal-700"
-        : "bg-sky-100 text-sky-700";
+      : role === "VALIDATOR"
+        ? "bg-amber-100 text-amber-700"
+        : role === "LECTURER"
+          ? "bg-teal-100 text-teal-700"
+          : "bg-sky-100 text-sky-700";
 
   const label = roleLabels[role];
 

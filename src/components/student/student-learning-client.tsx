@@ -6,11 +6,13 @@ import type { ReactNode } from "react";
 import Link from "next/link";
 import {
   ArrowLeft,
+  ArrowRight,
   BookOpen,
   CheckCircle2,
+  ClipboardList,
   Clock3,
-  ExternalLink,
   FileText,
+  HelpCircle,
   Layers3,
   Loader2,
   Lock,
@@ -19,6 +21,12 @@ import {
   Target,
 } from "lucide-react";
 import Markdown from "@/components/ui/markdown";
+import LearningResourceView from "@/components/student/learning-resource-view";
+import {
+  moduleContentHasBody,
+  moduleLearningContentToMarkdown,
+} from "@/lib/materials/module-content-format";
+import { normalizeModuleLearningContent } from "@/lib/validators/module-content.schema";
 
 type ProgressStatus =
   | "NOT_STARTED"
@@ -43,19 +51,11 @@ type LearningResource = {
   title: string;
   description: string | null;
   type: string;
-  url: string;
+  url: string | null;
+  content: string | null;
+  aiGenerated: boolean | null;
   sortOrder: number | null;
   createdAt: string;
-};
-
-type UnitProgress = {
-  id: string;
-  status: ProgressStatus;
-  progressPercent: number;
-  startedAt: string | null;
-  completedAt: string | null;
-  lastAccessedAt: string | null;
-  updatedAt: string;
 };
 
 type ModuleProgress = {
@@ -71,20 +71,22 @@ type ModuleProgress = {
   updatedAt: string;
 };
 
-type LearningUnit = {
+type QuizLink = {
   id: string;
   title: string;
-  slug: string;
   description: string | null;
-  content: string | null;
-  order: number;
-  estimatedMinutes: number | null;
-  unitType: string;
-  isRequired: boolean;
-  isLocked: boolean;
-  masteryThreshold: number | null;
-  progress: UnitProgress | null;
-  resources: LearningResource[];
+  timeLimitMinutes: number | null;
+  passingScore: number;
+  _count: { questions: number };
+};
+
+type AssignmentLink = {
+  id: string;
+  title: string;
+  description: string | null;
+  dueAt: string | null;
+  maxScore: number;
+  status: string;
 };
 
 type LearningModule = {
@@ -98,9 +100,13 @@ type LearningModule = {
   isLocked: boolean;
   unlockRule: unknown;
   masteryThreshold: number;
+  learningContent: unknown;
+  contentGeneratedByAi: boolean;
+  contentUpdatedAt: string | null;
   progress: ModuleProgress | null;
   resources: LearningResource[];
-  units: LearningUnit[];
+  quizzes: QuizLink[];
+  assignments: AssignmentLink[];
 };
 
 type LearningData = {
@@ -126,6 +132,7 @@ type LearningData = {
   };
   summary: {
     totalModules: number;
+    completedModules: number;
     totalUnits: number;
     totalRequiredUnits: number;
     completedRequiredUnits: number;
@@ -168,6 +175,14 @@ function readableStatus(status?: ProgressStatus | string) {
   }
 }
 
+function formatDate(value: string | null) {
+  if (!value) return "Tanpa tenggat";
+  return new Date(value).toLocaleString("id-ID", {
+    dateStyle: "medium",
+    timeStyle: "short",
+  });
+}
+
 export default function StudentLearningClient({
   user,
   courseSlug,
@@ -176,39 +191,40 @@ export default function StudentLearningClient({
   courseSlug: string;
 }) {
   const [data, setData] = useState<LearningData | null>(null);
-  const [activeUnitId, setActiveUnitId] = useState<string | null>(null);
+  const [activeModuleId, setActiveModuleId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-  const [updatingUnitId, setUpdatingUnitId] = useState<string | null>(null);
+  const [updatingModuleId, setUpdatingModuleId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [nowTick, setNowTick] = useState(Date.now());
 
-  const activeUnit = useMemo(() => {
-    if (!data || !activeUnitId) return null;
-    return (
-      data.modules
-        .flatMap((learningModule) => learningModule.units)
-        .find((unit) => unit.id === activeUnitId) ?? null
-    );
-  }, [data, activeUnitId]);
-
   const activeModule = useMemo(() => {
-    if (!data || !activeUnitId) return null;
+    if (!data || !activeModuleId) return null;
     return (
-      data.modules.find((learningModule) =>
-        learningModule.units.some((unit) => unit.id === activeUnitId),
+      data.modules.find(
+        (learningModule) => learningModule.id === activeModuleId,
       ) ?? null
     );
-  }, [data, activeUnitId]);
+  }, [data, activeModuleId]);
 
-  const activeUnitStatus = activeUnit?.progress?.status ?? "NOT_STARTED";
-  const isUnitNotStarted = activeUnitStatus === "NOT_STARTED";
-  const isUnitInProgress = activeUnitStatus === "IN_PROGRESS";
-  const isUnitCompleted = activeUnitStatus === "COMPLETED";
+  const activeModuleStatus = activeModule?.progress?.status ?? "NOT_STARTED";
+  const isModuleNotStarted = activeModuleStatus === "NOT_STARTED";
+  const isModuleInProgress = activeModuleStatus === "IN_PROGRESS";
+  const isModuleCompleted = activeModuleStatus === "COMPLETED";
   const remainingLearningSeconds = getRemainingLearningSeconds(
-    activeUnit?.progress?.startedAt ?? null,
+    activeModule?.progress?.startedAt ?? null,
     nowTick,
   );
-  const canCompleteUnit = isUnitInProgress && remainingLearningSeconds === 0;
+  const canCompleteModule =
+    isModuleInProgress && remainingLearningSeconds === 0;
+
+  const activeContentMarkdown = useMemo(() => {
+    if (!activeModule) return "";
+    const content = normalizeModuleLearningContent(
+      activeModule.learningContent,
+    );
+    if (!moduleContentHasBody(content)) return "";
+    return moduleLearningContentToMarkdown(content, activeModule.title);
+  }, [activeModule]);
 
   async function fetchLearningData() {
     try {
@@ -228,12 +244,13 @@ export default function StudentLearningClient({
 
       setData(json.data);
 
-      const firstAvailableUnit =
-        json.data.modules
-          .flatMap((learningModule) => learningModule.units)
-          .find((unit) => !unit.isLocked) ?? null;
+      const firstAvailableModule =
+        json.data.modules.find((learningModule) => !learningModule.isLocked) ??
+        null;
 
-      setActiveUnitId((current) => current ?? firstAvailableUnit?.id ?? null);
+      setActiveModuleId(
+        (current) => current ?? firstAvailableModule?.id ?? null,
+      );
     } catch (err) {
       setError(err instanceof Error ? err.message : "Terjadi kesalahan");
     } finally {
@@ -242,15 +259,15 @@ export default function StudentLearningClient({
   }
 
   async function updateProgress(
-    unitId: string,
+    moduleId: string,
     status: Extract<ProgressStatus, "IN_PROGRESS" | "COMPLETED">,
   ) {
     try {
-      setUpdatingUnitId(unitId);
+      setUpdatingModuleId(moduleId);
       setError(null);
 
       const res = await fetch(
-        `/api/students/${user.id}/courses/${courseSlug}/units/${unitId}/progress`,
+        `/api/students/${user.id}/courses/${courseSlug}/modules/${moduleId}/progress`,
         {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
@@ -268,7 +285,7 @@ export default function StudentLearningClient({
     } catch (err) {
       setError(err instanceof Error ? err.message : "Terjadi kesalahan");
     } finally {
-      setUpdatingUnitId(null);
+      setUpdatingModuleId(null);
     }
   }
 
@@ -332,14 +349,14 @@ export default function StudentLearningClient({
         </h1>
         <p className="mt-2 max-w-3xl text-lg leading-relaxed text-teal-50">
           {data.course.description ??
-            "Ikuti materi langkah demi langkah hingga selesai."}
+            "Ikuti modul langkah demi langkah hingga selesai."}
         </p>
 
         <div className="mt-5 max-w-2xl">
           <div className="mb-1.5 flex items-center justify-between text-base text-teal-50">
             <span>
-              {data.summary.completedRequiredUnits} dari{" "}
-              {data.summary.totalRequiredUnits} bagian wajib selesai
+              {data.summary.completedModules} dari {data.summary.totalModules}{" "}
+              modul selesai
             </span>
             <span className="font-semibold text-white">
               {data.summary.overallProgress}%
@@ -361,15 +378,13 @@ export default function StudentLearningClient({
       ) : null}
 
       <div className="grid gap-6 xl:grid-cols-[0.85fr_1.5fr]">
-        {/* Daftar materi */}
+        {/* Daftar modul */}
         <aside className="rounded-3xl border border-slate-200 bg-white p-5">
           <div className="mb-4 flex items-center justify-between gap-3">
             <div>
-              <h2 className="text-lg font-bold text-slate-900">
-                Daftar Materi
-              </h2>
+              <h2 className="text-lg font-bold text-slate-900">Daftar Modul</h2>
               <p className="mt-0.5 text-base text-slate-600">
-                Pilih bagian untuk mulai belajar.
+                Pilih modul untuk mulai belajar.
               </p>
             </div>
             <button
@@ -382,163 +397,144 @@ export default function StudentLearningClient({
             </button>
           </div>
 
-          <div className="space-y-4">
-            {data.modules.map((learningModule) => (
-              <div
-                key={learningModule.id}
-                className="rounded-2xl border border-slate-200 p-4"
-              >
-                <div className="flex items-start justify-between gap-3">
-                  <div className="min-w-0">
-                    <div className="text-base font-bold text-slate-900">
-                      {learningModule.order}. {learningModule.title}
-                    </div>
-                    <div className="mt-0.5 text-sm text-slate-500">
-                      {learningModule.units.length} bagian ·{" "}
-                      {learningModule.progress?.progressPercent ?? 0}%
-                    </div>
-                  </div>
-                  {learningModule.progress?.status === "COMPLETED" ? (
-                    <CheckCircle2
-                      size={20}
-                      className="text-emerald-600"
-                      aria-hidden="true"
-                    />
-                  ) : (
-                    <Layers3
-                      size={20}
-                      className="text-teal-600"
-                      aria-hidden="true"
-                    />
-                  )}
-                </div>
+          {data.modules.length === 0 ? (
+            <div className="rounded-2xl bg-slate-50 p-5 text-base text-slate-600">
+              Belum ada modul yang diterbitkan. Silakan tunggu dosen pengampu.
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {data.modules.map((learningModule) => {
+                const isActive = activeModuleId === learningModule.id;
+                const isCompleted =
+                  learningModule.progress?.status === "COMPLETED";
 
-                <div className="mt-3 h-2 overflow-hidden rounded-full bg-slate-200">
-                  <div
-                    className="h-full rounded-full bg-teal-600"
-                    style={{
-                      width: `${learningModule.progress?.progressPercent ?? 0}%`,
-                    }}
-                  />
-                </div>
-
-                <div className="mt-4 space-y-2">
-                  {learningModule.units.map((unit) => {
-                    const isActive = activeUnitId === unit.id;
-                    const isCompleted = unit.progress?.status === "COMPLETED";
-
-                    return (
-                      <button
-                        key={unit.id}
-                        type="button"
-                        disabled={unit.isLocked}
-                        onClick={() => setActiveUnitId(unit.id)}
-                        aria-current={isActive ? "true" : undefined}
-                        className={`flex w-full items-start gap-3 rounded-2xl border p-3 text-left transition ${
-                          isActive
-                            ? "border-teal-300 bg-teal-50"
-                            : "border-slate-200 hover:bg-slate-50"
-                        } ${
-                          unit.isLocked
-                            ? "cursor-not-allowed opacity-50"
-                            : "cursor-pointer"
-                        }`}
-                      >
-                        <span className="mt-0.5 shrink-0">
-                          {unit.isLocked ? (
-                            <Lock
-                              size={18}
-                              className="text-slate-400"
-                              aria-hidden="true"
-                            />
-                          ) : isCompleted ? (
-                            <CheckCircle2
-                              size={18}
-                              className="text-emerald-600"
-                              aria-hidden="true"
-                            />
-                          ) : unit.progress?.status === "IN_PROGRESS" ? (
-                            <Clock3
-                              size={18}
-                              className="text-amber-600"
-                              aria-hidden="true"
-                            />
-                          ) : (
-                            <PlayCircle
-                              size={18}
-                              className="text-teal-600"
-                              aria-hidden="true"
-                            />
-                          )}
-                        </span>
-                        <span className="min-w-0">
-                          <span className="block text-base font-medium text-slate-800">
-                            {unit.order}. {unit.title}
+                return (
+                  <button
+                    key={learningModule.id}
+                    type="button"
+                    disabled={learningModule.isLocked}
+                    onClick={() => setActiveModuleId(learningModule.id)}
+                    aria-current={isActive ? "true" : undefined}
+                    className={`flex w-full items-start gap-3 rounded-2xl border p-4 text-left transition ${
+                      isActive
+                        ? "border-teal-300 bg-teal-50"
+                        : "border-slate-200 hover:bg-slate-50"
+                    } ${
+                      learningModule.isLocked
+                        ? "cursor-not-allowed opacity-50"
+                        : "cursor-pointer"
+                    }`}
+                  >
+                    <span className="mt-0.5 shrink-0">
+                      {learningModule.isLocked ? (
+                        <Lock
+                          size={20}
+                          className="text-slate-400"
+                          aria-hidden="true"
+                        />
+                      ) : isCompleted ? (
+                        <CheckCircle2
+                          size={20}
+                          className="text-emerald-600"
+                          aria-hidden="true"
+                        />
+                      ) : learningModule.progress?.status === "IN_PROGRESS" ? (
+                        <Clock3
+                          size={20}
+                          className="text-amber-600"
+                          aria-hidden="true"
+                        />
+                      ) : (
+                        <Layers3
+                          size={20}
+                          className="text-teal-600"
+                          aria-hidden="true"
+                        />
+                      )}
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block text-base font-bold text-slate-900">
+                        {learningModule.order}. {learningModule.title}
+                      </span>
+                      <span className="mt-0.5 block text-sm text-slate-500">
+                        {readableStatus(learningModule.progress?.status)} ·{" "}
+                        {learningModule.progress?.progressPercent ?? 0}%
+                      </span>
+                      <span className="mt-2 flex flex-wrap gap-1.5 text-xs text-slate-500">
+                        {learningModule.quizzes.length > 0 ? (
+                          <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-0.5">
+                            <HelpCircle size={12} aria-hidden="true" />
+                            {learningModule.quizzes.length} kuis
                           </span>
-                          <span className="block text-sm text-slate-500">
-                            {unit.estimatedMinutes
-                              ? `${unit.estimatedMinutes} menit`
-                              : "Materi belajar"}
+                        ) : null}
+                        {learningModule.assignments.length > 0 ? (
+                          <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-0.5">
+                            <ClipboardList size={12} aria-hidden="true" />
+                            {learningModule.assignments.length} tugas
                           </span>
-                        </span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            ))}
-          </div>
+                        ) : null}
+                      </span>
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          )}
         </aside>
 
-        {/* Konten materi */}
+        {/* Konten modul */}
         <section className="rounded-3xl border border-slate-200 bg-white p-6">
-          {!activeUnit || !activeModule ? (
+          {!activeModule ? (
             <div className="rounded-2xl bg-slate-50 p-6 text-base text-slate-600">
-              Pilih salah satu bagian di sebelah kiri untuk mulai belajar.
+              Pilih salah satu modul di sebelah kiri untuk mulai belajar.
             </div>
           ) : (
             <div>
               <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
                 <div className="min-w-0">
                   <div className="flex flex-wrap gap-2">
-                    {activeUnit.isRequired && <Badge>Wajib</Badge>}
-                    <Badge>{readableStatus(activeUnitStatus)}</Badge>
+                    <Badge>Modul {activeModule.order}</Badge>
+                    <Badge>{readableStatus(activeModuleStatus)}</Badge>
                   </div>
                   <h2 className="mt-3 text-2xl font-bold text-slate-900">
-                    {activeUnit.title}
+                    {activeModule.title}
                   </h2>
-                  <p className="mt-1 text-base text-slate-600">
-                    Bagian dari modul: {activeModule.title}
-                  </p>
+                  {activeModule.description ? (
+                    <p className="mt-1 text-base text-slate-600">
+                      {activeModule.description}
+                    </p>
+                  ) : null}
                 </div>
 
                 <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
                   <button
                     type="button"
                     disabled={
-                      updatingUnitId === activeUnit.id || isUnitCompleted
+                      updatingModuleId === activeModule.id || isModuleCompleted
                     }
-                    onClick={() => updateProgress(activeUnit.id, "IN_PROGRESS")}
+                    onClick={() =>
+                      updateProgress(activeModule.id, "IN_PROGRESS")
+                    }
                     className={`inline-flex items-center justify-center gap-2 rounded-2xl border px-5 py-3 text-base font-semibold transition disabled:opacity-70 ${
-                      isUnitCompleted
+                      isModuleCompleted
                         ? "cursor-not-allowed border-emerald-200 bg-emerald-50 text-emerald-700"
-                        : isUnitInProgress
+                        : isModuleInProgress
                           ? "border-amber-200 bg-amber-50 text-amber-700"
                           : "border-slate-200 text-slate-700 hover:bg-slate-50"
                     }`}
                   >
-                    {updatingUnitId === activeUnit.id ? (
+                    {updatingModuleId === activeModule.id ? (
                       <Loader2 size={18} className="animate-spin" />
-                    ) : isUnitCompleted ? (
+                    ) : isModuleCompleted ? (
                       <CheckCircle2 size={18} aria-hidden="true" />
-                    ) : isUnitInProgress ? (
+                    ) : isModuleInProgress ? (
                       <Clock3 size={18} aria-hidden="true" />
                     ) : (
                       <PlayCircle size={18} aria-hidden="true" />
                     )}
-                    {isUnitCompleted
+                    {isModuleCompleted
                       ? "Sudah Selesai"
-                      : isUnitInProgress
+                      : isModuleInProgress
                         ? "Sedang Dipelajari"
                         : "Mulai Belajar"}
                   </button>
@@ -546,39 +542,39 @@ export default function StudentLearningClient({
                   <button
                     type="button"
                     disabled={
-                      updatingUnitId === activeUnit.id ||
-                      isUnitNotStarted ||
-                      isUnitCompleted ||
-                      !canCompleteUnit
+                      updatingModuleId === activeModule.id ||
+                      isModuleNotStarted ||
+                      isModuleCompleted ||
+                      !canCompleteModule
                     }
-                    onClick={() => updateProgress(activeUnit.id, "COMPLETED")}
+                    onClick={() => updateProgress(activeModule.id, "COMPLETED")}
                     className="inline-flex items-center justify-center gap-2 rounded-2xl bg-teal-600 px-5 py-3 text-base font-semibold text-white transition hover:bg-teal-700 disabled:cursor-not-allowed disabled:opacity-50"
                   >
-                    {updatingUnitId === activeUnit.id ? (
+                    {updatingModuleId === activeModule.id ? (
                       <Loader2 size={18} className="animate-spin" />
                     ) : (
                       <CheckCircle2 size={18} aria-hidden="true" />
                     )}
-                    {isUnitCompleted
+                    {isModuleCompleted
                       ? "Selesai"
-                      : isUnitNotStarted
+                      : isModuleNotStarted
                         ? "Mulai Dulu"
-                        : canCompleteUnit
+                        : canCompleteModule
                           ? "Tandai Selesai"
                           : `Tunggu ${remainingLearningSeconds} detik`}
                   </button>
                 </div>
               </div>
 
-              {isUnitNotStarted ? (
+              {isModuleNotStarted ? (
                 <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-base leading-relaxed text-amber-800">
                   Tekan <span className="font-semibold">Mulai Belajar</span>{" "}
-                  untuk membuka sesi. Bagian ini belum bisa diselesaikan sebelum
+                  untuk membuka sesi. Modul ini belum bisa diselesaikan sebelum
                   Anda memulainya.
                 </div>
               ) : null}
 
-              {isUnitInProgress ? (
+              {isModuleInProgress ? (
                 <div className="mt-4 rounded-2xl border border-teal-200 bg-teal-50 p-4 text-base leading-relaxed text-teal-800">
                   Sesi belajar sedang berjalan. Tombol selesai akan aktif
                   {remainingLearningSeconds > 0
@@ -587,23 +583,13 @@ export default function StudentLearningClient({
                 </div>
               ) : null}
 
-              {isUnitCompleted ? (
+              {isModuleCompleted ? (
                 <div className="mt-4 rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-base leading-relaxed text-emerald-800">
-                  Bagian ini sudah selesai. Bagus! Progres Anda tersimpan.
+                  Modul ini sudah selesai. Bagus! Progres Anda tersimpan.
                 </div>
               ) : null}
 
-              {activeUnit.description ? (
-                <div className="mt-6 rounded-2xl bg-slate-50 p-5">
-                  <div className="mb-2 text-base font-semibold text-slate-900">
-                    Ringkasan
-                  </div>
-                  <p className="text-base leading-relaxed text-slate-700">
-                    {activeUnit.description}
-                  </p>
-                </div>
-              ) : null}
-
+              {/* Materi modul */}
               <div className="mt-6 rounded-2xl border border-slate-200 p-5">
                 <div className="mb-3 flex items-center gap-2 text-base font-semibold text-slate-900">
                   <FileText
@@ -613,9 +599,9 @@ export default function StudentLearningClient({
                   />
                   Materi
                 </div>
-                {activeUnit.content ? (
+                {activeContentMarkdown ? (
                   <Markdown className="text-base leading-8">
-                    {activeUnit.content}
+                    {activeContentMarkdown}
                   </Markdown>
                 ) : (
                   <div className="text-base leading-8 text-slate-700">
@@ -624,6 +610,81 @@ export default function StudentLearningClient({
                 )}
               </div>
 
+              {/* Kuis modul */}
+              {activeModule.quizzes.length > 0 ? (
+                <div className="mt-6">
+                  <div className="mb-3 flex items-center gap-2 text-base font-semibold text-slate-900">
+                    <HelpCircle
+                      size={20}
+                      className="text-teal-600"
+                      aria-hidden="true"
+                    />
+                    Kuis
+                  </div>
+                  <div className="space-y-3">
+                    {activeModule.quizzes.map((quiz) => (
+                      <Link
+                        key={quiz.id}
+                        href={`/student/courses/${courseSlug}/quizzes/${quiz.id}`}
+                        className="flex items-center justify-between gap-3 rounded-2xl border border-slate-200 p-4 transition hover:bg-slate-50"
+                      >
+                        <span className="min-w-0">
+                          <span className="block text-base font-semibold text-slate-900">
+                            {quiz.title}
+                          </span>
+                          <span className="block text-sm text-slate-500">
+                            {quiz._count.questions} soal · nilai lulus{" "}
+                            {quiz.passingScore}
+                          </span>
+                        </span>
+                        <ArrowRight
+                          size={18}
+                          className="shrink-0 text-teal-600"
+                          aria-hidden="true"
+                        />
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
+
+              {/* Tugas modul */}
+              {activeModule.assignments.length > 0 ? (
+                <div className="mt-6">
+                  <div className="mb-3 flex items-center gap-2 text-base font-semibold text-slate-900">
+                    <ClipboardList
+                      size={20}
+                      className="text-teal-600"
+                      aria-hidden="true"
+                    />
+                    Tugas
+                  </div>
+                  <div className="space-y-3">
+                    {activeModule.assignments.map((assignment) => (
+                      <Link
+                        key={assignment.id}
+                        href={`/student/courses/${courseSlug}/assignments/${assignment.id}`}
+                        className="flex items-center justify-between gap-3 rounded-2xl border border-slate-200 p-4 transition hover:bg-slate-50"
+                      >
+                        <span className="min-w-0">
+                          <span className="block text-base font-semibold text-slate-900">
+                            {assignment.title}
+                          </span>
+                          <span className="block text-sm text-slate-500">
+                            Tenggat: {formatDate(assignment.dueAt)}
+                          </span>
+                        </span>
+                        <ArrowRight
+                          size={18}
+                          className="shrink-0 text-teal-600"
+                          aria-hidden="true"
+                        />
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
+
               <ResourceSection
                 title="Bahan Tambahan Kelas"
                 resources={data.resources}
@@ -631,10 +692,6 @@ export default function StudentLearningClient({
               <ResourceSection
                 title="Bahan Tambahan Modul"
                 resources={activeModule.resources}
-              />
-              <ResourceSection
-                title="Bahan Tambahan Bagian Ini"
-                resources={activeUnit.resources}
               />
             </div>
           )}
@@ -649,8 +706,8 @@ export default function StudentLearningClient({
           icon={Layers3}
         />
         <SummaryBox
-          label="Total Bagian"
-          value={data.summary.totalUnits}
+          label="Modul Selesai"
+          value={data.summary.completedModules}
           icon={BookOpen}
         />
         <SummaryBox
@@ -709,29 +766,7 @@ function ResourceSection({
       <div className="mb-3 text-base font-semibold text-slate-900">{title}</div>
       <div className="space-y-3">
         {resources.map((resource) => (
-          <a
-            key={resource.id}
-            href={resource.url}
-            target="_blank"
-            rel="noreferrer"
-            className="flex items-center justify-between gap-4 rounded-2xl border border-slate-200 p-4 transition hover:border-teal-300 hover:bg-teal-50"
-          >
-            <div className="min-w-0">
-              <div className="text-base font-semibold text-slate-900">
-                {resource.title}
-              </div>
-              {resource.description ? (
-                <p className="mt-1 text-base text-slate-600">
-                  {resource.description}
-                </p>
-              ) : null}
-            </div>
-            <ExternalLink
-              size={20}
-              className="shrink-0 text-teal-600"
-              aria-hidden="true"
-            />
-          </a>
+          <LearningResourceView key={resource.id} resource={resource} />
         ))}
       </div>
     </div>

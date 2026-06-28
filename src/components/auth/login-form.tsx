@@ -101,6 +101,14 @@ export default function LoginForm() {
             placeholder="••••••••"
             className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-base text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-teal-500 focus:ring-2 focus:ring-teal-100"
           />
+          <div className="mt-2 text-right">
+            <Link
+              href="/forgot-password"
+              className="text-sm font-medium text-teal-700 hover:text-teal-800"
+            >
+              Lupa kata sandi?
+            </Link>
+          </div>
         </div>
 
         {error ? (

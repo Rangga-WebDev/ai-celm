@@ -18,7 +18,13 @@ BAGIAN 0 — AKUN, LOGIN, DAN HAL UMUM
 A. JENIS AKUN
    - DOSEN (LECTURER)  : membuat & mengelola kelas, materi, kuis, tugas, forum.
    - MAHASISWA (STUDENT): belajar, mengerjakan kuis/tugas, berdiskusi, portofolio.
+   - VALIDATOR         : meninjau & memvalidasi mutu konten/penilaian berbasis AI
+                         (pengawasan human-in-the-loop, di luar fokus tutorial ini).
    - ADMIN             : mengelola pengguna & pendaftaran (di luar tutorial ini).
+
+   PRINSIP AI: AI di AI-CELM berperan sebagai ASISTEN, bukan pengganti manusia.
+   Setiap keluaran AI (nilai, ringkasan, saran) selalu dapat ditinjau, diedit,
+   disetujui, atau ditolak oleh dosen/validator (human-in-the-loop).
 
 B. PENDAFTARAN (khusus MAHASISWA)
    1. Buka halaman /register
@@ -57,22 +63,20 @@ F. NOTIFIKASI
    Ikon lonceng di bagian atas menampilkan pengingat (mis. tenggat tugas/kuis).
    Klik untuk melihat daftar pengingat terbaru.
 
+G. PENGATURAN TAMPILAN & AKSESIBILITAS
+   Tombol pengaturan tampilan tersedia di pojok kiri-bawah layar. Klik untuk:
+   - Memperbesar/memperkecil ukuran huruf (A- / A+).
+   - Mengaktifkan Mode Gelap.
+   - Mengaktifkan Kontras Tinggi (teks lebih tegas, tautan digarisbawahi).
+   - Mengaktifkan Tampilan Sederhana (mengurangi bayangan/gradien).
+   Preferensi tersimpan otomatis di perangkat Anda dan langsung diterapkan
+   saat halaman dibuka kembali.
 
-================================================================================
-BAGIAN 1 — PANDUAN UNTUK DOSEN (LECTURER)
-================================================================================
-
-NAVIGASI UTAMA (Sidebar Dosen)
-   - Beranda            -> /lecturer/dashboard
-   - Mata Kuliah        -> /lecturer/courses
-
-   Menu KONTEKS PER KELAS (muncul saat membuka satu mata kuliah):
-   - Ringkasan Kelas    -> /lecturer/courses/[slug]
-   - Modul              -> /lecturer/courses/[slug]/modules
-   - Bahan Belajar      -> /lecturer/courses/[slug]/resources
-   - Tugas Argumentasi  -> /lecturer/courses/[slug]/cer
-   - Forum Diskusi      -> /lecturer/courses/[slug]/forums
-   - Project Aksi       -> /lecturer/courses/[slug]/projects
+H. PANDUAN SINGKAT (ONBOARDING) & BANTUAN KONTEKSTUAL
+   - Saat pertama masuk, muncul "Panduan Singkat" beberapa langkah yang dapat
+     dilewati atau diselesaikan; hanya tampil sekali per perangkat.
+   - Ikon tanda tanya "?" di samping judul/istilah penting membuka penjelasan
+     kontekstual tanpa meninggalkan halaman.
 
 
 --------------------------------------------------------------------------------
@@ -162,7 +166,13 @@ LANGKAH 8 — MEMBUAT TUGAS ARGUMENTASI (CER: Klaim-Bukti-Alasan)
    6. Saat mahasiswa mengirim, buka submission untuk menilai:
         - Lihat Klaim/Bukti/Alasan mahasiswa.
         - "Lihat Saran Penilaian AI" -> AI memberi usulan skor + alasan.
-        - Anda dapat menimpa dengan skor & umpan balik manual.
+        - Kendali human-in-the-loop atas saran AI:
+            * Setujui        -> pakai skor & umpan balik usulan AI.
+            * Edit           -> ubah dulu sebelum dipakai.
+            * Tolak          -> abaikan usulan AI.
+            * Minta AI revisi -> minta usulan baru dari AI.
+            * Tambahkan catatan -> sisipkan catatan pengajar pada umpan balik.
+        - Anda tetap dapat menimpa dengan skor & umpan balik manual.
         - Tandai "Perlu Revisi" atau "Disetujui".
 
 LANGKAH 9 — MEMBUAT PROJECT AKSI KEWARGANEGARAAN
@@ -181,6 +191,11 @@ LANGKAH 10 — MENGELOLA FORUM DISKUSI
         - Statistik: total post, peserta, mahasiswa aktif, mahasiswa pasif.
         - "Buat Ringkasan AI" -> AI merangkum deliberasi diskusi.
         - Kontrol Pin/Lock thread.
+   4. MODERASI KOMUNIKASI BERBASIS AI:
+        - Setiap postingan otomatis ditandai AI dengan tingkat: AMAN (CLEAN),
+          PERLU PERHATIAN (CAUTION), atau BERAT (SEVERE).
+        - Postingan berisiko diberi penanda agar mudah ditinjau dosen.
+        - Moderasi AI bersifat membantu; keputusan akhir tetap di tangan dosen.
 
 LANGKAH 11 — MEMANTAU MAHASISWA BERISIKO (AT-RISK)
    1. Dari Beranda/Dashboard, buka pemantauan risiko.
@@ -190,20 +205,21 @@ LANGKAH 11 — MEMANTAU MAHASISWA BERISIKO (AT-RISK)
       rata-rata nilai kuis, tugas tertunda, dan alasan risiko.
    5. Tindakan: kirim notifikasi/email ke mahasiswa berisiko.
 
+LANGKAH 12 — MEMANTAU CIVIC ENGAGEMENT (PRE-TEST vs POST-TEST)
+   1. Di dalam kelas, buka menu "Rekap Civic Engagement".
+   2. Lihat rata-rata kelas untuk pre-test dan post-test pada tiga dimensi:
+      Kognitif, Afektif, dan Behavioral, beserta skor keseluruhan.
+   3. Diagram batang membandingkan capaian pre vs post.
+   4. Tabel per mahasiswa menampilkan peningkatan (delta) tiap mahasiswa,
+      sehingga dampak pembelajaran kewargaan dapat dipantau.
 
-================================================================================
-BAGIAN 2 — PANDUAN UNTUK MAHASISWA (STUDENT)
-================================================================================
-
-NAVIGASI UTAMA (Sidebar Mahasiswa)
-   - Beranda        -> /student/dashboard
-   - Mata Kuliah    -> /student/courses
-   - Modul Belajar  -> /student/modules
-   - Portofolio     -> /student/portfolio
-
-   Fitur dalam halaman (tanpa menu terpisah):
-   - Bantuan (ikon chat mengambang) -> Asisten AI
-   - Tugas Argumentasi, Forum, Project, Study Kit -> diakses dari dalam Mata Kuliah
+LANGKAH 13 — MENINJAU DEKLARASI INTEGRITAS AKADEMIK (TUGAS)
+   1. Buka submission tugas mahasiswa.
+   2. Pada tiap submission tampil kartu "Deklarasi Integritas Akademik":
+        - Status pakta kejujuran (honesty pledge) mahasiswa.
+        - Apakah mahasiswa menyatakan memakai AI; bila ya, rincian:
+          cara penggunaan, prompt yang dipakai, dan verifikasi mandiri.
+   3. Gunakan informasi ini untuk menilai kejujuran & proses kerja mahasiswa.
 
 
 --------------------------------------------------------------------------------
@@ -215,7 +231,12 @@ LANGKAH 1 — MELIHAT KELAS & PROGRES
    2. Buka "Mata Kuliah" untuk daftar semua kelas yang Anda ikuti.
    3. Klik sebuah kelas untuk melihat detail: info dosen, RPS/silabus, dan
       kartu akses cepat (Modul, Kuis, Tugas Argumentasi, Project Aksi, Forum,
-      Bahan Belajar Tambahan), serta progress per modul.
+      Tes Civic Engagement, Bahan Belajar Tambahan), serta progress per modul.
+   4. PETA BELAJAR: di halaman detail kelas tersedia "Peta Belajar" visual
+      yang menampilkan urutan modul sebagai alur bertahap. Setiap simpul modul
+      diberi warna & ikon status (Selesai, Sedang berjalan, Perlu diulang,
+      Terkunci, Belum mulai), menandai "Posisi Anda", dan menyediakan tombol
+      "Lanjut" ke modul berikutnya.
 
 LANGKAH 2 — BELAJAR DARI MODUL
    1. Buka "Modul Belajar" (daftar modul lintas kelas) ATAU lewat Mata Kuliah.
@@ -263,8 +284,12 @@ LANGKAH 6 — MENGERJAKAN TUGAS ARGUMENTASI (CER)
    1. Buka Mata Kuliah -> tab Tugas Argumentasi.
    2. Klik tugas untuk membaca prompt & pertanyaan pemandu.
    3. Isi tiga kolom: Klaim, Bukti, dan Alasan.
-   4. Simpan sebagai draf atau Kirim.
-   5. Pantau status: SUBMITTED -> (PERLU REVISI) -> SUBMITTED lagi -> GRADED
+   4. DEKLARASI INTEGRITAS AKADEMIK (sebelum mengirim):
+        - Centang pakta kejujuran (honesty pledge); wajib untuk mengirim.
+        - Bila Anda memakai AI, aktifkan toggle lalu isi: cara penggunaan,
+          prompt yang dipakai, dan verifikasi mandiri atas hasil AI.
+   5. Simpan sebagai draf atau Kirim.
+   6. Pantau status: SUBMITTED -> (PERLU REVISI) -> SUBMITTED lagi -> GRADED
       -> APPROVED. Lihat umpan balik & nilai dari dosen.
 
 LANGKAH 7 — MENGIRIM PROJECT AKSI
@@ -280,6 +305,9 @@ LANGKAH 8 — BERDISKUSI DI FORUM
    3. Tulis balasan Anda dan kirim.
    4. Gunakan "Dapatkan panduan berargumen dari AI" untuk memperoleh saran
       cara berargumen sesuai prompt diskusi.
+   5. CATATAN MODERASI: postingan ditinjau AI demi komunikasi yang sehat.
+      Bila tulisan Anda terindikasi kurang santun, akan muncul pemberitahuan
+      agar Anda memperbaikinya sebelum/atau sesudah terkirim.
 
 LANGKAH 9 — MEMANFAATKAN STUDY KIT
    1. Buka Mata Kuliah -> tab Study Kit / Bahan Belajar Tambahan.
@@ -299,6 +327,16 @@ LANGKAH 10 — MELIHAT PORTOFOLIO
         - Tombol "Perbarui Ringkasan" untuk membuat ulang ringkasan AI.
         - Rincian per mata kuliah: modul selesai, kuis (lulus/tidak), CER &
           project yang dikirim/dinilai.
+
+LANGKAH 11 — MENGISI TES CIVIC ENGAGEMENT (PRE & POST)
+   1. Buka Mata Kuliah -> kartu "Tes Civic Engagement".
+   2. Tersedia dua tab: PRE-TEST (di awal pembelajaran) dan POST-TEST
+      (di akhir pembelajaran).
+   3. Isi 12 pernyataan skala Likert yang mengukur tiga dimensi kepedulian
+      kewargaan: Kognitif, Afektif, dan Behavioral.
+   4. Kirim jawaban. Sistem menghitung skor tiap dimensi & skor keseluruhan.
+   5. Setelah mengisi PRE dan POST, Anda dapat melihat peningkatan (delta)
+      sebagai gambaran perkembangan sikap kewargaan Anda.
 
 
 ================================================================================
@@ -320,6 +358,10 @@ BAGIAN 3 — RINGKASAN FITUR AI & LOKASINYA
   Panduan Argumen Forum       | Mhs     | Thread Forum -> "Panduan berargumen AI"
   Ringkasan Portofolio        | Mhs     | Portofolio -> "Perbarui Ringkasan"
   Deteksi Mahasiswa Berisiko  | Dosen   | Dashboard -> pemantauan risiko
+  Moderasi Komunikasi Forum   | Sistem  | Otomatis menandai postingan
+                              |         | (AMAN/PERHATIAN/BERAT) saat dikirim
+  Kendali Saran AI (HITL)     | Dosen   | Submission CER -> Setujui/Edit/Tolak/
+                              |         | Minta AI revisi/Tambahkan catatan
 
 
 ================================================================================
@@ -335,6 +377,12 @@ BAGIAN 4 — TIPS & PEMECAHAN MASALAH
   - Selalu klik Simpan setelah mengedit konten/penilaian.
   - Periksa ikon lonceng notifikasi untuk pengingat tenggat tugas & kuis.
   - Dosen tetap memegang keputusan akhir: nilai AI dapat ditimpa kapan saja.
+  - AI hanyalah asisten (human-in-the-loop): saran AI dapat disetujui, diedit,
+    ditolak, atau diminta direvisi; manusia yang memutuskan.
+  - Jika butuh tampilan lebih nyaman, gunakan tombol Pengaturan Tampilan di
+    pojok kiri-bawah (ukuran huruf, mode gelap, kontras tinggi, tampilan
+    sederhana). Lihat Bagian 0.G.
+  - Klik ikon "?" di samping istilah untuk penjelasan singkat saat dibutuhkan.
 
 ================================================================================
                               SELAMAT BELAJAR & MENGAJAR

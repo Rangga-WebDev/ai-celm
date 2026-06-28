@@ -14,6 +14,7 @@ import {
   buildRawModuleContentFromText,
   generateModuleContent,
 } from "@/lib/ai/module-content-generator";
+import { syncModuleContentUnit } from "@/lib/materials/module-content-unit";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -145,6 +146,8 @@ export async function POST(request: NextRequest, { params }: Params) {
         },
       });
 
+      await syncModuleContentUnit(targetModule.id, targetModule.title, content);
+
       return NextResponse.json(
         {
           success: true,
@@ -172,6 +175,12 @@ export async function POST(request: NextRequest, { params }: Params) {
         contentUpdatedAt: new Date(),
       },
     });
+
+    await syncModuleContentUnit(
+      targetModule.id,
+      targetModule.title,
+      result.content,
+    );
 
     await prisma.aIResponseLog.create({
       data: {

@@ -61,7 +61,9 @@ export async function POST(req: Request) {
         ? "/student/dashboard"
         : user.role === "LECTURER"
           ? "/lecturer/dashboard"
-          : "/admin/dashboard";
+          : user.role === "VALIDATOR"
+            ? "/validator/dashboard"
+            : "/admin/dashboard";
 
     const res = NextResponse.json({
       message: "Login berhasil",

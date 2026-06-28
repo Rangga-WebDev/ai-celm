@@ -1,7 +1,7 @@
 /** @format */
 
 import { NextRequest, NextResponse } from "next/server";
-import { ModuleStatus, Role } from "@/generated/prisma/client";
+import { ModuleStatus, ModuleTaskType, Role } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/api-guard";
 
@@ -51,6 +51,17 @@ function isValidModuleStatus(value: unknown): value is ModuleStatus {
     value === ModuleStatus.PUBLISHED ||
     value === ModuleStatus.ARCHIVED
   );
+}
+
+function toModuleTaskType(value: unknown): ModuleTaskType {
+  if (
+    value === ModuleTaskType.NONE ||
+    value === ModuleTaskType.SMALL ||
+    value === ModuleTaskType.BIG
+  ) {
+    return value;
+  }
+  return ModuleTaskType.NONE;
 }
 
 export async function GET(_: NextRequest, { params }: Params) {
@@ -223,6 +234,7 @@ export async function POST(request: NextRequest, { params }: Params) {
     const isLocked = Boolean(body.isLocked);
     const unlockRule = optionalText(body.unlockRule);
     const masteryThreshold = toMasteryThreshold(body.masteryThreshold);
+    const taskType = toModuleTaskType(body.taskType);
 
     if (!title) {
       return NextResponse.json(
@@ -239,6 +251,17 @@ export async function POST(request: NextRequest, { params }: Params) {
         {
           success: false,
           message: "Valid module status is required",
+        },
+        { status: 400 },
+      );
+    }
+
+    if (statusInput === ModuleStatus.PUBLISHED) {
+      return NextResponse.json(
+        {
+          success: false,
+          message:
+            "Modul baru harus dibuat sebagai draf dulu. Lengkapi konten & bagiannya, lalu terbitkan.",
         },
         { status: 400 },
       );
@@ -329,6 +352,7 @@ export async function POST(request: NextRequest, { params }: Params) {
         isLocked,
         unlockRule: unlockRule ?? undefined,
         masteryThreshold,
+        taskType,
       },
       include: {
         _count: {
