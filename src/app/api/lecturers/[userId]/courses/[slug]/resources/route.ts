@@ -1,9 +1,18 @@
 /** @format */
 
 import { NextRequest, NextResponse } from "next/server";
-import { ResourceType, Role } from "@/generated/prisma/client";
+import { MaterialStatus, ResourceType, Role } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/api-guard";
+import { saveMaterialFile } from "@/lib/materials/storage";
+import {
+  ALLOWED_MATERIAL_MIME,
+  MAX_MATERIAL_BYTES,
+  extractTextFromBuffer,
+} from "@/lib/materials/extract-text";
+
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 
 type Params = {
   params: Promise<{
@@ -11,6 +20,37 @@ type Params = {
     slug: string;
   }>;
 };
+
+const RESOURCE_INCLUDE = {
+  module: {
+    select: { id: true, title: true, slug: true, order: true },
+  },
+  microUnit: {
+    select: {
+      id: true,
+      title: true,
+      slug: true,
+      order: true,
+      moduleId: true,
+      unitType: true,
+    },
+  },
+  uploadedBy: {
+    select: { id: true, firstName: true, lastName: true, email: true },
+  },
+} as const;
+
+function resourceTypeForMime(mimeType: string): ResourceType {
+  if (mimeType === "application/pdf") return ResourceType.PDF;
+  if (
+    mimeType === "application/msword" ||
+    mimeType ===
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+  ) {
+    return ResourceType.DOC;
+  }
+  return ResourceType.OTHER;
+}
 
 type TargetType = "COURSE" | "MODULE" | "UNIT";
 
@@ -341,6 +381,14 @@ export async function POST(request: NextRequest, { params }: Params) {
       );
     }
 
+    const contentType = request.headers.get("content-type") ?? "";
+
+    // Unggah berkas (PDF/Word/dll) sebagai bahan belajar yang juga bisa
+    // dijadikan rujukan AI untuk mahasiswa.
+    if (contentType.includes("multipart/form-data")) {
+      return handleResourceFileUpload(request, userId, slug, course.id);
+    }
+
     const body = await request.json();
 
     const title = String(body.title ?? "").trim();
@@ -488,4 +536,151 @@ export async function POST(request: NextRequest, { params }: Params) {
       { status: 500 },
     );
   }
+}
+
+async function handleResourceFileUpload(
+  request: NextRequest,
+  userId: string,
+  slug: string,
+  courseId: string,
+) {
+  const formData = await request.formData();
+
+  const file = formData.get("file");
+  const title = String(formData.get("title") ?? "").trim();
+  const description = optionalText(formData.get("description"));
+  const targetTypeRaw = String(formData.get("targetType") ?? "COURSE");
+  const moduleId = optionalText(formData.get("moduleId"));
+  const microUnitId = optionalText(formData.get("microUnitId"));
+  const sortOrder = toNullableInt(formData.get("sortOrder"));
+
+  if (!(file instanceof File)) {
+    return NextResponse.json(
+      { success: false, message: "Berkas bahan belajar wajib diunggah." },
+      { status: 400 },
+    );
+  }
+
+  const mimeType = file.type;
+  if (!ALLOWED_MATERIAL_MIME[mimeType]) {
+    return NextResponse.json(
+      {
+        success: false,
+        message:
+          "Tipe berkas tidak didukung. Gunakan PDF, Word (.doc/.docx), TXT, atau Markdown.",
+      },
+      { status: 400 },
+    );
+  }
+
+  if (file.size <= 0) {
+    return NextResponse.json(
+      { success: false, message: "Berkas kosong." },
+      { status: 400 },
+    );
+  }
+
+  if (file.size > MAX_MATERIAL_BYTES) {
+    return NextResponse.json(
+      { success: false, message: "Ukuran berkas melebihi 15 MB." },
+      { status: 400 },
+    );
+  }
+
+  if (!isValidTargetType(targetTypeRaw)) {
+    return NextResponse.json(
+      { success: false, message: "Valid target type is required" },
+      { status: 400 },
+    );
+  }
+
+  const target = await resolveResourceTarget({
+    courseId,
+    targetType: targetTypeRaw,
+    moduleId,
+    microUnitId,
+  });
+
+  if (target.error) {
+    return NextResponse.json(
+      { success: false, message: target.error },
+      { status: 400 },
+    );
+  }
+
+  const arrayBuffer = await file.arrayBuffer();
+  const buffer = Buffer.from(arrayBuffer);
+  const storageKey = await saveMaterialFile(buffer, mimeType, file.name);
+
+  let extractedText: string | null = null;
+  let charCount: number | null = null;
+  let status: MaterialStatus = MaterialStatus.READY;
+  let errorMessage: string | null = null;
+
+  try {
+    const result = await extractTextFromBuffer(buffer, mimeType);
+    extractedText = result.text;
+    charCount = result.charCount;
+
+    if (result.charCount === 0) {
+      status = MaterialStatus.FAILED;
+      errorMessage =
+        "Tidak ada teks yang bisa dibaca (berkas mungkin hasil pindai/gambar).";
+    }
+  } catch (extractError) {
+    console.error("Resource material extraction error:", extractError);
+    status = MaterialStatus.FAILED;
+    errorMessage = "Gagal membaca isi berkas.";
+  }
+
+  const resourceTitle = title.length > 0 ? title : file.name;
+
+  const resource = await prisma.$transaction(async (tx) => {
+    const material = await tx.courseMaterial.create({
+      data: {
+        courseId,
+        moduleId: target.moduleId,
+        uploadedById: userId,
+        title: resourceTitle,
+        description,
+        fileName: file.name,
+        mimeType,
+        fileSize: file.size,
+        storageKey,
+        extractedText,
+        charCount,
+        status,
+        errorMessage,
+      },
+      select: { id: true },
+    });
+
+    return tx.learningResource.create({
+      data: {
+        courseId: target.courseId,
+        moduleId: target.moduleId,
+        microUnitId: target.microUnitId,
+        title: resourceTitle,
+        description,
+        type: resourceTypeForMime(mimeType),
+        url: `/api/courses/${slug}/materials/${material.id}/file`,
+        sourceMaterialId: material.id,
+        sortOrder,
+        uploadedById: userId,
+      },
+      include: RESOURCE_INCLUDE,
+    });
+  });
+
+  return NextResponse.json(
+    {
+      success: true,
+      message:
+        status === MaterialStatus.READY
+          ? "Berkas bahan belajar berhasil diunggah dan siap dipakai AI."
+          : "Berkas diunggah, namun teksnya tidak terbaca sehingga tidak dapat dipakai AI.",
+      data: resource,
+    },
+    { status: 201 },
+  );
 }

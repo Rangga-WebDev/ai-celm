@@ -4,7 +4,6 @@ import { NextRequest, NextResponse } from "next/server";
 import {
   AIInteractionType,
   EnrollmentStatus,
-  ModuleStatus,
   QuizStatus,
   Role,
 } from "@/generated/prisma/client";
@@ -96,7 +95,6 @@ export async function POST(request: NextRequest, { params }: Params) {
         status: QuizStatus.PUBLISHED,
         module: {
           courseId: course.id,
-          status: ModuleStatus.PUBLISHED,
         },
       },
       select: {

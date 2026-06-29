@@ -625,9 +625,16 @@ export default function StudentCourseDetailClient({
       {/* Bahan belajar */}
       {course.resources.length > 0 && (
         <section>
-          <h2 className="mb-4 text-xl font-bold text-slate-900">
-            Bahan Belajar
-          </h2>
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+            <h2 className="text-xl font-bold text-slate-900">Bahan Belajar</h2>
+            <Link
+              href={`/student/courses/${slug}/chat`}
+              className="inline-flex items-center gap-2 rounded-2xl bg-teal-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-teal-700"
+            >
+              <Sparkles size={18} aria-hidden="true" />
+              Belajar dengan AI dari bahan ini
+            </Link>
+          </div>
           <div className="space-y-3">
             {course.resources.map((resource) => (
               <LearningResourceView key={resource.id} resource={resource} />

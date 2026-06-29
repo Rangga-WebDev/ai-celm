@@ -19,6 +19,7 @@ import {
   RefreshCcw,
   Search,
   Trash2,
+  Upload,
   Video,
 } from "lucide-react";
 
@@ -196,6 +197,8 @@ export default function LecturerResourcesClient({
   const [editingResource, setEditingResource] = useState<ResourceItem | null>(
     null,
   );
+  const [inputMode, setInputMode] = useState<"link" | "file">("link");
+  const [file, setFile] = useState<File | null>(null);
 
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -283,6 +286,8 @@ export default function LecturerResourcesClient({
   function resetForm() {
     setForm(initialForm);
     setEditingResource(null);
+    setInputMode("link");
+    setFile(null);
   }
 
   function updateTargetType(targetType: TargetType) {
@@ -310,6 +315,8 @@ export default function LecturerResourcesClient({
         : (resource.moduleId ?? "");
 
     setEditingResource(resource);
+    setInputMode("link");
+    setFile(null);
     setForm({
       title: resource.title,
       description: resource.description ?? "",
@@ -335,6 +342,45 @@ export default function LecturerResourcesClient({
       setMessage(null);
       setError(null);
 
+      const isEditing = Boolean(editingResource);
+
+      // Unggah berkas (hanya saat membuat bahan belajar baru).
+      if (!isEditing && inputMode === "file") {
+        if (!file) {
+          throw new Error("Pilih berkas yang akan diunggah.");
+        }
+
+        const data = new FormData();
+        data.append("file", file);
+        data.append("title", form.title.trim());
+        data.append("description", form.description.trim());
+        data.append("targetType", form.targetType);
+        data.append("moduleId", form.moduleId);
+        data.append("microUnitId", form.microUnitId);
+        if (form.sortOrder) {
+          data.append("sortOrder", form.sortOrder);
+        }
+
+        const res = await fetch(
+          `/api/lecturers/${user.id}/courses/${courseSlug}/resources`,
+          {
+            method: "POST",
+            body: data,
+          },
+        );
+
+        const json = await res.json();
+
+        if (!res.ok || !json.success) {
+          throw new Error(json.message || "Gagal mengunggah berkas");
+        }
+
+        setMessage(json.message || "Berkas bahan belajar berhasil diunggah.");
+        resetForm();
+        await fetchResources();
+        return;
+      }
+
       const payload = {
         title: form.title.trim(),
         description: form.description.trim(),
@@ -345,8 +391,6 @@ export default function LecturerResourcesClient({
         microUnitId: form.targetType === "UNIT" ? form.microUnitId : "",
         sortOrder: form.sortOrder ? Number(form.sortOrder) : null,
       };
-
-      const isEditing = Boolean(editingResource);
 
       const endpoint = isEditing
         ? `/api/lecturers/${user.id}/courses/${courseSlug}/resources/${editingResource?.id}`
@@ -498,8 +542,9 @@ export default function LecturerResourcesClient({
               {editingResource ? "Ubah Bahan Belajar" : "Tambah Bahan Belajar"}
             </h2>
             <p className="mt-1 text-base text-slate-600">
-              Untuk saat ini gunakan URL/link. Unggah berkas langsung bisa
-              dibuat pada tahap lanjutan.
+              Tambahkan tautan (Google Drive, YouTube, atau URL lain) atau
+              unggah berkas PDF/Word. Berkas yang diunggah otomatis dibaca AI
+              sehingga mahasiswa bisa belajar dan bertanya dari materi tersebut.
             </p>
           </div>
 
@@ -525,47 +570,117 @@ export default function LecturerResourcesClient({
               placeholder="Contoh: Slide Paradigma Baru PKn"
             />
 
-            <div className="grid gap-4 sm:grid-cols-2">
+            {!editingResource ? (
               <div>
                 <label className="text-sm font-medium text-slate-700">
-                  Jenis Bahan
+                  Cara Menambah
                 </label>
-
-                <select
-                  value={form.type}
-                  onChange={(event) =>
-                    setForm((prev) => ({
-                      ...prev,
-                      type: event.target.value as ResourceType,
-                    }))
-                  }
-                  className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-base text-slate-900 outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-100"
-                >
-                  {resourceTypes.map((type) => (
-                    <option key={type} value={type}>
-                      {resourceTypeLabel(type)}
-                    </option>
-                  ))}
-                </select>
+                <div className="mt-2 grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setInputMode("link")}
+                    className={`inline-flex items-center justify-center gap-2 rounded-2xl border px-4 py-3 text-base font-medium transition ${
+                      inputMode === "link"
+                        ? "border-teal-500 bg-teal-50 text-teal-700"
+                        : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+                    }`}
+                  >
+                    <LinkIcon size={18} aria-hidden="true" />
+                    Tautan / Link
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setInputMode("file")}
+                    className={`inline-flex items-center justify-center gap-2 rounded-2xl border px-4 py-3 text-base font-medium transition ${
+                      inputMode === "file"
+                        ? "border-teal-500 bg-teal-50 text-teal-700"
+                        : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+                    }`}
+                  >
+                    <Upload size={18} aria-hidden="true" />
+                    Unggah Berkas
+                  </button>
+                </div>
               </div>
+            ) : null}
 
-              <FormField
-                label="Urutan"
-                type="number"
-                value={form.sortOrder}
-                onChange={(value) =>
-                  setForm((prev) => ({ ...prev, sortOrder: value }))
-                }
-                placeholder="Opsional"
-              />
-            </div>
+            {inputMode === "link" || editingResource ? (
+              <>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div>
+                    <label className="text-sm font-medium text-slate-700">
+                      Jenis Bahan
+                    </label>
 
-            <FormField
-              label="URL Bahan Belajar"
-              value={form.url}
-              onChange={(value) => setForm((prev) => ({ ...prev, url: value }))}
-              placeholder="https://drive.google.com/... atau /resources/file.pdf"
-            />
+                    <select
+                      value={form.type}
+                      onChange={(event) =>
+                        setForm((prev) => ({
+                          ...prev,
+                          type: event.target.value as ResourceType,
+                        }))
+                      }
+                      className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-base text-slate-900 outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-100"
+                    >
+                      {resourceTypes.map((type) => (
+                        <option key={type} value={type}>
+                          {resourceTypeLabel(type)}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <FormField
+                    label="Urutan"
+                    type="number"
+                    value={form.sortOrder}
+                    onChange={(value) =>
+                      setForm((prev) => ({ ...prev, sortOrder: value }))
+                    }
+                    placeholder="Opsional"
+                  />
+                </div>
+
+                <FormField
+                  label="URL Bahan Belajar"
+                  value={form.url}
+                  onChange={(value) =>
+                    setForm((prev) => ({ ...prev, url: value }))
+                  }
+                  placeholder="https://drive.google.com/... atau https://youtu.be/..."
+                />
+              </>
+            ) : (
+              <>
+                <div>
+                  <label className="text-sm font-medium text-slate-700">
+                    Berkas (PDF, Word, TXT, atau Markdown)
+                  </label>
+                  <input
+                    type="file"
+                    accept=".pdf,.doc,.docx,.txt,.md,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain,text/markdown"
+                    onChange={(event) =>
+                      setFile(event.target.files?.[0] ?? null)
+                    }
+                    className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-base text-slate-900 outline-none transition file:mr-4 file:rounded-xl file:border-0 file:bg-teal-50 file:px-4 file:py-2 file:text-sm file:font-medium file:text-teal-700 focus:border-teal-500 focus:ring-2 focus:ring-teal-100"
+                  />
+                  <p className="mt-2 text-sm text-slate-500">
+                    Maksimal 15 MB. Teks dari berkas akan dibaca AI agar
+                    mahasiswa bisa belajar &amp; bertanya dari materi ini.
+                  </p>
+                </div>
+
+                <FormField
+                  label="Urutan"
+                  type="number"
+                  value={form.sortOrder}
+                  onChange={(value) =>
+                    setForm((prev) => ({ ...prev, sortOrder: value }))
+                  }
+                  placeholder="Opsional"
+                />
+              </>
+            )}
 
             <div>
               <label className="text-sm font-medium text-slate-700">
@@ -663,12 +778,16 @@ export default function LecturerResourcesClient({
                     className="animate-spin"
                     aria-hidden="true"
                   />
+                ) : !editingResource && inputMode === "file" ? (
+                  <Upload size={18} aria-hidden="true" />
                 ) : (
                   <Plus size={18} aria-hidden="true" />
                 )}
                 {editingResource
                   ? "Simpan Bahan Belajar"
-                  : "Tambah Bahan Belajar"}
+                  : inputMode === "file"
+                    ? "Unggah Bahan Belajar"
+                    : "Tambah Bahan Belajar"}
               </button>
 
               {editingResource ? (

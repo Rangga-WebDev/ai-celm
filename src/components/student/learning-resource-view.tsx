@@ -112,7 +112,11 @@ function EmbedResource({
           className="max-h-120 w-full bg-slate-50 object-contain"
         />
       ) : (
-        <div className="aspect-video w-full bg-slate-900">
+        <div
+          className={`w-full bg-slate-900 ${
+            kind === "pdf" ? "h-[600px]" : "aspect-video"
+          }`}
+        >
           <iframe
             src={embedUrl}
             title={resource.title}
@@ -167,6 +171,25 @@ export default function LearningResourceView({
 }) {
   if (resource.type === "ARTICLE" && resource.content) {
     return <ArticleResource resource={resource} />;
+  }
+
+  // Berkas internal yang diunggah dosen (PDF/gambar) ditampilkan tertanam.
+  if (resource.url && resource.url.startsWith("/")) {
+    if (resource.type === "IMAGE") {
+      return (
+        <EmbedResource
+          resource={resource}
+          embedUrl={resource.url}
+          kind="image"
+        />
+      );
+    }
+    if (resource.type === "PDF") {
+      return (
+        <EmbedResource resource={resource} embedUrl={resource.url} kind="pdf" />
+      );
+    }
+    return <LinkResource resource={resource} />;
   }
 
   if (resource.url) {

@@ -123,12 +123,16 @@ export async function POST(req: NextRequest, { params }: Params) {
       );
     }
 
-    // Basis pengetahuan: materi yang bahan belajarnya sudah diterbitkan dosen.
+    // Basis pengetahuan: materi yang diterbitkan dosen sebagai bahan belajar
+    // (tertaut sebagai bahan belajar) atau yang study kit-nya sudah terbit.
     const materials = await prisma.courseMaterial.findMany({
       where: {
         courseId: course.id,
         extractedText: { not: null },
-        studyKit: { isPublished: true },
+        OR: [
+          { studyKit: { isPublished: true } },
+          { learningResources: { some: {} } },
+        ],
       },
       select: { id: true, title: true, extractedText: true },
     });

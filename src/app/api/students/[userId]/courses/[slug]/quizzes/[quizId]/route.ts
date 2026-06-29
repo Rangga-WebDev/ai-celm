@@ -1,12 +1,7 @@
 /** @format */
 
 import { NextRequest, NextResponse } from "next/server";
-import {
-  EnrollmentStatus,
-  ModuleStatus,
-  QuizStatus,
-  Role,
-} from "@/generated/prisma/client";
+import { EnrollmentStatus, QuizStatus, Role } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/api-guard";
 
@@ -75,7 +70,6 @@ export async function GET(_: NextRequest, { params }: Params) {
         status: QuizStatus.PUBLISHED,
         module: {
           courseId: course.id,
-          status: ModuleStatus.PUBLISHED,
         },
       },
       select: {

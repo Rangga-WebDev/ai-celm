@@ -481,6 +481,14 @@ export default function LecturerQuizzesClient({
                     </p>
                   ) : null}
 
+                  {quiz.status === "DRAFT" ? (
+                    <p className="mt-3 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-medium text-amber-800">
+                      Kuis ini masih draf dan belum tampil ke mahasiswa. Buka
+                      &ldquo;Kelola Soal&rdquo;, tinjau, lalu ubah status
+                      menjadi Terbit agar mahasiswa dapat mengerjakannya.
+                    </p>
+                  ) : null}
+
                   <div className="mt-4 flex flex-wrap gap-2 text-sm text-slate-600">
                     <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-50 px-3 py-1.5">
                       <HelpCircle size={16} aria-hidden="true" />
