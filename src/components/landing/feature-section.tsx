@@ -50,45 +50,46 @@ const features = [
 ];
 
 const toneMap: Record<string, string> = {
-  teal: "bg-teal-100 text-teal-700",
-  violet: "bg-violet-100 text-violet-700",
-  sky: "bg-sky-100 text-sky-700",
-  amber: "bg-amber-100 text-amber-700",
-  emerald: "bg-emerald-100 text-emerald-700",
-  rose: "bg-rose-100 text-rose-700",
+  teal: "bg-teal-50 text-teal-700 ring-1 ring-teal-200/70",
+  violet: "bg-violet-50 text-violet-700 ring-1 ring-violet-200/70",
+  sky: "bg-sky-50 text-sky-700 ring-1 ring-sky-200/70",
+  amber: "bg-amber-50 text-amber-700 ring-1 ring-amber-200/70",
+  emerald: "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200/70",
+  rose: "bg-rose-50 text-rose-700 ring-1 ring-rose-200/70",
 };
 
 export default function FeatureSection() {
   return (
-    <section id="fitur" className="scroll-mt-28 bg-slate-50 py-20">
+    <section
+      id="fitur"
+      className="scroll-mt-28 border-y border-[var(--line)] bg-white/60 py-24"
+    >
       <Container>
-        <div className="mx-auto max-w-2xl text-center">
-          <div className="text-sm font-semibold uppercase tracking-[0.2em] text-teal-600">
-            Fitur Utama
-          </div>
-          <h2 className="mt-3 text-3xl font-bold text-slate-900 sm:text-4xl">
+        <div className="max-w-2xl">
+          <div className="eyebrow">Fitur Utama</div>
+          <h2 className="mt-4 text-4xl font-bold leading-[1.05] tracking-[-0.02em] text-slate-900 text-balance sm:text-5xl">
             Satu tempat untuk seluruh proses belajar
           </h2>
-          <p className="mt-4 text-lg leading-8 text-slate-600">
+          <p className="mt-5 text-lg leading-8 text-slate-600">
             Dari memahami materi sampai melakukan aksi nyata, semua langkah
             belajar terhubung dalam satu alur yang sederhana.
           </p>
         </div>
 
-        <div className="mt-12 grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+        <div className="mt-14 grid gap-px overflow-hidden rounded-3xl border border-[var(--line)] bg-[var(--line)] md:grid-cols-2 xl:grid-cols-3">
           {features.map((feature) => {
             const Icon = feature.icon;
             return (
               <div
                 key={feature.title}
-                className="rounded-3xl border border-slate-200 bg-white p-6 transition hover:-translate-y-1 hover:shadow-lg hover:shadow-slate-200/70"
+                className="group bg-white/80 p-7 transition duration-300 hover:bg-white"
               >
                 <div
-                  className={`mb-5 flex h-12 w-12 items-center justify-center rounded-2xl ${toneMap[feature.tone]}`}
+                  className={`mb-5 flex h-12 w-12 items-center justify-center rounded-2xl transition group-hover:scale-105 ${toneMap[feature.tone]}`}
                 >
-                  <Icon size={24} aria-hidden="true" />
+                  <Icon size={22} aria-hidden="true" />
                 </div>
-                <h3 className="text-xl font-bold text-slate-900">
+                <h3 className="text-xl font-bold tracking-tight text-slate-900">
                   {feature.title}
                 </h3>
                 <p className="mt-3 text-base leading-7 text-slate-600">

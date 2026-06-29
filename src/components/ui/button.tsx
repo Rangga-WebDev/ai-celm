@@ -31,7 +31,7 @@ export default function Button({
   ...props
 }: ButtonProps) {
   const baseClasses =
-    "group inline-flex items-center justify-center gap-2 rounded-2xl font-semibold transition duration-200 ease-out focus:outline-none focus-visible:ring-2 focus-visible:ring-teal-500/40 focus-visible:ring-offset-2 focus-visible:ring-offset-white active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50";
+    "group inline-flex items-center justify-center gap-2 rounded-full font-semibold tracking-tight transition-[transform,background-color,box-shadow,border-color] duration-200 ease-out focus:outline-none focus-visible:ring-2 focus-visible:ring-teal-500/40 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--paper)] active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-50";
 
   const sizeClasses = {
     sm: "h-10 px-4 text-sm",
@@ -41,12 +41,12 @@ export default function Button({
 
   const variantClasses = {
     primary:
-      "bg-teal-600 text-white shadow-sm shadow-teal-600/20 hover:-translate-y-0.5 hover:bg-teal-700",
+      "bg-teal-600 text-white shadow-[0_1px_0_rgba(255,255,255,0.25)_inset,0_8px_24px_-12px_rgba(13,148,136,0.7)] hover:-translate-y-0.5 hover:bg-teal-700",
     secondary:
-      "border border-slate-200 bg-white text-slate-700 hover:-translate-y-0.5 hover:bg-slate-50",
-    ghost: "bg-transparent text-slate-700 hover:bg-slate-100",
+      "border border-[var(--line)] bg-white/80 text-slate-700 backdrop-blur hover:-translate-y-0.5 hover:border-[var(--line-strong)] hover:bg-white",
+    ghost: "bg-transparent text-slate-700 hover:bg-slate-900/5",
     outline:
-      "border border-slate-300 bg-white text-slate-700 hover:-translate-y-0.5 hover:border-teal-400 hover:bg-teal-50 hover:text-teal-700",
+      "border border-[var(--line-strong)] bg-transparent text-slate-700 hover:-translate-y-0.5 hover:border-teal-400 hover:bg-teal-50/70 hover:text-teal-700",
   };
 
   const renderRightIcon = () => {

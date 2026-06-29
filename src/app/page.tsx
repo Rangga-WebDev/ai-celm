@@ -11,7 +11,7 @@ import FinalCtaSection from "@/components/landing/final-cta-section";
 
 export default function LandingPage() {
   return (
-    <main className="min-h-screen bg-white text-slate-900">
+    <main className="min-h-screen bg-[var(--paper)] text-slate-900">
       <Navbar />
       <HeroSection />
       <FeatureSection />

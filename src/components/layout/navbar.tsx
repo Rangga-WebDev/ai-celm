@@ -95,11 +95,11 @@ export default function Navbar() {
   }, [pathname, sectionItems]);
 
   return (
-    <header className="sticky top-0 z-50 border-b border-slate-200 bg-white/85 backdrop-blur-xl">
+    <header className="sticky top-0 z-50 border-b border-[var(--line)] glass">
       <Container className="py-3.5">
         <div className="flex items-center justify-between gap-4">
           <Link href="/" className="flex shrink-0 items-center gap-3">
-            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-teal-600 text-lg font-bold text-white">
+            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-teal-600 text-lg font-bold text-white shadow-[0_8px_24px_-12px_rgba(13,148,136,0.8)] ring-1 ring-white/30">
               AC
             </div>
             <div>
@@ -147,7 +147,7 @@ export default function Navbar() {
             aria-label="Buka menu"
             aria-expanded={isOpen}
             onClick={() => setIsOpen((prev) => !prev)}
-            className="flex h-11 w-11 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-700 transition hover:bg-slate-50 lg:hidden"
+            className="flex h-11 w-11 items-center justify-center rounded-2xl border border-[var(--line)] bg-white/70 text-slate-700 backdrop-blur transition hover:bg-white lg:hidden"
           >
             {isOpen ? (
               <X size={20} aria-hidden="true" />
@@ -158,7 +158,7 @@ export default function Navbar() {
         </div>
 
         {isOpen && (
-          <div className="mt-3 rounded-3xl border border-slate-200 bg-white p-4 shadow-xl lg:hidden">
+          <div className="mt-3 rounded-3xl glass-panel p-4 shadow-[0_24px_60px_-30px_rgba(15,23,23,0.45)] lg:hidden">
             <nav className="flex flex-col gap-1">
               {navItems.map((item) => {
                 const isActivePage =

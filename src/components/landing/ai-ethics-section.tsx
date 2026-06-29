@@ -30,15 +30,16 @@ const principles = [
 
 export default function AIEthicsSection() {
   return (
-    <section id="etika" className="scroll-mt-40 bg-slate-50 py-20">
+    <section
+      id="etika"
+      className="scroll-mt-40 border-y border-[var(--line)] bg-white/60 py-24"
+    >
       <Container>
         <div className="grid items-start gap-6 lg:grid-cols-2">
           {/* Kartu utama */}
-          <div className="rounded-3xl border border-teal-200 bg-teal-50 p-8">
-            <div className="text-sm font-semibold uppercase tracking-[0.2em] text-teal-700">
-              Prinsip AI
-            </div>
-            <h2 className="mt-3 text-3xl font-bold text-slate-900 sm:text-4xl">
+          <div className="signature-top rounded-3xl border border-teal-200/70 bg-teal-50/60 p-8 backdrop-blur">
+            <div className="eyebrow">Prinsip AI</div>
+            <h2 className="mt-4 text-4xl font-bold leading-[1.05] tracking-[-0.02em] text-slate-900 text-balance sm:text-5xl">
               AI sebagai pendamping, bukan pengganti dosen
             </h2>
             <p className="mt-4 text-base leading-8 text-slate-700">
@@ -89,7 +90,7 @@ export default function AIEthicsSection() {
           </div>
 
           {/* Daftar prinsip */}
-          <div className="rounded-3xl border border-slate-200 bg-white p-8">
+          <div className="rounded-3xl border border-[var(--line)] bg-white/80 p-8 backdrop-blur">
             <div className="flex items-center justify-between">
               <div>
                 <div className="text-base font-bold text-slate-900">
@@ -99,7 +100,7 @@ export default function AIEthicsSection() {
                   Pondasi penggunaan AI yang aman dan terarah
                 </div>
               </div>
-              <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">
+              <span className="data-numeric rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">
                 4 prinsip
               </span>
             </div>
@@ -108,9 +109,9 @@ export default function AIEthicsSection() {
               {principles.map((item, index) => (
                 <div
                   key={item}
-                  className="rounded-2xl border border-slate-200 bg-slate-50 p-4"
+                  className="rounded-2xl border border-[var(--line)] bg-white/70 p-4"
                 >
-                  <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-teal-600 text-sm font-bold text-white">
+                  <div className="data-numeric flex h-9 w-9 items-center justify-center rounded-xl bg-teal-600 text-sm font-bold text-white">
                     {index + 1}
                   </div>
                   <div className="mt-3 text-base leading-7 text-slate-700">
@@ -124,12 +125,12 @@ export default function AIEthicsSection() {
               {["Mahasiswa", "Bantuan AI", "Dosen Menilai"].map((step, i) => (
                 <div
                   key={step}
-                  className="rounded-2xl border border-slate-200 bg-slate-50 px-3 py-4 text-center"
+                  className="rounded-2xl border border-[var(--line)] bg-white/70 px-3 py-4 text-center"
                 >
-                  <div className="text-xs font-medium uppercase tracking-wide text-slate-400">
+                  <div className="eyebrow text-[0.65rem]">
                     {i === 0 ? "Mulai" : i === 1 ? "Bantu" : "Akhir"}
                   </div>
-                  <div className="mt-1 text-sm font-semibold text-slate-800">
+                  <div className="mt-1.5 text-sm font-semibold text-slate-800">
                     {step}
                   </div>
                 </div>

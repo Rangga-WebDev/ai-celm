@@ -22,27 +22,31 @@ export default function HeroSection() {
   return (
     <section
       id="beranda"
-      className="relative overflow-hidden scroll-mt-28 py-16 sm:py-20 lg:py-24"
+      className="relative overflow-hidden scroll-mt-28 py-20 sm:py-24 lg:py-32"
     >
-      {/* dekorasi lembut */}
+      {/* dekorasi lembut: grid editorial + cahaya aksen tunggal */}
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(13,148,136,0.08),transparent_40%),radial-gradient(circle_at_top_right,rgba(56,189,248,0.08),transparent_40%)]"
+        className="editorial-grid pointer-events-none absolute inset-0 opacity-60"
+      />
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute -top-32 right-[-10%] h-[34rem] w-[34rem] rounded-full bg-[radial-gradient(circle,rgba(13,148,136,0.16),transparent_65%)] blur-2xl"
       />
 
-      <Container className="relative grid gap-12 lg:grid-cols-2 lg:items-center">
-        <div>
-          <div className="inline-flex items-center gap-2 rounded-full border border-teal-200 bg-teal-50 px-4 py-2 text-sm font-medium text-teal-700">
-            <Sparkles size={16} aria-hidden="true" />
-            Platform belajar PKn SD berbasis AI
+      <Container className="relative grid gap-14 lg:grid-cols-[1.05fr_0.95fr] lg:items-center">
+        <div className="animate-soft-rise">
+          <div className="inline-flex items-center gap-2 rounded-full border border-[var(--line)] bg-white/70 px-4 py-2 backdrop-blur">
+            <Sparkles size={15} aria-hidden="true" className="text-teal-600" />
+            <span className="eyebrow">Platform belajar PKn SD berbasis AI</span>
           </div>
 
-          <h1 className="mt-6 text-4xl font-bold leading-tight tracking-tight text-slate-900 sm:text-5xl lg:text-6xl">
+          <h1 className="mt-7 text-[2.75rem] font-bold leading-[1.02] tracking-[-0.03em] text-slate-900 text-balance sm:text-6xl lg:text-7xl">
             Belajar kewarganegaraan jadi{" "}
             <span className="text-teal-600">menyenangkan dan bermakna</span>
           </h1>
 
-          <p className="mt-6 max-w-xl text-lg leading-8 text-slate-600">
+          <p className="mt-7 max-w-xl text-lg leading-8 text-slate-600">
             AI-CELM membantu calon guru SD belajar Pendidikan Kewarganegaraan
             secara bertahap: materi singkat, latihan argumentasi, diskusi, dan
             proyek aksi nyata — semua dalam satu tempat yang mudah digunakan.
@@ -83,19 +87,18 @@ export default function HeroSection() {
           </div>
         </div>
 
-        {/* Kartu preview ringkasan */}
-        <div className="rounded-3xl border border-slate-200 bg-white p-4 shadow-xl shadow-slate-200/60 sm:p-5">
-          <div className="rounded-3xl border border-slate-100 bg-slate-50 p-5 sm:p-6">
-            <div className="flex items-start justify-between gap-4 border-b border-slate-200 pb-4">
+        {/* Kartu preview ringkasan: material kaca dengan ritme data monospace */}
+        <div className="signature-top animate-soft-rise rounded-[1.75rem] glass-panel p-4 shadow-[0_40px_80px_-40px_rgba(15,23,23,0.4)] sm:p-5">
+          <div className="rounded-3xl border border-[var(--line)] bg-white/60 p-5 sm:p-6">
+            <div className="flex items-start justify-between gap-4 border-b border-[var(--line)] pb-4">
               <div>
-                <div className="text-base font-bold text-slate-900">
-                  Ringkasan Belajar
-                </div>
-                <div className="text-sm text-slate-500">
+                <div className="eyebrow">Ringkasan Belajar</div>
+                <div className="mt-1 text-sm text-slate-500">
                   Contoh tampilan dasbor mahasiswa
                 </div>
               </div>
-              <span className="shrink-0 rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-700">
+              <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700 ring-1 ring-emerald-200/70">
+                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
                 Didampingi dosen
               </span>
             </div>
@@ -131,12 +134,12 @@ export default function HeroSection() {
               />
             </div>
 
-            <div className="mt-4 rounded-2xl border border-slate-200 bg-white p-4">
+            <div className="mt-4 rounded-2xl border border-[var(--line)] bg-white/70 p-4">
               <div className="flex items-center justify-between">
                 <div className="text-sm font-semibold text-slate-900">
                   Keterlibatan mingguan
                 </div>
-                <span className="text-xs text-slate-500">
+                <span className="data-numeric text-xs text-slate-500">
                   6 minggu terakhir
                 </span>
               </div>
@@ -179,7 +182,7 @@ function MiniStat({
   bar: number;
 }) {
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white p-4">
+    <div className="rounded-2xl border border-[var(--line)] bg-white/70 p-4">
       <div className="flex items-center gap-2.5">
         <div
           className={`flex h-9 w-9 items-center justify-center rounded-xl ${toneMap[tone]}`}
@@ -188,7 +191,9 @@ function MiniStat({
         </div>
         <div className="text-sm text-slate-500">{label}</div>
       </div>
-      <div className="mt-3 text-2xl font-bold text-slate-900">{value}</div>
+      <div className="data-numeric mt-3 text-2xl font-bold text-slate-900">
+        {value}
+      </div>
       <div className="mt-2 h-2 rounded-full bg-slate-100">
         <div
           className={`h-2 rounded-full ${barMap[tone]}`}

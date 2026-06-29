@@ -2,9 +2,37 @@
 
 @import "tailwindcss";
 
+/* ===== Design tokens 2026 =====
+   Arah: clarity dengan signature — kertas hangat, satu warna aksen (teal),
+   layering tipis (hairline), tipografi yang bernapas, ritme data via monospace. */
 :root {
-  --background: #ffffff;
-  --foreground: #0f172a;
+  /* Permukaan: kertas hangat (calm + function-forward), bukan putih steril */
+  --paper: #f7f7f4;
+  --surface: #ffffff;
+  --background: var(--paper);
+  --foreground: #0f1715;
+
+  /* Garis rambut untuk kedalaman tipis (bukan drop-shadow tebal) */
+  --line: rgba(15, 23, 23, 0.08);
+  --line-strong: rgba(15, 23, 23, 0.14);
+
+  /* Satu warna aksen + dukungannya */
+  --accent: #0d9488;
+  --accent-strong: #0f766e;
+  --accent-soft: rgba(13, 148, 136, 0.1);
+
+  /* Tipografi */
+  --font-sans:
+    Poppins, Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+    "Segoe UI", sans-serif;
+}
+
+/* Daftarkan token tipografi ke Tailwind v4 agar utilitas font-mono tersedia
+   dan custom class (.eyebrow/.data-numeric) memakai var(--font-mono) yang sama. */
+@theme {
+  --font-mono:
+    "JetBrains Mono", "SFMono-Regular", ui-monospace, "Cascadia Code",
+    "Source Code Pro", Menlo, Consolas, monospace;
 }
 
 * {
@@ -16,21 +44,104 @@ html {
   /* Skala font ramah usia: diatur oleh tombol A- / A+ pada area mahasiswa.
      Basis 100% = 16px. Nilai disimpan di localStorage dan dipasang lewat JS. */
   font-size: var(--app-font-scale, 100%);
+  -webkit-text-size-adjust: 100%;
 }
 
 body {
   margin: 0;
   background: var(--background);
   color: var(--foreground);
-  font-family:
-    Poppins,
-    Inter,
-    ui-sans-serif,
-    system-ui,
-    -apple-system,
-    BlinkMacSystemFont,
-    "Segoe UI",
-    sans-serif;
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* ===== Utilitas signature 2026 ===== */
+
+/* Eyebrow monospace: menyelaraskan ritme visual dengan logika data */
+.eyebrow {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  font-weight: 500;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--accent-strong);
+}
+
+/* Angka data dengan tabular figures + monospace agar rapi sejajar */
+.data-numeric {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+}
+
+/* Liquid glass: material hidup yang membias konteks (tanpa skeuomorphism penuh) */
+.glass {
+  background: color-mix(in srgb, var(--surface) 70%, transparent);
+  backdrop-filter: blur(18px) saturate(150%);
+  -webkit-backdrop-filter: blur(18px) saturate(150%);
+  border: 1px solid color-mix(in srgb, #ffffff 55%, transparent);
+}
+.glass-panel {
+  background: color-mix(in srgb, var(--surface) 82%, transparent);
+  backdrop-filter: blur(24px) saturate(140%);
+  -webkit-backdrop-filter: blur(24px) saturate(140%);
+  border: 1px solid var(--line);
+}
+
+/* Hairline border helper (kedalaman lewat layering tipis) */
+.hairline {
+  border: 1px solid var(--line);
+}
+
+/* Grid editorial halus sebagai elemen depan (wireframe-to-UI) */
+.editorial-grid {
+  background-image:
+    linear-gradient(to right, var(--line) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--line) 1px, transparent 1px);
+  background-size: 56px 56px;
+  mask-image: radial-gradient(circle at center, #000 0%, transparent 78%);
+  -webkit-mask-image: radial-gradient(
+    circle at center,
+    #000 0%,
+    transparent 78%
+  );
+}
+
+/* Motion yang memandu, bukan berkedip: reveal lembut saat masuk */
+@keyframes soft-rise {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.animate-soft-rise {
+  animation: soft-rise 0.6s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* Aksen garis-atas tipis sebagai ciri khas kartu signature */
+.signature-top {
+  position: relative;
+}
+.signature-top::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto auto 0;
+  height: 2px;
+  width: 100%;
+  border-radius: 9999px 9999px 0 0;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    var(--accent) 30%,
+    var(--accent) 70%,
+    transparent
+  );
+  opacity: 0.7;
 }
 
 /* ===== Aksesibilitas global (WCAG 2.1 AA) ===== */
@@ -109,4 +220,14 @@ html[data-simple="on"] * {
 }
 html[data-simple="on"] :where(.rounded-3xl, .rounded-2xl) {
   border-radius: 0.75rem !important;
+}
+/* Mode sederhana: matikan material kaca & grid agar tenang dan hemat GPU. */
+html[data-simple="on"] :where(.glass, .glass-panel) {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  background: var(--surface) !important;
+}
+html[data-simple="on"] .editorial-grid,
+html[data-simple="on"] .signature-top::before {
+  display: none !important;
 }
