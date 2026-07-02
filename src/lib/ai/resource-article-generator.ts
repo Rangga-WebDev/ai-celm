@@ -9,11 +9,18 @@ import { DEFAULT_OPENAI_MODEL, getOpenAIClient } from "@/lib/ai/openai";
  */
 export const MAX_RESOURCE_MATERIAL_CHARS = 14000;
 
+export type ResourceOutcomeContext = {
+  code: string;
+  statement: string;
+};
+
 export type ResourceArticleGeneratorInput = {
   courseTitle: string;
   materialTitle: string;
   materialText: string;
   focus?: string | null;
+  cpls?: ResourceOutcomeContext[];
+  cpmks?: ResourceOutcomeContext[];
 };
 
 const generatedArticleSchema = z.object({
@@ -43,6 +50,7 @@ Aturan penting:
 - Tulis artikel dalam format MARKDOWN yang rapi: gunakan heading (##, ###), paragraf, daftar berpoin, penekanan (**tebal**), dan kutipan bila perlu.
 - Susun materi dari yang paling mudah ke yang paling kompleks, dengan alur yang logis.
 - Buat HANYA berdasarkan isi materi yang diberikan. JANGAN mengarang fakta di luar materi. Jika informasi tidak ada di materi, jangan menambahkannya.
+- Jika diberikan daftar CPL/CPMK, selaraskan pembahasan artikel agar mendukung ketercapaian capaian pembelajaran tersebut (tanpa menambah fakta di luar materi).
 - Sertakan contoh penerapan nyata untuk konteks guru SD bila relevan.
 - Akhiri dengan bagian "## Rangkuman" berisi poin-poin kunci.
 - Panjang artikel proporsional dengan materi (jangan terlalu pendek, jangan bertele-tele).
@@ -59,10 +67,30 @@ function buildUserPrompt(
   input: ResourceArticleGeneratorInput,
   materialText: string,
 ): string {
+  const cplBlock =
+    input.cpls && input.cpls.length > 0
+      ? [
+          "",
+          "=== CPL acuan ===",
+          ...input.cpls.map((c) => `- ${c.code}: ${c.statement}`),
+        ]
+      : [];
+
+  const cpmkBlock =
+    input.cpmks && input.cpmks.length > 0
+      ? [
+          "",
+          "=== CPMK yang harus didukung ===",
+          ...input.cpmks.map((c) => `- ${c.code}: ${c.statement}`),
+        ]
+      : [];
+
   return [
     `Mata kuliah: ${input.courseTitle}`,
     `Judul materi sumber: ${input.materialTitle}`,
     input.focus ? `Fokus/permintaan khusus dosen: ${input.focus}` : null,
+    ...cplBlock,
+    ...cpmkBlock,
     "",
     "=== Isi Materi PDF ===",
     materialText,

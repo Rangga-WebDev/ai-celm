@@ -2,6 +2,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { usePathname, useRouter } from "next/navigation";
 import StudentSidebar from "@/components/student/student-sidebar";
 import StudentTopbar from "@/components/student/student-topbar";
 import StudentHelpPanel from "@/components/student/student-help-panel";
@@ -30,12 +31,14 @@ const STUDENT_TOUR_STEPS: OnboardingStep[] = [
 
 type StudentShellProps = {
   children: React.ReactNode;
+  profileComplete?: boolean;
   user: {
     id: string;
     firstName: string;
     lastName: string;
     email: string;
     role: string;
+    avatarUrl?: string | null;
   };
 };
 
@@ -44,7 +47,13 @@ const FONT_MIN = 90;
 const FONT_MAX = 130;
 const FONT_STEP = 10;
 
-export default function StudentShell({ children, user }: StudentShellProps) {
+export default function StudentShell({
+  children,
+  user,
+  profileComplete = true,
+}: StudentShellProps) {
+  const router = useRouter();
+  const pathname = usePathname();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
@@ -76,6 +85,14 @@ export default function StudentShell({ children, user }: StudentShellProps) {
     );
     window.localStorage.setItem(FONT_SCALE_KEY, String(fontScale));
   }, [fontScale]);
+
+  // Wajibkan kelengkapan profil (NIM & kelas) sebelum memakai fitur lain.
+  const onSettingsPage = pathname?.startsWith("/student/settings") ?? false;
+  useEffect(() => {
+    if (!profileComplete && !onSettingsPage) {
+      router.replace("/student/settings");
+    }
+  }, [profileComplete, onSettingsPage, router]);
 
   const increaseFont = () =>
     setFontScale((prev) => Math.min(FONT_MAX, prev + FONT_STEP));

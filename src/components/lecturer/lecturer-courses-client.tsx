@@ -11,11 +11,15 @@ import {
   FileText,
   GraduationCap,
   LibraryBig,
+  Loader2,
   MessageSquareMore,
+  Plus,
   RefreshCcw,
   Search,
   Target,
+  Trash2,
   Users,
+  X,
 } from "lucide-react";
 
 type LecturerCoursesClientProps = {
@@ -114,6 +118,16 @@ export default function LecturerCoursesClient({
     "ALL" | "PUBLISHED" | "DRAFT"
   >("ALL");
 
+  const [showCreate, setShowCreate] = useState(false);
+  const [createForm, setCreateForm] = useState({
+    title: "",
+    code: "",
+    description: "",
+  });
+  const [creating, setCreating] = useState(false);
+  const [createError, setCreateError] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+
   async function fetchCourses() {
     try {
       setLoading(true);
@@ -141,6 +155,79 @@ export default function LecturerCoursesClient({
     fetchCourses();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user.id]);
+
+  async function handleCreateCourse(event: React.FormEvent) {
+    event.preventDefault();
+
+    const title = createForm.title.trim();
+    if (title.length < 3) {
+      setCreateError("Nama mata kuliah minimal 3 karakter.");
+      return;
+    }
+
+    try {
+      setCreating(true);
+      setCreateError(null);
+
+      const res = await fetch(`/api/lecturers/${user.id}/courses`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title,
+          code: createForm.code.trim() || undefined,
+          description: createForm.description.trim() || undefined,
+        }),
+      });
+
+      const json = (await res.json()) as {
+        success: boolean;
+        message?: string;
+      };
+
+      if (!res.ok || !json.success) {
+        throw new Error(json.message || "Gagal membuat mata kuliah.");
+      }
+
+      setCreateForm({ title: "", code: "", description: "" });
+      setShowCreate(false);
+      await fetchCourses();
+    } catch (err) {
+      setCreateError(err instanceof Error ? err.message : "Unknown error");
+    } finally {
+      setCreating(false);
+    }
+  }
+
+  async function handleDeleteCourse(course: CourseItem) {
+    const confirmed = window.confirm(
+      `Hapus mata kuliah "${course.title}"? Semua modul, bahan belajar, tugas, dan data mahasiswa pada mata kuliah ini akan ikut terhapus dan tidak dapat dikembalikan.`,
+    );
+    if (!confirmed) return;
+
+    try {
+      setDeletingId(course.id);
+
+      const res = await fetch(
+        `/api/lecturers/${user.id}/courses/${course.slug}`,
+        { method: "DELETE" },
+      );
+
+      const json = (await res.json()) as {
+        success: boolean;
+        message?: string;
+      };
+
+      if (!res.ok || !json.success) {
+        throw new Error(json.message || "Gagal menghapus mata kuliah.");
+      }
+
+      await fetchCourses();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Unknown error");
+    } finally {
+      setDeletingId(null);
+    }
+  }
 
   const filteredCourses = useMemo(() => {
     if (!data) return [];
@@ -203,7 +290,131 @@ export default function LecturerCoursesClient({
           Pilih mata kuliah untuk mengelola modul, bahan belajar, tugas, forum,
           dan memantau perkembangan mahasiswa.
         </p>
+        <button
+          type="button"
+          onClick={() => {
+            setShowCreate((prev) => !prev);
+            setCreateError(null);
+          }}
+          className="mt-5 inline-flex items-center gap-2 rounded-2xl bg-white px-5 py-3 text-base font-semibold text-teal-700 transition hover:bg-teal-50"
+        >
+          {showCreate ? (
+            <>
+              <X size={18} aria-hidden="true" />
+              Tutup Formulir
+            </>
+          ) : (
+            <>
+              <Plus size={18} aria-hidden="true" />
+              Tambah Mata Kuliah
+            </>
+          )}
+        </button>
       </section>
+
+      {/* Formulir tambah mata kuliah */}
+      {showCreate ? (
+        <section className="rounded-3xl border border-teal-200 bg-teal-50/60 p-6">
+          <h2 className="text-lg font-bold text-slate-900">
+            Tambah Mata Kuliah Baru
+          </h2>
+          <p className="mt-1 text-sm text-slate-600">
+            Mata kuliah baru akan berstatus draf dan otomatis diampu oleh Anda.
+            Lengkapi kurikulum, CPL, dan CPMK setelah dibuat.
+          </p>
+
+          <form
+            onSubmit={handleCreateCourse}
+            className="mt-4 grid gap-4 sm:grid-cols-2"
+          >
+            <div className="sm:col-span-2">
+              <label className="mb-1.5 block text-sm font-medium text-slate-700">
+                Nama Mata Kuliah <span className="text-rose-500">*</span>
+              </label>
+              <input
+                value={createForm.title}
+                onChange={(event) =>
+                  setCreateForm((prev) => ({
+                    ...prev,
+                    title: event.target.value,
+                  }))
+                }
+                placeholder="Contoh: Pendidikan Pancasila SD"
+                className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-base text-slate-900 outline-none focus:border-teal-500"
+              />
+            </div>
+
+            <div>
+              <label className="mb-1.5 block text-sm font-medium text-slate-700">
+                Kode Mata Kuliah
+              </label>
+              <input
+                value={createForm.code}
+                onChange={(event) =>
+                  setCreateForm((prev) => ({
+                    ...prev,
+                    code: event.target.value,
+                  }))
+                }
+                placeholder="Contoh: PKN-101"
+                className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-base text-slate-900 outline-none focus:border-teal-500"
+              />
+            </div>
+
+            <div>
+              <label className="mb-1.5 block text-sm font-medium text-slate-700">
+                Deskripsi Singkat
+              </label>
+              <input
+                value={createForm.description}
+                onChange={(event) =>
+                  setCreateForm((prev) => ({
+                    ...prev,
+                    description: event.target.value,
+                  }))
+                }
+                placeholder="Ringkasan singkat mata kuliah"
+                className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-base text-slate-900 outline-none focus:border-teal-500"
+              />
+            </div>
+
+            {createError ? (
+              <p className="sm:col-span-2 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+                {createError}
+              </p>
+            ) : null}
+
+            <div className="sm:col-span-2 flex gap-2.5">
+              <button
+                type="submit"
+                disabled={creating}
+                className="inline-flex items-center gap-2 rounded-2xl bg-teal-600 px-5 py-3 text-base font-semibold text-white transition hover:bg-teal-700 disabled:opacity-60"
+              >
+                {creating ? (
+                  <Loader2
+                    size={18}
+                    className="animate-spin"
+                    aria-hidden="true"
+                  />
+                ) : (
+                  <Plus size={18} aria-hidden="true" />
+                )}
+                {creating ? "Menyimpan..." : "Simpan Mata Kuliah"}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowCreate(false);
+                  setCreateError(null);
+                }}
+                className="inline-flex items-center rounded-2xl border border-slate-200 bg-white px-5 py-3 text-base font-medium text-slate-700 transition hover:bg-slate-50"
+              >
+                Batal
+              </button>
+            </div>
+          </form>
+        </section>
+      ) : null}
 
       {/* Ringkasan angka */}
       <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
@@ -279,7 +490,12 @@ export default function LecturerCoursesClient({
       ) : (
         <div className="grid gap-5">
           {filteredCourses.map((course) => (
-            <CourseCard key={course.id} course={course} />
+            <CourseCard
+              key={course.id}
+              course={course}
+              onDelete={handleDeleteCourse}
+              deleting={deletingId === course.id}
+            />
           ))}
         </div>
       )}
@@ -287,7 +503,15 @@ export default function LecturerCoursesClient({
   );
 }
 
-function CourseCard({ course }: { course: CourseItem }) {
+function CourseCard({
+  course,
+  onDelete,
+  deleting,
+}: {
+  course: CourseItem;
+  onDelete: (course: CourseItem) => void;
+  deleting: boolean;
+}) {
   return (
     <div className="rounded-3xl border border-slate-200 bg-white p-6">
       <div className="flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
@@ -380,6 +604,19 @@ function CourseCard({ course }: { course: CourseItem }) {
           label="Project Aksi"
           icon={Target}
         />
+        <button
+          type="button"
+          onClick={() => onDelete(course)}
+          disabled={deleting}
+          className="inline-flex items-center gap-2 rounded-2xl border border-rose-200 px-4 py-3 text-base font-medium text-rose-600 transition hover:bg-rose-50 disabled:opacity-60"
+        >
+          {deleting ? (
+            <Loader2 size={16} className="animate-spin" aria-hidden="true" />
+          ) : (
+            <Trash2 size={16} aria-hidden="true" />
+          )}
+          {deleting ? "Menghapus..." : "Hapus"}
+        </button>
       </div>
     </div>
   );

@@ -10,6 +10,7 @@ import {
   GraduationCap,
   Home,
   LifeBuoy,
+  Settings,
   type LucideIcon,
 } from "lucide-react";
 
@@ -48,6 +49,12 @@ const navItems: Array<{
     icon: Award,
     description: "Rangkuman capaian belajar Anda",
   },
+  {
+    label: "Pengaturan Profil",
+    href: "/student/settings",
+    icon: Settings,
+    description: "Foto, NIM, nama, dan kelas",
+  },
 ];
 
 export default function StudentSidebar({
@@ -58,9 +65,11 @@ export default function StudentSidebar({
   onOpenHelp,
 }: {
   user: {
+    id: string;
     firstName: string;
     lastName: string;
     email: string;
+    avatarUrl?: string | null;
   };
   isMobile: boolean;
   open: boolean;
@@ -123,9 +132,18 @@ export default function StudentSidebar({
         {/* Kartu profil */}
         <div className="shrink-0 px-4 pt-4">
           <div className="flex items-center gap-3 rounded-2xl bg-slate-50 p-3">
-            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-teal-100 text-base font-bold text-teal-700">
-              {initials || "M"}
-            </div>
+            {user.avatarUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={`/api/users/${user.id}/avatar`}
+                alt="Foto profil"
+                className="h-12 w-12 shrink-0 rounded-2xl object-cover"
+              />
+            ) : (
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-teal-100 text-base font-bold text-teal-700">
+                {initials || "M"}
+              </div>
+            )}
             <div className="min-w-0">
               <div className="truncate text-base font-semibold text-slate-900">
                 {user.firstName} {user.lastName}

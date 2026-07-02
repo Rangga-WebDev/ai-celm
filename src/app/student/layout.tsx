@@ -19,5 +19,11 @@ export default async function StudentLayout({
     redirect("/login");
   }
 
-  return <StudentShell user={user}>{children}</StudentShell>;
+  const profileComplete = Boolean(user.nim?.trim() && user.kelas?.trim());
+
+  return (
+    <StudentShell user={user} profileComplete={profileComplete}>
+      {children}
+    </StudentShell>
+  );
 }

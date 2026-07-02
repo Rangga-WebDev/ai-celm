@@ -111,11 +111,31 @@ export async function POST(request: NextRequest, { params }: Params) {
       );
     }
 
+    const [cplMappings, cpmks] = await Promise.all([
+      prisma.courseCPL.findMany({
+        where: { courseId: course.id },
+        select: { cpl: { select: { code: true, statement: true } } },
+      }),
+      prisma.cPMK.findMany({
+        where: { courseId: course.id },
+        orderBy: { order: "asc" },
+        select: { code: true, statement: true },
+      }),
+    ]);
+
     const result = await generateResourceArticle({
       courseTitle: course.title,
       materialTitle: material.title,
       materialText: material.extractedText,
       focus,
+      cpls: cplMappings.map((item) => ({
+        code: item.cpl.code,
+        statement: item.cpl.statement,
+      })),
+      cpmks: cpmks.map((item) => ({
+        code: item.code,
+        statement: item.statement,
+      })),
     });
 
     await prisma.aIResponseLog.create({

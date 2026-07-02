@@ -1,0 +1,4 @@
+-- AlterTable
+ALTER TABLE "User" ADD COLUMN "nim" TEXT;
+ALTER TABLE "User" ADD COLUMN "kelas" TEXT;
+ALTER TABLE "User" ADD COLUMN "avatarUrl" TEXT;

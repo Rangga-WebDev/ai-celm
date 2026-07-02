@@ -341,3 +341,101 @@ export async function GET(_: Request, { params }: Params) {
     );
   }
 }
+
+function slugify(value: string) {
+  return value
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9\s-]/g, "")
+    .replace(/\s+/g, "-")
+    .replace(/-+/g, "-");
+}
+
+function optionalText(value: unknown) {
+  const text = String(value ?? "").trim();
+  return text.length > 0 ? text : null;
+}
+
+export async function POST(request: Request, { params }: Params) {
+  try {
+    const auth = await requireUser([Role.LECTURER]);
+    if (auth.response) return auth.response;
+
+    const { userId } = await params;
+    if (auth.user.id !== userId) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "Lecturer can only create their own courses",
+        },
+        { status: 403 },
+      );
+    }
+
+    const body = (await request.json().catch(() => null)) as {
+      title?: unknown;
+      code?: unknown;
+      description?: unknown;
+    } | null;
+
+    const title = String(body?.title ?? "").trim();
+    const code = optionalText(body?.code);
+    const description = optionalText(body?.description);
+
+    if (title.length < 3) {
+      return NextResponse.json(
+        { success: false, message: "Judul mata kuliah minimal 3 karakter." },
+        { status: 400 },
+      );
+    }
+
+    const baseSlug = slugify(title) || "mata-kuliah";
+    let slug = baseSlug;
+    let suffix = 1;
+    // Pastikan slug unik secara global.
+    while (
+      await prisma.course.findUnique({
+        where: { slug },
+        select: { id: true },
+      })
+    ) {
+      suffix += 1;
+      slug = `${baseSlug}-${suffix}`;
+    }
+
+    const created = await prisma.course.create({
+      data: {
+        title,
+        slug,
+        code,
+        description,
+        lecturerId: userId,
+        isPublished: false,
+      },
+      select: {
+        id: true,
+        title: true,
+        slug: true,
+        code: true,
+        description: true,
+        isPublished: true,
+        createdAt: true,
+      },
+    });
+
+    return NextResponse.json(
+      {
+        success: true,
+        message: "Mata kuliah berhasil dibuat.",
+        data: { course: created },
+      },
+      { status: 201 },
+    );
+  } catch (error) {
+    console.error("POST /api/lecturers/[userId]/courses error:", error);
+    return NextResponse.json(
+      { success: false, message: "Gagal membuat mata kuliah." },
+      { status: 500 },
+    );
+  }
+}

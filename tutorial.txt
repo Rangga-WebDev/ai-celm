@@ -41,14 +41,33 @@ C. MASUK (LOGIN) — untuk Dosen & Mahasiswa
       - Dosen     -> /lecturer/dashboard
       - Mahasiswa -> /student/dashboard
 
-D. AKUN PENGUJI (TESTER) — semua berperan DOSEN
-   Email dan kata sandi para penguji menggunakan pola:
-        kata-sandi = [bagian-depan-email] + "12345!"
-   Contoh:
-        agustan@uinpalopo.ac.id        -> agustan12345!
-        abdul.azis@unismuh.ac.id       -> abdul.azis12345!
-        akbaraba97@gmail.com           -> akbaraba9712345!
-   (Hanya untuk keperluan pengujian.)
+D. DAFTAR AKUN TERDAFTAR
+   Berikut akun yang sudah disiapkan di sistem (hasil seed). Gunakan untuk
+   login di /login. RAHASIAKAN daftar ini — hanya untuk pengembangan/pengujian.
+
+   D.1 AKUN BAWAAN (DEMO)
+        Peran      Email                      Kata Sandi      Nama
+        ---------  -------------------------  --------------  -----------------
+        ADMIN      admin@aicelm.local         Admin12345!     System Admin
+        DOSEN      dosen@aicelm.local         Lecturer123!    Try Gustaf Said
+        MAHASISWA  mahasiswa@aicelm.local     Student123!     Mahasiswa Demo
+
+   D.2 AKUN PENGUJI (TESTER) — semua berperan DOSEN
+        Pola kata sandi = [bagian-depan-email] + "12345!"
+
+        Email                              Kata Sandi
+        ---------------------------------  ----------------------------
+        Ridhaichwantysabir69@gmail.com     Ridhaichwantysabir6912345!
+        agustan@uinpalopo.ac.id            agustan12345!
+        akbaraba97@gmail.com               akbaraba9712345!
+        rismawatia34@gmail.com             rismawatia3412345!
+        abdul.azis@unismuh.ac.id           abdul.azis12345!
+        nursakiah@unismuh.ac.id            nursakiah12345!
+        rahim.ruspa@gmail.com              rahim.ruspa12345!
+        musdalifahsyahrir@unismuh.ac.id    musdalifahsyahrir12345!
+        syahar2@gmail.com                  syahar212345!
+
+        CATATAN: Disarankan mengganti kata sandi setelah login pertama.
 
 E. PEMBATASAN AI (RATE LIMIT & KUOTA)
    Setiap fitur AI dibatasi agar adil dan hemat:

@@ -14,6 +14,8 @@ export default function RegisterForm() {
   const [form, setForm] = useState({
     firstName: "",
     lastName: "",
+    nim: "",
+    kelas: "",
     email: "",
     role: "STUDENT" as RegisterRole,
     password: "",
@@ -58,6 +60,8 @@ export default function RegisterForm() {
         body: JSON.stringify({
           firstName: form.firstName,
           lastName: form.lastName,
+          nim: form.nim,
+          kelas: form.kelas,
           email: form.email,
           role: "STUDENT",
           password: form.password,
@@ -142,6 +146,34 @@ export default function RegisterForm() {
             placeholder="nama@email.com"
             className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-base text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-teal-500 focus:ring-2 focus:ring-teal-100"
           />
+        </div>
+
+        <div className="grid gap-5 sm:grid-cols-2">
+          <div>
+            <label className="mb-2 block text-sm font-medium text-slate-700">
+              NIM
+            </label>
+            <input
+              type="text"
+              value={form.nim}
+              onChange={(e) => updateField("nim", e.target.value)}
+              placeholder="Nomor Induk Mahasiswa"
+              className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-base text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-teal-500 focus:ring-2 focus:ring-teal-100"
+            />
+          </div>
+
+          <div>
+            <label className="mb-2 block text-sm font-medium text-slate-700">
+              Kelas
+            </label>
+            <input
+              type="text"
+              value={form.kelas}
+              onChange={(e) => updateField("kelas", e.target.value)}
+              placeholder="Mis. PGSD 3A"
+              className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-base text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-teal-500 focus:ring-2 focus:ring-teal-100"
+            />
+          </div>
         </div>
 
         <div className="grid gap-5 sm:grid-cols-2">

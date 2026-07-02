@@ -3,6 +3,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import {
   AIInteractionType,
+  MaterialCategory,
   MaterialStatus,
   Role,
 } from "@/generated/prisma/client";
@@ -93,6 +94,62 @@ export async function POST(request: NextRequest, { params }: Params) {
       );
     }
 
+    // Prasyarat AI: kurikulum + CPL wajib lengkap agar modul selaras capaian.
+    let cplContext: Array<{ code: string; statement: string }> = [];
+    let cpmkContext: Array<{ code: string; statement: string }> = [];
+    if (mode === "ai") {
+      const [cplMappings, cpmks, curriculumReady] = await Promise.all([
+        prisma.courseCPL.findMany({
+          where: { courseId: course.id },
+          select: { cpl: { select: { code: true, statement: true } } },
+        }),
+        prisma.cPMK.findMany({
+          where: { courseId: course.id },
+          orderBy: { order: "asc" },
+          select: { code: true, statement: true },
+        }),
+        prisma.courseMaterial.findFirst({
+          where: {
+            courseId: course.id,
+            category: MaterialCategory.CURRICULUM,
+            status: MaterialStatus.READY,
+          },
+          select: { id: true },
+        }),
+      ]);
+
+      if (cplMappings.length === 0) {
+        return NextResponse.json(
+          {
+            success: false,
+            message:
+              "Tetapkan minimal satu CPL pada menu Kurikulum & CPMK sebelum membuat modul dengan AI.",
+          },
+          { status: 409 },
+        );
+      }
+
+      if (!curriculumReady) {
+        return NextResponse.json(
+          {
+            success: false,
+            message:
+              "Unggah dokumen kurikulum yang berhasil diproses pada menu Kurikulum & CPMK sebelum membuat modul dengan AI.",
+          },
+          { status: 409 },
+        );
+      }
+
+      cplContext = cplMappings.map((item) => ({
+        code: item.cpl.code,
+        statement: item.cpl.statement,
+      }));
+      cpmkContext = cpmks.map((item) => ({
+        code: item.code,
+        statement: item.statement,
+      }));
+    }
+
     if (mode === "ai") {
       const limited = await enforceAiRateLimit(auth.user.id);
       if (limited.response) return limited.response;
@@ -164,6 +221,8 @@ export async function POST(request: NextRequest, { params }: Params) {
       moduleDescription: targetModule.description,
       materialTitle: material.title,
       materialText: material.extractedText,
+      cpls: cplContext,
+      cpmks: cpmkContext,
     });
 
     await prisma.module.update({

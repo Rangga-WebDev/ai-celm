@@ -13,7 +13,9 @@ import {
   LibraryBig,
   ListChecks,
   MessageSquareMore,
+  Sparkles,
   Target,
+  TrendingUp,
   X,
 } from "lucide-react";
 
@@ -62,6 +64,11 @@ export default function LecturerSidebar({
           icon: BookOpen,
         },
         {
+          label: "Kurikulum & CPMK",
+          href: `/lecturer/courses/${courseSlug}/curriculum`,
+          icon: Sparkles,
+        },
+        {
           label: "Modul",
           href: `/lecturer/courses/${courseSlug}/modules`,
           icon: LibraryBig,
@@ -85,6 +92,11 @@ export default function LecturerSidebar({
           label: "Project Aksi",
           href: `/lecturer/courses/${courseSlug}/projects`,
           icon: Target,
+        },
+        {
+          label: "Analisis Civic",
+          href: `/lecturer/courses/${courseSlug}/civic-analysis`,
+          icon: TrendingUp,
         },
         {
           label: "Nilai",

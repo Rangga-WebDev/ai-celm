@@ -21,6 +21,9 @@ export async function getCurrentUser() {
         lastName: true,
         email: true,
         role: true,
+        nim: true,
+        kelas: true,
+        avatarUrl: true,
       },
     });
 

@@ -13,12 +13,19 @@ import {
  */
 export const MAX_MODULE_MATERIAL_CHARS = 14000;
 
+export type ModuleOutcomeContext = {
+  code: string;
+  statement: string;
+};
+
 export type ModuleContentGeneratorInput = {
   courseTitle: string;
   moduleTitle: string;
   moduleDescription: string | null;
   materialTitle: string;
   materialText: string;
+  cpls?: ModuleOutcomeContext[];
+  cpmks?: ModuleOutcomeContext[];
 };
 
 const generatedContentSchema = z.object({
@@ -91,6 +98,7 @@ Aturan penting:
 - Gunakan Bahasa Indonesia yang komunikatif, seolah dosen berbicara langsung dengan mahasiswa (bukan bahasa kaku buku teks).
 - Susun materi dari yang paling mudah ke yang paling kompleks.
 - Buat HANYA berdasarkan isi materi yang diberikan. JANGAN mengarang fakta di luar materi. Jika informasi tidak ada di materi, biarkan bagian itu singkat atau kosong.
+- Jika diberikan daftar CPL (Capaian Pembelajaran Lulusan) dan CPMK (Capaian Pembelajaran Mata Kuliah), SELARASKAN isi modul dengan capaian tersebut. Rumusan "capaianPembelajaran" pada pendahuluan harus menurunkan CPMK yang relevan, dan kegiatan belajar harus mendukung ketercapaian CPMK/CPL tersebut.
 - Capaian Pembelajaran memakai kata kerja operasional Taksonomi Bloom tingkat tinggi (mis. "Mahasiswa mampu menganalisis...", "Mahasiswa mampu mendesain...").
 - Buat 1 sampai 3 kegiatan belajar sesuai cakupan materi. Setiap kegiatan memuat uraian materi mendalam, contoh/studi kasus nyata, pertanyaan refleksi sisipan, dan rangkuman poin.
 - Tes formatif berisi 3-5 soal pemahaman beserta kunci jawaban singkat.
@@ -131,6 +139,24 @@ function buildUserPrompt(
   input: ModuleContentGeneratorInput,
   materialText: string,
 ): string {
+  const cplBlock =
+    input.cpls && input.cpls.length > 0
+      ? [
+          "",
+          "=== CPL (Capaian Pembelajaran Lulusan) acuan ===",
+          ...input.cpls.map((c) => `- ${c.code}: ${c.statement}`),
+        ]
+      : [];
+
+  const cpmkBlock =
+    input.cpmks && input.cpmks.length > 0
+      ? [
+          "",
+          "=== CPMK (Capaian Pembelajaran Mata Kuliah) yang harus didukung ===",
+          ...input.cpmks.map((c) => `- ${c.code}: ${c.statement}`),
+        ]
+      : [];
+
   return [
     `Mata kuliah: ${input.courseTitle}`,
     `Judul modul: ${input.moduleTitle}`,
@@ -138,6 +164,8 @@ function buildUserPrompt(
       ? `Deskripsi modul: ${input.moduleDescription}`
       : null,
     `Judul materi sumber: ${input.materialTitle}`,
+    ...cplBlock,
+    ...cpmkBlock,
     "",
     "=== Isi Materi PDF ===",
     materialText,

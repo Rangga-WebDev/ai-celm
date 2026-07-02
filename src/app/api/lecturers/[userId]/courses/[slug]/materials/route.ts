@@ -1,7 +1,11 @@
 /** @format */
 
 import { NextRequest, NextResponse } from "next/server";
-import { MaterialStatus, Role } from "@/generated/prisma/client";
+import {
+  MaterialStatus,
+  MaterialCategory,
+  Role,
+} from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/api-guard";
 import { saveMaterialFile } from "@/lib/materials/storage";
@@ -67,6 +71,7 @@ export async function GET(_: NextRequest, { params }: Params) {
         fileSize: true,
         charCount: true,
         status: true,
+        category: true,
         errorMessage: true,
         createdAt: true,
         moduleId: true,
@@ -112,6 +117,11 @@ export async function POST(req: NextRequest, { params }: Params) {
     const title = optionalText(formData.get("title"));
     const description = optionalText(formData.get("description"));
     const moduleIdRaw = optionalText(formData.get("moduleId"));
+    const categoryRaw = optionalText(formData.get("category"));
+    const category =
+      categoryRaw === "CURRICULUM"
+        ? MaterialCategory.CURRICULUM
+        : MaterialCategory.GENERAL;
 
     if (!(file instanceof File)) {
       return NextResponse.json(
@@ -203,6 +213,7 @@ export async function POST(req: NextRequest, { params }: Params) {
         extractedText,
         charCount,
         status,
+        category,
         errorMessage,
       },
       select: {
@@ -214,6 +225,7 @@ export async function POST(req: NextRequest, { params }: Params) {
         fileSize: true,
         charCount: true,
         status: true,
+        category: true,
         errorMessage: true,
         createdAt: true,
         moduleId: true,

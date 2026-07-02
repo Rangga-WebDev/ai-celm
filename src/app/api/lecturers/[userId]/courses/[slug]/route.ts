@@ -313,3 +313,44 @@ export async function GET(_: Request, { params }: Params) {
     );
   }
 }
+
+export async function DELETE(_: Request, { params }: Params) {
+  try {
+    const { userId, slug } = await params;
+
+    const auth = await requireUser([Role.LECTURER]);
+    if (auth.response) return auth.response;
+
+    if (auth.user.id !== userId) {
+      return forbiddenResponse("Lecturer can only delete their own course");
+    }
+
+    const course = await prisma.course.findFirst({
+      where: { slug, lecturerId: userId },
+      select: { id: true, title: true },
+    });
+
+    if (!course) {
+      return NextResponse.json(
+        { success: false, message: "Mata kuliah tidak ditemukan." },
+        { status: 404 },
+      );
+    }
+
+    await prisma.course.delete({ where: { id: course.id } });
+
+    return NextResponse.json(
+      { success: true, message: "Mata kuliah berhasil dihapus." },
+      { status: 200 },
+    );
+  } catch (error) {
+    console.error(
+      "DELETE /api/lecturers/[userId]/courses/[slug] error:",
+      error,
+    );
+    return NextResponse.json(
+      { success: false, message: "Gagal menghapus mata kuliah." },
+      { status: 500 },
+    );
+  }
+}
